@@ -1,31 +1,68 @@
-# Scoring and prioritization
+# Scoring — from check results to the score on the report
 
-## Severity
+Deterministic arithmetic over the `CheckResult` list. Given the same results, every host must
+compute the same numbers. Show your work in a scratch table before writing the report.
 
-Assign each finding a severity from its customer impact:
+## 1. Effective ratio per check
 
-| Severity | Meaning | Examples |
-| --- | --- | --- |
-| **Critical** | Actively misleads customers or blocks discovery | AI states wrong hours/address; store pages `noindex`; locator uncrawlable |
-| **Major** | Materially weakens local/AI visibility | NAP mismatch vs PinMeTo; missing `LocalBusiness` schema; no per-store URLs |
-| **Minor** | Real but lower-leverage | Thin meta descriptions; missing `sameAs`; no hreflang on a single-market brand |
-| **Info** | Observation / opportunity, not a defect | "Add FAQ content to improve answer-shaped coverage" |
+| Status | Ratio |
+| --- | --- |
+| `pass` | 1.0, or the measured ratio for gradient/threshold checks (e.g. 0.9 alt-text coverage) |
+| `warn` | 0.5 — always, regardless of what little was measured |
+| `fail` | 0, or the measured ratio for gradient checks (partial credit below threshold) |
 
-## Lens scores
+## 2. Pillar scores (0–100, round half up to integers at the end only)
 
-Score each lens **SEO**, **AIO**, **GEO** on 0–100. Start at 100 and subtract per finding
-(Critical −25, Major −10, Minor −3), floored at 0. Report the three lens scores plus a headline
-average. Scores are a communication device for tracking movement run-over-run, not a
-scientific metric — say so.
+**SEO / AIO / Agent Readiness:** `pillar = Σ (check_weight × ratio)` — the weights in
+`rubric.md` already sum to 100 per pillar.
 
-## Prioritized actions
+**GEO:** three sub-groups, then `geo = 0.55·A + 0.25·B + 0.20·C`:
 
-Roll findings into an ordered action list by **impact ÷ effort**:
+- **A (per-platform):** per location, per platform: share of applicable checks passed
+  (accuracy + richness for Google; existence/NAP/pin for Apple). No listing on a platform →
+  that platform scores 0 for that location. Location score = 0.6·google + 0.4·apple.
+  A = mean across sampled locations × 100.
+- **B (consistency):** per location with both listings: `0.35·name + 0.35·address +
+  0.30·coords`, each field 1 or 0. Locations with only one listing are excluded from B.
+  B = mean × 100 (if no location has both listings, B is excluded and A/C reweighted
+  proportionally — note this in the report).
+- **C (page agreement):** per location: mean of the five 20-point field checks vs the
+  dominant platform answer. C = mean × 100.
 
-- **Impact** ≈ severity, weighted up when the finding hits many locations at once (a broken
-  page template beats a single typo).
-- **Effort** is your best estimate: template/schema fixes that fix every location at once are
-  high-leverage; per-location manual edits are lower.
+## 3. Overall score and grade
 
-Lead the report with the top 3–5 actions. A fix that resolves a Major finding across the whole
-location set is almost always the #1 action, because it is one change with fleet-wide payoff.
+`overall = 0.30·seo + 0.30·geo + 0.25·aio + 0.15·agent_readiness`, rounded to an integer.
+
+| Grade | Overall |
+| --- | --- |
+| A | ≥90 |
+| B | ≥75 |
+| C | ≥60 |
+| D | ≥45 |
+| F | <45 |
+
+Status bands (used for the hero tag and the pillar scorecards) map onto the grade
+thresholds: **Strong** ≥90 · **Healthy** ≥75 · **Needs work** ≥60 · **Critical** <60.
+
+## 4. Top fixes — ranked by points returned
+
+For each failing (not warn) check:
+
+`points_returned = check_weight × (1 − ratio) × pillar_weight / 100`
+
+…expressed in overall-score points. For GEO, treat a sub-group field's effective weight as
+`field_share × subgroup_weight × 0.30`. Group related checks that one fix resolves (e.g. a
+template change fixing H1 + title + description) and sum their points — the report's "Fix
+these first" section shows the **three highest-point fixes**, each with its combined point
+value ("Worth ~4 points"), a plain-English headline, and the coding-agent brief.
+
+Tie-breakers: fleet-wide template fixes beat per-location manual edits; person-tasks (claim a
+listing) rank on points but are labeled as not-a-code-change.
+
+## 5. Honesty in numbers
+
+- Report integers; don't imply decimal precision.
+- `warn` checks are listed under "could not be measured" with their 0.5 credit stated — never
+  silently folded into pass or fail counts.
+- When a re-run changes the rubric version, recompute nothing retroactively: old scans keep
+  their scores; the trend note names the rubric change.

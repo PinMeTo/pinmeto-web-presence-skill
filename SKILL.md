@@ -1,117 +1,127 @@
 ---
 name: pinmeto-web-presence
-description: This skill should be used when the user asks to "audit our web presence", "run an SEO audit of our store locator", "check our local SEO", "how do we look in AI search / ChatGPT / Gemini", "AI visibility audit", "GEO/AEO audit", "check our landing pages", "are our store pages optimized", or otherwise requests an SEO, AI-visibility (AIO), or generative-engine (GEO) analysis of a multi-location brand's store locator, local landing pages, and PinMeTo data. Produces an updatable HTML report artifact. Requires the PinMeTo Location MCP server (>= 4.0.0) to be connected.
-version: 0.1.0
+description: This skill should be used when the user asks to "check our web presence", "audit or monitor our SEO / AIO / GEO / agent readiness", "how do we look in AI search / ChatGPT / Gemini", "are our locations correct on Google Maps and Apple Maps", "run a presence scan", "update the presence report", or otherwise requests an SEO, AI-visibility (AIO), generative-engine (GEO), or agent-readiness analysis of a multi-location brand's website and map listings. Scores the brand against the PinMeTo MLPR rubric, produces an updatable HTML report artifact, and can set up scheduled monitoring. Requires the PinMeTo Location MCP server; GEO checks use a browser against the real Google Maps and Apple Maps.
+version: 0.2.0
 license: Proprietary - (c) PinMeTo AB. See LICENSE.
 ---
 
-# PinMeTo Web Presence Audit (SEO / AIO / GEO)
+# PinMeTo Web Presence Audit (SEO / AIO / GEO / Agent Readiness)
 
-Audit a multi-location brand's online findability across three lenses and produce a
-prioritized, **updatable** report:
+Audit a multi-location brand's online findability across **four pillars**, score it against the
+PinMeTo MLPR rubric, and produce a prioritized, **updatable** report:
 
-- **SEO** — classic + local search: the store locator and per-location landing pages, their
-  technical health, and their `LocalBusiness` structured data.
-- **AIO** — AI visibility: whether AI assistants (ChatGPT, Claude, Gemini, Perplexity) surface
-  the brand correctly for local intent.
-- **GEO** — generative-engine optimization: the on-page and entity signals that make the brand
-  citable by those assistants.
+- **SEO** (30%) — the store locator and per-location landing pages: crawlability, structured
+  data, titles, sitemaps, performance.
+- **GEO** (30%) — the brand's real listings on **Google Maps and Apple Maps**: existence,
+  NAP accuracy, richness, cross-platform consistency, agreement with the landing pages.
+- **AIO** (25%) — whether generative answers (ChatGPT, Claude, Gemini, Perplexity) can ground
+  on the brand: liftable schema, answer-shaped content, `llms.txt`, entity consistency.
+- **Agent Readiness** (15%) — whether AI agents acting for a customer can use the site:
+  MCP server card, agent skills discovery, API catalog, content signals, markdown negotiation.
 
-The audit cross-checks all of it against the source of truth in **PinMeTo** (the brand's
-managed location data), because most local-SEO and AI-visibility failures are really
-NAP (name/address/phone) and structured-data inconsistencies between PinMeTo and the live web.
+Everything is cross-checked against the source of truth in **PinMeTo** (the brand's managed
+location data), because most local-SEO and AI-visibility failures are NAP (name/address/phone)
+and structured-data inconsistencies between PinMeTo and the live web.
+
+The scoring rubric is vendored in [references/rubric.md](references/rubric.md) — same check
+IDs, weights, and grade bands as the PinMeTo MLPR product, so scores are comparable. Do not
+invent checks or reweight; deviations from the rubric make runs incomparable.
 
 ## Requirements
 
-Requires the **PinMeTo Location MCP** server (the `.mcpb` Desktop Extension, or the npm
-package in Claude Code) with its twelve `pinmeto_*` tools connected. If the tools are missing,
-run the `pinmeto-setup` flow first. Web fetching (for the locator and landing pages) uses the
-host's web tools.
-
-Before analyzing, confirm the tools resolve by calling `pinmeto_get_locations` with no
-arguments. If it returns `UNAUTHORIZED` or is not found, stop and fix setup — the audit is
-meaningless without the PinMeTo baseline.
+- **PinMeTo Location MCP** server (the `.mcpb` Desktop Extension, or the npm package in Claude
+  Code) with its `pinmeto_*` tools connected. Confirm by calling `pinmeto_get_locations` with
+  no arguments before anything else. If it fails or is missing, stop and run the
+  `pinmeto-setup` flow first — the audit is meaningless without the PinMeTo baseline.
+- **A browser tool** for GEO: the in-app Browser, Claude in Chrome, or another browser
+  automation surface. GEO evidence comes from the *real* Google Maps and Apple Maps pages —
+  never from the Places API or MapKit. If no browser is available, run the other three pillars
+  and mark every GEO check `warn` (evidence gap) with a note explaining why.
+- **Web fetch** for SEO / AIO / Agent Readiness checks against the brand's site.
 
 ## Inputs to gather from the user
 
-Ask for whatever is not obvious, one thing at a time:
+Ask only for what is not obvious, one thing at a time:
 
 1. **Brand / PinMeTo account** — confirm which account's data to use (the audit uses whatever
    the connected server is scoped to).
-2. **Store locator URL** — the brand's find-a-store page (e.g. `https://brand.com/stores`).
-3. **A few representative landing-page URLs** — 2–5 individual location pages, ideally across
-   markets, so the audit samples rather than crawls everything.
-4. **Target markets / languages**, if the brand is multi-country (affects hreflang and GEO).
-5. **Priority**, if any (e.g. "we care most about AI visibility this quarter").
+2. **Website root and store locator URL** — e.g. `https://brand.com` and `/stores`. Often
+   derivable from the PinMeTo location records' `url` fields; confirm rather than ask cold.
+3. **Target markets / languages**, if multi-country (affects hreflang and sampling).
+4. Whether this is a **first scan** or a **re-run** of an existing report (re-runs update the
+   same artifact — see Output below).
 
 ## Workflow
 
-Work through the five stages in order. Each stage writes findings into a running list of
-`{area, check, severity, evidence, recommendation}` objects — that list becomes the report.
+Work through the stages in order. Every check produces a `CheckResult`:
+`{id, status: pass|warn|fail, ratio?, evidence: [{url, note}], why, fixSteps?, agentPrompt?}`.
+`warn` means *could not measure* (fetch failed, no browser, consent wall) — never use it for a
+real failure. The full result list feeds scoring and the report.
 
-### Stage 1 — Establish the PinMeTo baseline
+### Stage 1 — PinMeTo baseline and sampling
 
-Pull the source-of-truth data with the MCP tools and note completeness gaps (a gap here is
-itself a finding):
+Pull the canonical location data and select the deterministic sample per
+[references/pinmeto-data-check.md](references/pinmeto-data-check.md):
 
-- `pinmeto_get_locations` — the canonical NAP, categories, hours, URLs for every location.
-- `pinmeto_get_google_ratings` / `pinmeto_get_facebook_ratings` — reputation signals.
-- `pinmeto_get_google_keywords` — the queries Google already associates with the locations.
-- Google/Facebook/Apple insights tools — visibility and action metrics for context.
+- `pinmeto_get_locations` → canonical NAP, hours, categories, coordinates, URLs.
+- Ratings/keywords/insights tools for reputation and context.
+- Sample: 5 locations if the brand has <20, 10 if ≥20, minimum 3 to score at all; sorted
+  deterministically so re-runs sample the same locations.
 
-See [references/pinmeto-data-check.md](references/pinmeto-data-check.md) for exactly which
-fields matter and how to judge "complete".
+Baseline gaps (missing URL, hours, category, coordinates) are findings in their own right.
 
-### Stage 2 — Store locator (technical + local SEO)
+### Stage 2 — SEO (site checks on the sample)
 
-Fetch the locator and evaluate crawlability, per-store URL structure, indexability, internal
-linking to location pages, and store-finder schema. Full rubric in
-[references/seo-audit.md](references/seo-audit.md#store-locator).
+Fetch the locator, sitemap, robots.txt, and each sampled landing page. Run the 15 rubric
+checks per [references/seo-checks.md](references/seo-checks.md).
 
-### Stage 3 — Location landing pages (sample)
+### Stage 3 — AIO and Agent Readiness (site + homepage checks)
 
-For each sampled page: title/meta, headings, `LocalBusiness`/`Store` JSON-LD, and — the
-highest-value check — **NAP + hours + category consistency against the PinMeTo baseline from
-Stage 1**. Divergence between PinMeTo and the live page is the most common, most damaging
-finding. Rubric in [references/seo-audit.md](references/seo-audit.md#landing-pages).
+Mostly homepage- and site-level: schema completeness, `llms.txt`, markdown content
+negotiation, `.well-known` agent endpoints. Run per
+[references/aio-checks.md](references/aio-checks.md) and
+[references/agent-readiness-checks.md](references/agent-readiness-checks.md). Many checks
+share fetches with Stage 2 — reuse responses instead of re-fetching.
 
-### Stage 4 — AIO / GEO (AI visibility)
+### Stage 4 — GEO (browser lookups on real maps)
 
-Assess how well the brand is positioned to be surfaced and cited by AI assistants for local
-intent: entity consistency across the web, structured data an LLM can lift, review coverage,
-and answer-shaped content. Where web tools allow, probe a few representative assistant-style
-queries and record how the brand appears. Rubric in [references/aio-geo.md](references/aio-geo.md).
+For each sampled location, look it up on Google Maps and Apple Maps **in the browser**,
+extract the listing facts, and compare against the PinMeTo baseline and the landing page.
+Procedure, URL patterns, extraction fields, and normalization rules in
+[references/geo-browser-checks.md](references/geo-browser-checks.md). This is the slowest
+stage — budget it, and record evidence as you go.
 
-### Stage 5 — Score, prioritize, and report
+### Stage 5 — Score and prioritize
 
-Score each lens and roll findings up into a prioritized action list (impact × effort). Scoring
-model in [references/scoring.md](references/scoring.md). Then produce the report artifact per
-the next section.
+Compute pillar scores (0–100) and the weighted overall score + grade exactly per
+[references/scoring.md](references/scoring.md). Then rank failing checks by points returned
+(check weight × pillar weight × how far from passing) to pick the **top 3 fixes**.
 
-## Output: an updatable report artifact
+### Stage 6 — Report (updatable artifact)
 
-Produce the report as a single self-contained **HTML artifact** (not a chat dump), following
-[references/artifact-report.md](references/artifact-report.md).
+Produce the report per [references/artifact-report.md](references/artifact-report.md) — a
+single self-contained HTML artifact matching the PinMeTo Presence Report design, with a
+fix-brief drawer (including a copy-paste coding-agent prompt) for every failing check.
 
-**Make it updatable across runs.** The report is meant to be re-run and refreshed, so it must
-land on the *same* artifact each time rather than spawning a new one:
+**Updatability is not optional.** The artifact embeds its own scan history JSON; on a re-run,
+find the existing artifact by title, read its history, append the new scan, and republish to
+the **same URL** so the brand keeps one living scorecard with a trend section.
 
-- Give the artifact a **stable title**: `PinMeTo Web Presence — <Brand>`.
-- On every run, **first list existing artifacts and look for that title**; if found, update it
-  in place (same URL) so the brand keeps one living scorecard. Only create a new artifact when
-  none with that title exists.
-- Put a visible "Last updated" date and a short "What changed since last run" note at the top
-  when you are updating an existing report.
+### Stage 7 — Offer monitoring
 
-If the user wants the report to pull fresh data on its own (a live dashboard rather than a
-snapshot), that needs artifact runtime capabilities — load the `artifact-capabilities` skill
-before authoring, and confirm the capability is available to this user.
+After delivering the report, offer to set up a recurring scan (weekly or monthly) using the
+host's scheduling capability. Mechanics in [references/monitoring.md](references/monitoring.md).
 
 ## Scope and honesty
 
-- **Sample, don't boil the ocean.** Audit the locator plus a handful of representative pages;
-  say explicitly which pages were and were not checked. Never imply full-site coverage.
-- **Evidence over assertion.** Every finding cites what was observed (a URL, a missing schema
-  field, a PinMeTo-vs-page mismatch), not a generic best-practice lecture.
-- **This is not a ranking guarantee.** SEO/AIO/GEO improve the odds of visibility; they don't
-  promise positions. State recommendations as changes to make, not outcomes promised.
+- **Sample, don't boil the ocean.** Say explicitly which locations and pages were checked.
+  Never imply full-site or full-fleet coverage.
+- **Evidence over assertion.** Every non-pass finding cites what was observed: a URL, a missing
+  field, a PinMeTo-vs-listing mismatch. No generic best-practice lectures.
+- **`warn` is an evidence gap, not a failure.** The report must distinguish "we found a
+  problem" from "we couldn't measure this" — they score differently (0.5 vs 0) and read
+  differently to the customer.
+- **Browser observations are point-in-time.** Maps surfaces personalize and change; record the
+  date and what was actually on screen.
+- **No ranking guarantees.** These pillars improve the odds of visibility; state
+  recommendations as changes to make, not outcomes promised.
