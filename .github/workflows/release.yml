@@ -1,0 +1,51 @@
+name: Release skill
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Derive version from tag
+        id: v
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Sanity-check SKILL.md version matches the tag
+        env:
+          TAG_VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          FILE_VERSION=$(grep -m1 '^version:' SKILL.md | sed 's/version:[[:space:]]*//')
+          if [ "$FILE_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::SKILL.md version ($FILE_VERSION) does not match tag ($TAG_VERSION)."
+            exit 1
+          fi
+
+      - name: Package the .skill
+        run: |
+          chmod +x package-skill.sh
+          ./package-skill.sh
+
+      - name: Create the GitHub release with the .skill artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" ./*.skill --title "$TAG" --notes "pinmeto-web-presence $TAG"
+
+      - name: Notify the marketplace to sync
+        # Requires a MARKETPLACE_DISPATCH_TOKEN secret: a token allowed to send
+        # repository_dispatch to PinMeTo/claude-plugins. The payload names this
+        # skill so the marketplace sync vendors the right registry entry.
+        env:
+          GH_TOKEN: ${{ secrets.MARKETPLACE_DISPATCH_TOKEN }}
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          gh api repos/PinMeTo/claude-plugins/dispatches \
+            --field event_type=skill-released \
+            --field "client_payload[skill_name]=pinmeto-web-presence" \
+            --field "client_payload[skill_version]=$VERSION"
