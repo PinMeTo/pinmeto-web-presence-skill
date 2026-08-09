@@ -1,7 +1,7 @@
 ---
 name: pinmeto-web-presence
 description: This skill should be used when the user asks to "check our web presence", "audit or monitor our SEO / AIO / GEO / agent readiness", "how do we look in AI search / ChatGPT / Gemini", "are our locations correct on Google, Apple, and Bing Maps", "run a presence scan", "update the presence report", or otherwise requests an SEO, AI-visibility (AIO), generative-engine (GEO), or agent-readiness analysis of a multi-location brand's website and map listings. Scores the brand against the PinMeTo MLPR rubric, produces an updatable HTML report artifact, and can set up scheduled monitoring. Requires the PinMeTo Location MCP server; GEO checks use a browser against the real Google, Apple, and Bing Maps.
-version: 0.8.1
+version: 0.9.0
 license: Proprietary - (c) PinMeTo AB. See LICENSE.
 ---
 
@@ -140,16 +140,22 @@ Route each kind of work to the cheapest thing that does it correctly:
    arithmetic (`scoring.md`), and generating the report HTML from the data structure
    (`artifact-report.md`). This is required where a shell exists — it is faster, free, and
    reproducible.
-2. **Delegate mechanical stages to a small, fast model** when the host supports subagents
-   with model selection (e.g. a Haiku-class model in Claude Code): the per-location GEO
-   extraction (it follows the recipe in `geo-browser-checks.md` and returns the compact
-   evidence JSON — nothing else), and the `.well-known`/`llms.txt`/markdown-negotiation
-   probes. Give the subagent the recipe and the evidence schema; it must return recorded
-   observations or `warn`, never interpretations and never invented values.
-3. **Keep judgment on the primary model:** normalization calls (does "Karhumäkivägen 3,
-   Vanda" match "Karhumäentie 3, Vantaa"?), severity decisions, the fix briefs and agent
-   prompts, and all report prose. A wrong judgment here corrupts the score; this is not
-   where to save tokens.
+2. **Delegate only the identity-and-position reads to a small, fast model** when the host
+   supports subagents with model selection (e.g. a Haiku-class model in Claude Code):
+   listing **existence, name, address, phone, website href, coordinates** — every one of
+   which is verifiable against the PinMeTo baseline, so a wrong value is caught — plus the
+   `.well-known`/`llms.txt`/markdown-negotiation probes. Give the subagent the recipe and
+   the evidence schema, require `null` plus a note when a field cannot be read, and
+   **reject any value prefixed `~` or "approx"** on arrival.
+3. **Keep judgment *and* the unverifiable reads on the primary model:** the Google richness
+   fields (weekly hours table, photo count, attribute chips, review recency), normalization
+   calls (does "Karhumäkivägen 3, Vanda" match "Karhumäentie 3, Vantaa"?), severity
+   decisions, fix briefs, and all report prose. Richness fields are read off a localized UI
+   with relative dates and have no baseline to check against — a small model returns
+   plausible-looking numbers there rather than nulls (a dogfood run produced a *fabricated*
+   ISO review date synthesized from "a year ago", and nulled five passing hours tables).
+   Anything a wrong answer can silently corrupt stays here; this is not where to save
+   tokens.
 4. **One browser, one driver.** Subagents on most hosts share a single browser surface —
    do not run two browser-driving agents concurrently; delegate map lookups sequentially
    within that surface. Two independent surfaces (e.g. the in-app Browser *and* Claude in
@@ -162,9 +168,11 @@ Route each kind of work to the cheapest thing that does it correctly:
    - Inside the fetch script, pull all pages **concurrently** (e.g. `curl` via
      `xargs -P4`, or an async fetch script) — robots, sitemaps, sampled pages,
      `.well-known` probes in one burst against the brand's own site.
-   - Where background subagents exist, run **Stages 2–3 (HTTP-only, small model) and
-     Stage 4 (browser) at the same time** — they share no state except the Stage 1
-     baseline, and join before Stage 5 scoring.
+   - Where background subagents exist, run **the HTTP-only part of Stages 2–3 and Stage 4
+     (browser) at the same time** — they share no state except the Stage 1 baseline, and
+     join before Stage 5 scoring. **Caveat on client-rendered sites:** the rendered pass of
+     Stages 2–3 needs the same single browser as Stage 4, so those two cannot overlap.
+     Sequence there: concurrent served fetches → rendered pass → GEO.
 6. **No subagent support?** Fine — the whole workflow runs single-agent; the scripts in
    rule 1 (including their concurrent fetching) are what keep that affordable, and the
    PSI-first ordering still applies.

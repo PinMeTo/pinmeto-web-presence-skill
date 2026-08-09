@@ -15,11 +15,18 @@ ratio; everything else is exactly 1 / 0.5 / 0.
 | `warn` | 0.5 — always, regardless of what little was measured |
 | `fail` | 0, or the measured ratio for gradient checks (partial credit below threshold) |
 
-For html/json-ld checks the measured ratio already reflects the dual-pass rendering policy
-(`seo-checks.md`): a page/value satisfied in the served HTML contributes 1, satisfied only
-in the rendered DOM contributes `rendered_only_credit` (0.5), absent contributes 0. A
-rendered-only 0.5 is a **real half-failure** (invisible to non-rendering AI crawlers), not
-a `warn` — never conflate the two in the report.
+### The two meanings of 0.5 — keep them apart
+
+| 0.5 as… | Status | Means | In the report |
+| --- | --- | --- | --- |
+| **warn** | `warn` | We could not measure it (fetch failed, quota, no browser, consent wall) | Counted under "could not be measured"; never in the failing count |
+| **rendered-only credit** | `fail` (or `pass` if the check's threshold is met at 0.5+) | We measured it: present after JS hydration, absent from the served HTML | A **real half-failure** — listed with its evidence and a fix brief |
+
+Both come from the dual-pass policy in `seo-checks.md` (served = 1, rendered-only = 0.5,
+absent = 0), and the rendered-only 0.5 is legal on **any** html/json-ld check regardless of
+the `gradient_checks` whitelist — it is the policy's fixed credit, not a measured ratio.
+Never conflate the two: one says "we don't know", the other says "half your audience can't
+see this".
 
 ## 2. Pillar scores (0–100, round half up to integers at the end only)
 

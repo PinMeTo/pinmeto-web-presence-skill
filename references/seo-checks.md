@@ -35,6 +35,13 @@ brief for any rendered-only finding is still "serve it in the HTML", because hal
 audience never runs the JS. Never score from the rendered DOM without recording the served
 result first; the delta between the passes *is* the finding.
 
+**Uniqueness checks under dual-pass** (`seo.meta_title_unique`,
+`seo.meta_description_unique`): these are set properties, not value-presence, so score the
+*set* in each pass — unique across the sample in the served HTML = 1 · identical in served
+but unique after rendering = 0.5 · duplicated in both passes = 0. (A site whose location
+pages all serve the locator's title but hydrate distinct ones lands on 0.5; one that ships
+the same description either way lands on 0.)
+
 `seo.internal_linking_depth` under this policy: crawl served-HTML anchors as the primary
 graph; where a hub page (homepage, locator) is a JS shell, render it once, add its rendered
 anchors to the graph, and count locations reachable only through rendered links at 0.5.

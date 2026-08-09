@@ -73,6 +73,10 @@ Flag per location:
   baseline-less (page vs platform only) and says so.
 - **Long tail of zero-rating locations** — either genuinely new or disconnected profiles.
 
+`storeId` is case-sensitive to the MCP but sites often lowercase it in URLs
+(`/locations/GDANSK/` → `/locations/gdansk/`): use the record's exact storeId for MCP calls
+and the resolved URL for evidence rows.
+
 Record the canonical record per location:
 `{name, street, zip, city, country, phone, primaryCategory, hours, url, lat, lng}` —
 **plus the platform connections** from the record's `network` object:

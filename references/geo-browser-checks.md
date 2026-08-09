@@ -36,10 +36,13 @@ platform, `pass` when the `network.<platform>` connection exists in the PinMeTo 
 `fail` when it doesn't. This measures *managed through PinMeTo*; a listing the brand claimed
 outside PinMeTo still fails, and its fix brief is "connect the location in PinMeTo" (so the
 platform stays in sync automatically), not "claim it on the platform".
-**Downgrade rule:** if the map surface contradicts the record — an unclaimed/"Claim This
-Place" banner, or listing data that is plainly stale against PinMeTo — score `fail` even
-though the connection exists, with evidence "connected in PinMeTo but not taking effect on
-the platform". A green check next to an obviously broken listing is not credible.
+**Downgrade rule (with a threshold, so it doesn't drift between runs):** score `fail` even
+though the connection exists when the surface shows an unclaimed/"Claim This Place" banner,
+**or** the listing disagrees with the PinMeTo record on **address or pin** (the two fields a
+working connection always syncs). A wrong phone or name alone is recorded by its own
+accuracy check and does *not* trigger the downgrade. Evidence reads "connected in PinMeTo
+but not taking effect on the platform". A green check next to an obviously broken listing is
+not credible.
 
 Opening by ID removes matching ambiguity and is faster — always prefer it. But it only proves
 what the *claimed* listing says; it cannot prove a customer would find it, and it cannot see
@@ -83,7 +86,12 @@ misbehaves. Never use `javascript_tool` to *change* anything on the page.
    - **Phone**
    - **Website URL** (the actual href, not the display text)
    - **Hours** (weekly table — expand it; note "special hours" / holiday rows if shown)
-   - **Photos**: rough count — open the photo strip; "5+" is enough precision
+   - **Photos**: rough count — "5+" is enough precision. **Trap:** the card's `innerText`
+     contains reviewer-profile strings like "Local Guide · 52 reviews · 21 photos" — that
+     is the *reviewer's* lifetime photo count, not the listing's. Never infer the count
+     from an innerText number. Open the photo grid (the `/photos` view or the header photo
+     tile) and count tiles; if the grid will not open in this host, score
+     `geo.photos_5_plus` as **warn** with that reason.
    - **Attributes/services** (the "About" tab chips: accessibility, service options, …)
    - **Menu / order / reserve links** if the category warrants them
    - **Latest owner post** (the "Updates"/"From the owner" section): date of the newest

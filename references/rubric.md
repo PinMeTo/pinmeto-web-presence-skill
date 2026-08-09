@@ -29,8 +29,17 @@ Agent Readiness remain identical to 2.8.0. Do not add, drop, or reweight checks 
 the rubric needs changing, change it here with a version bump (and reconcile upstream when
 the product catches up).
 
-When re-running an existing report, keep using the rubric version recorded in that report's
-history for delta narration, and note it if this file has moved on since.
+## Re-run rule (unambiguous — two readings here make runs incomparable)
+
+A re-run **always scores with the rubric version in *this* file**. Prior scans keep the
+scores they were computed with and are never recomputed. When the version has moved since
+the last scan, the trend section must attribute every check whose ratio changed to one of:
+
+1. **rubric change** — the check is scored differently now,
+2. **measurement correction** — the earlier run mis-measured or mis-recorded it,
+3. **real change** — the site or the listing actually changed.
+
+Never present a rubric-caused or correction-caused delta as customer progress.
 
 ## Machine-readable rubric
 
@@ -99,6 +108,27 @@ history for delta narration, and note it if this file has moved on since.
         "a_per_platform": {
           "weight_inside_geo": 55,
           "platform_weights": { "google": 55, "apple": 30, "bing": 15 },
+          "applicable_checks": {
+            "google": [
+              "geo.listing_connected_pinmeto", "geo.name_matches_site", "geo.address_matches_site",
+              "geo.phone_matches_site", "geo.website_url_on_listing", "geo.coords_within_50m",
+              "geo.location_platform_parity", "geo.hours_present", "geo.special_hours_set",
+              "geo.photos_5_plus", "geo.services_attributes", "geo.recent_reviews_180d",
+              "geo.consumer_alerts_clear"
+            ],
+            "apple": [
+              "geo.listing_connected_pinmeto", "geo.name_matches_site", "geo.address_matches_site",
+              "geo.phone_matches_site", "geo.coords_within_50m"
+            ],
+            "bing": [
+              "geo.listing_connected_pinmeto", "geo.name_matches_site", "geo.address_matches_site",
+              "geo.phone_matches_site", "geo.website_url_on_listing", "geo.coords_within_50m"
+            ],
+            "conditional": {
+              "geo.menu_order_reservations": "google, only when the location's primary category implies a menu, ordering or reservations (restaurant, cafe, hotel, salon, clinic). Excluded from the denominator otherwise — record the exclusion in evidence."
+            },
+            "note": "These lists ARE the denominator for sub-group A ('share of applicable checks passed'). Do not assemble them by hand from prose; drift here is the largest source of run-to-run GEO variance."
+          },
           "accuracy_checks": [
             { "id": "geo.listing_connected_pinmeto", "platforms": ["google", "apple", "bing"], "source": "pinmeto_mcp network object", "notes": "connection/claim managed through PinMeTo: network.google.placeId / network.apple.link / network.bing.link present" },
             { "id": "geo.name_matches_site", "platforms": ["google", "apple", "bing"], "normalization": "case+punctuation+legal_suffix" },
@@ -222,5 +252,8 @@ This skill gathers the **same facts from the real map surfaces in a browser** (s
 **Only the check ids in `gradient_checks` may carry a measured ratio.** Every other check
 scores exactly 1 / 0.5 / 0 — do not invent partial credit for them; a half-satisfied binary
 check is a judgment call that the check's own procedure must resolve, or it scores 0.
+**The rendered-only 0.5 is exempt from this whitelist**: any `html`/`json-ld` check may
+land on 0.5 through the dual-pass rendering policy, because that is the policy's fixed
+half-credit, not a measured ratio.
 Gradient example: `seo.localbusiness_jsonld_richness` at 55/100 contributes ratio 0.55 —
 status `fail` (below threshold) but partial credit still flows into the pillar score.

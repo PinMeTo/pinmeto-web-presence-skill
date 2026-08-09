@@ -26,7 +26,9 @@ needs inline code styling, escape first and re-allow only `<code>`/`</code>`.
   attributes (hostile to CSP) — and the script sits at the end of the body;
 - when a local browser is available, serve the file and click one accordion, one drawer
   button, and one filter before publishing (`document.scripts.length` being 0 is the
-  instant tell that markup swallowed the script).
+  instant tell that markup swallowed the script);
+- escape non-ASCII inside CSS `content:` rules as `\00B7`-style escapes — a served page
+  without a charset header renders raw bytes there as mojibake.
 
 After publishing, **verify via a web fetch of the artifact URL** — the in-app browser is
 not signed in to claude.ai and will show a 404; keep the verification narrow (title,
@@ -45,6 +47,14 @@ score, history block), the page is 200 KB+.
   create fresh when no artifact matches that exact title. If the user says "update the
   report" ambiguously and several presence reports exist for the brand, ask which one (or
   update all on a scheduled run that says so).
+- **Reading the previous history block, cheaply.** Fetch the artifact URL **once** with the
+  host's web-fetch tool. Do not ask the fetch prompt to transcribe the history block — it
+  won't, and the response dumps ~10k tokens of page head into context. The fetch tool saves
+  the full HTML to a local path; read *that file* and extract the block with a regex —
+  `re.search(r'<script type="application/json" id="pmt-scan-history">(.*?)</script>', html, re.S)`
+  — for a couple of hundred tokens. Never `curl` an artifact URL (you get the SPA shell or
+  a 403) and never use a markdown-converting fetcher (it strips
+  `<script type="application/json">` entirely).
 
 ## Scoped reports (country / region)
 
@@ -102,8 +112,20 @@ renders identically in light and dark viewers.
      labels above points, dates below, last point emphasized in orange),
    - a per-pillar now/±delta strip,
    - a scan-history table (date, label, SEO, GEO, AIO, Agent, Overall),
-   - a "What moved since <last scan>" callout (soft blue wash card): one line per notable
-     change, concrete ("Agent readiness gained 12 points. The MCP server card went live.").
+   - a "What moved since <last scan>" callout (soft blue wash card): derive the bullets
+     **mechanically from a diff of the previous and current `checks` maps** (that is why
+     the map stores every check), and classify each one as **rubric change**,
+     **measurement correction**, or **real change** per the re-run rule in `rubric.md`.
+     Concrete and honest: "Agent readiness gained 12 points — the MCP server card went
+     live" (real) vs "SEO gained 10 points because the rubric now gives half credit for
+     client-rendered values; nothing changed on the site" (rubric).
+
+   Rendering rules for this section: the hero score, the pillar scorecards and the trend
+   table must all render **from the history entries**, never from separately computed
+   numbers — a report that disagrees with its own embedded state (hero 22, history 23) is
+   worse than no trend at all. When two scans share a date, label the chart points with
+   date **and** ordinal ("9 Aug (1st)", "9 Aug (2nd)"). With only two points the chart is
+   thin but still correct — keep it.
 5. **Fix these first**: the top 3 fixes by points returned (scoring.md §4). Each row: rank ·
    pillar · "Worth ~N points" · plain-English headline (a change, not a check name) · 1–2
    sentence summary · a "How to fix" button opening the drawer.
@@ -127,7 +149,10 @@ renders identically in light and dark viewers.
    Eufemias gate 16"). Fields that are scored on fewer platforms show only those chips
    (Hours: G · URL: G/B · the rest: G/A/B). Legend underneath must explain the chips
    **and define Map pin** ("the platform's map-pin position — within 50 m of the PinMeTo
-   coordinates counts as matching"). This is the money table for the PinMeTo pitch — it
+   coordinates counts as matching") **and what the Hours chip compares** ("Google's weekly
+   hours table vs the PinMeTo record" — hours are a Google richness check and a
+   page-agreement field, not a three-platform NAP comparison, so the single chip is
+   correct and should not read as if Apple and Bing were checked and omitted). This is the money table for the PinMeTo pitch — it
    must be exactly right per the GEO evidence.
 10. **Listing content table** (directly after the matrix): per sampled location, what the
     Google listing actually shows — {Category (vs the category PinMeTo pushes, from
@@ -186,7 +211,8 @@ The artifact carries its own memory. Embed exactly one block:
       "pillars": { "seo": 47, "geo": 79, "aio": 45, "agent_readiness": 90 },
       "counts": { "pass": 40, "warn": 2, "fail": 14 },
       "sample": ["<locationId>", "…"],
-      "checks": { "seo.h1_unique_has_location": { "status": "fail", "ratio": 0 } }
+      "checks": { "seo.h1_unique_has_location": { "status": "fail", "ratio": 0 } },
+      "notes": ["ar.markdown_content_negotiation was recorded 1.0 here but 0.5 under the AIO id; corrected in the next scan"]
     }
   ]
 }
@@ -199,7 +225,11 @@ The artifact carries its own memory. Embed exactly one block:
 - `scans` is append-only, oldest first. Keep every prior scan verbatim — never recompute old
   numbers, even if the rubric version moved.
 - `checks` records status+ratio for **every** check (compact but complete): it is what lets
-  the next run say "internal linking hasn't moved across four scans" without guessing.
+  the next run say "internal linking hasn't moved across four scans" without guessing, and
+  it is the input to the trend section's mechanical diff.
+- `notes` (optional) records **measurement corrections** discovered about *that* scan — so
+  a later run can see "this check was mis-scored" without re-deriving it. Append notes to
+  the older entry when you find the error; never edit its scores.
 - On re-run: fetch the live artifact, extract this block, append, republish. If the block is
   missing or unparseable (hand-edited artifact), say so, start a fresh history with the
   current scan, and keep the old visual sections out of the history math.
