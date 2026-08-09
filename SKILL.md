@@ -1,7 +1,7 @@
 ---
 name: pinmeto-web-presence
 description: This skill should be used when the user asks to "check our web presence", "audit or monitor our SEO / AIO / GEO / agent readiness", "how do we look in AI search / ChatGPT / Gemini", "are our locations correct on Google, Apple, and Bing Maps", "run a presence scan", "update the presence report", or otherwise requests an SEO, AI-visibility (AIO), generative-engine (GEO), or agent-readiness analysis of a multi-location brand's website and map listings. Scores the brand against the PinMeTo MLPR rubric, produces an updatable HTML report artifact, and can set up scheduled monitoring. Requires the PinMeTo Location MCP server; GEO checks use a browser against the real Google, Apple, and Bing Maps.
-version: 0.7.0
+version: 0.8.0
 license: Proprietary - (c) PinMeTo AB. See LICENSE.
 ---
 
@@ -130,6 +130,31 @@ per-country/region — and a re-run must update the right one, never a different
 
 After delivering the report, offer to set up a recurring scan (weekly or monthly) using the
 host's scheduling capability. Mechanics in [references/monitoring.md](references/monitoring.md).
+
+## Scripts, delegation, and model choice
+
+Route each kind of work to the cheapest thing that does it correctly:
+
+1. **Scripts beat any model.** Everything deterministic runs as shell scripts, not model
+   reasoning: HTTP fetching and header/JSON-LD parsing (Stages 2–3), the scoring
+   arithmetic (`scoring.md`), and generating the report HTML from the data structure
+   (`artifact-report.md`). This is required where a shell exists — it is faster, free, and
+   reproducible.
+2. **Delegate mechanical stages to a small, fast model** when the host supports subagents
+   with model selection (e.g. a Haiku-class model in Claude Code): the per-location GEO
+   extraction (it follows the recipe in `geo-browser-checks.md` and returns the compact
+   evidence JSON — nothing else), and the `.well-known`/`llms.txt`/markdown-negotiation
+   probes. Give the subagent the recipe and the evidence schema; it must return recorded
+   observations or `warn`, never interpretations and never invented values.
+3. **Keep judgment on the primary model:** normalization calls (does "Karhumäkivägen 3,
+   Vanda" match "Karhumäentie 3, Vantaa"?), severity decisions, the fix briefs and agent
+   prompts, and all report prose. A wrong judgment here corrupts the score; this is not
+   where to save tokens.
+4. **One browser, one driver.** Subagents on most hosts share a single browser surface —
+   do not run two browser-driving agents concurrently; delegate map lookups sequentially
+   (the win is keeping extraction noise out of the main context, not parallelism).
+5. **No subagent support?** Fine — the whole workflow runs single-agent; the scripts in
+   rule 1 are what keep that affordable.
 
 ## Scope and honesty
 
