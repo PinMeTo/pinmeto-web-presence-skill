@@ -6,14 +6,41 @@ HTTP status, final URL after redirects, and fetch date for evidence.
 
 ## Rendering policy (read this first — it decides scores)
 
-Evaluate every `source: html` check against the **raw served HTTP response**, never against
-a browser-rendered DOM. When a value is absent from the served HTML but appears after
-JS hydration, the check **fails**, and the evidence row records the rendered value with the
-words "client-rendered only". Rationale: non-rendering AI crawlers (GPTBot, ClaudeBot,
-PerplexityBot) are a first-class audience for this rubric, and a fixed policy is what keeps
-re-runs comparable — the served-vs-rendered choice can swing SEO by tens of points. The one
-deliberate exception is GEO sub-group C's "visible NAP", which is explicitly scored on the
-rendered page (see `geo-browser-checks.md`).
+The audience for these checks is split, and the policy models that split:
+
+| Fetcher | Renders JS? |
+| --- | --- |
+| Googlebot, Bingbot (search indexing) | Yes — evergreen Chromium |
+| Agentic browsing (ChatGPT browse, Perplexity live, Claude with a browser) | Yes — at query time |
+| AI training/index crawlers (GPTBot, ClaudeBot, PerplexityBot, most LLM fetchers) | **No — raw HTML only** |
+
+So every `source: html` / `json-ld` check runs as a **dual pass**:
+
+1. **Served pass** — the raw HTTP response (plain `curl`/fetch). A value present here is
+   visible to everyone: **full credit**.
+2. **Rendered pass** — only needed when the served pass misses. If a sampled page's served
+   HTML lacks the expected signals (no unique title, no H1, no JSON-LD, no canonical — the
+   classic SPA-shell fingerprint, e.g. byte-identical bodies across different location
+   URLs), load that page in the **real browser** and re-extract the same signals from the
+   rendered DOM (one `javascript_tool` read per page: `document.title`, canonical href,
+   meta/OG tags, H1s, serialized `ld+json` blocks, anchor list).
+3. **Credit rule:** present in served HTML = ratio counts fully · present **only after
+   rendering** = that page/value contributes at `rendered_only_credit` = **0.5** ·
+   absent in both = 0. Evidence rows carry the provenance: "client-rendered only — visible
+   to Google and agent browsers, invisible to non-rendering AI crawlers (half credit)".
+
+This is deterministic (same site → same split → same score), it stops punishing sites that
+Google indexes perfectly well, and it keeps the pressure on server-rendering — the fix
+brief for any rendered-only finding is still "serve it in the HTML", because half the AI
+audience never runs the JS. Never score from the rendered DOM without recording the served
+result first; the delta between the passes *is* the finding.
+
+`seo.internal_linking_depth` under this policy: crawl served-HTML anchors as the primary
+graph; where a hub page (homepage, locator) is a JS shell, render it once, add its rendered
+anchors to the graph, and count locations reachable only through rendered links at 0.5.
+Site-level checks (`robots.txt`, sitemap, PSI) have no rendered pass — they are what they
+are. GEO sub-group C's "visible NAP" is always scored on the rendered page
+(see `geo-browser-checks.md`).
 
 ## Fetch tooling
 

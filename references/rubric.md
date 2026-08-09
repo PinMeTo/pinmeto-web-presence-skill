@@ -1,4 +1,10 @@
-# Rubric — v2.10.0-skill.1 (skill-line fork of PinMeTo MLPR rubric v2.8.0)
+# Rubric — v2.11.0-skill.1 (skill-line fork of PinMeTo MLPR rubric v2.8.0)
+
+Changes in 2.11.0-skill.1: dual-pass rendering policy — `source: html`/`json-ld` checks are
+evaluated on served HTML first, then on the browser-rendered DOM for SPA pages; values
+present only after rendering earn `rendered_only_credit` (0.5), because Googlebot/Bingbot
+and agentic browsers render JS while AI training/index crawlers do not. Replaces
+2.10.0-skill.1's served-only policy, which over-punished client-rendered sites.
 
 Changes in 2.10.0-skill.1 (from the 2026-08-09 dogfood run): parity's arithmetic slot
 defined (Google column only), `geo.listing_connected_pinmeto` downgrade rule when the map
@@ -30,8 +36,9 @@ history for delta narration, and note it if this file has moved on since.
 
 ```json
 {
-  "rubric_version": "2.10.0-skill.1",
+  "rubric_version": "2.11.0-skill.1",
   "derived_from": "MLPR 2.8.0",
+  "rendered_only_credit": 0.5,
   "gradient_checks": [
     "seo.localbusiness_jsonld_present", "seo.localbusiness_jsonld_richness",
     "seo.h1_unique_has_location", "seo.sitemap_lists_locations",
@@ -172,6 +179,11 @@ history for delta narration, and note it if this file has moved on since.
 ```
 
 ## Skill adaptations (evidence source only — never scoring)
+
+- **Dual-pass rendering** for all `source: html`/`json-ld` checks (SEO, AIO, and
+  `ar.jsonld_present_valid`): served HTML = full credit, rendered-DOM-only =
+  `rendered_only_credit` (0.5), absent = 0. Full policy and the SPA detection procedure in
+  `seo-checks.md`; it applies pillar-wide, not just to SEO.
 
 The product gathers GEO evidence through the Google Places API and Apple MapKit Server API.
 This skill gathers the **same facts from the real map surfaces in a browser** (see

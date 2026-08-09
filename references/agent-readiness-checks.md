@@ -46,7 +46,9 @@ exists.
 
 ### ar.jsonld_present_valid (5)
 At least one sampled page and the homepage carry JSON-LD that parses cleanly. (Deliberately
-redundant with the SEO pillar at a small weight — an agent consumes it too.)
+redundant with the SEO pillar at a small weight — an agent consumes it too.) The dual-pass
+rendering policy from `seo-checks.md` applies: JSON-LD that only exists after hydration
+counts at 0.5.
 
 ### ar.xml_sitemap (5)
 A syntactically valid XML sitemap exists and is referenced from `robots.txt`. Reuse the

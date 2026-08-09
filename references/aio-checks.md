@@ -5,6 +5,12 @@ data, answer-shaped content, and the emerging AI-consumption conventions. Run ag
 homepage, the sampled landing pages, and 1–2 key content pages (an article/FAQ page if the
 site has them). Reuse Stage 2 fetches.
 
+The **dual-pass rendering policy in `seo-checks.md` applies to every html/json-ld check in
+this pillar too**: schema present in the served HTML = full credit, present only in the
+rendered DOM = 0.5, absent = 0, provenance in the evidence. AIO is the pillar where the
+distinction bites hardest — the non-rendering AI crawlers are precisely this pillar's
+audience.
+
 ### aio.faqpage_schema_2_types (10)
 `FAQPage` JSON-LD present on at least **two different page types** (e.g. a location page and
 a support/FAQ page). One page type = ratio 0.5.
