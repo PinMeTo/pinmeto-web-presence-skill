@@ -1,7 +1,7 @@
 ---
 name: pinmeto-web-presence
-description: This skill should be used when the user asks to "check our web presence", "audit or monitor our SEO / AIO / GEO / agent readiness", "how do we look in AI search / ChatGPT / Gemini", "are our locations correct on Google Maps and Apple Maps", "run a presence scan", "update the presence report", or otherwise requests an SEO, AI-visibility (AIO), generative-engine (GEO), or agent-readiness analysis of a multi-location brand's website and map listings. Scores the brand against the PinMeTo MLPR rubric, produces an updatable HTML report artifact, and can set up scheduled monitoring. Requires the PinMeTo Location MCP server; GEO checks use a browser against the real Google Maps and Apple Maps.
-version: 0.2.0
+description: This skill should be used when the user asks to "check our web presence", "audit or monitor our SEO / AIO / GEO / agent readiness", "how do we look in AI search / ChatGPT / Gemini", "are our locations correct on Google, Apple, and Bing Maps", "run a presence scan", "update the presence report", or otherwise requests an SEO, AI-visibility (AIO), generative-engine (GEO), or agent-readiness analysis of a multi-location brand's website and map listings. Scores the brand against the PinMeTo MLPR rubric, produces an updatable HTML report artifact, and can set up scheduled monitoring. Requires the PinMeTo Location MCP server; GEO checks use a browser against the real Google, Apple, and Bing Maps.
+version: 0.3.0
 license: Proprietary - (c) PinMeTo AB. See LICENSE.
 ---
 
@@ -12,7 +12,7 @@ PinMeTo MLPR rubric, and produce a prioritized, **updatable** report:
 
 - **SEO** (30%) — the store locator and per-location landing pages: crawlability, structured
   data, titles, sitemaps, performance.
-- **GEO** (30%) — the brand's real listings on **Google Maps and Apple Maps**: existence,
+- **GEO** (30%) — the brand's real listings on **Google, Apple, and Bing Maps**: existence,
   NAP accuracy, richness, cross-platform consistency, agreement with the landing pages.
 - **AIO** (25%) — whether generative answers (ChatGPT, Claude, Gemini, Perplexity) can ground
   on the brand: liftable schema, answer-shaped content, `llms.txt`, entity consistency.
@@ -23,9 +23,11 @@ Everything is cross-checked against the source of truth in **PinMeTo** (the bran
 location data), because most local-SEO and AI-visibility failures are NAP (name/address/phone)
 and structured-data inconsistencies between PinMeTo and the live web.
 
-The scoring rubric is vendored in [references/rubric.md](references/rubric.md) — same check
-IDs, weights, and grade bands as the PinMeTo MLPR product, so scores are comparable. Do not
-invent checks or reweight; deviations from the rubric make runs incomparable.
+The scoring rubric is defined in [references/rubric.md](references/rubric.md) — a skill-line
+fork (v2.9.0-skill.1) of the PinMeTo MLPR product rubric v2.8.0 that re-adds Bing as a scored
+GEO platform and adds a PinMeTo-connection check; SEO/AIO/Agent Readiness are identical to
+the product. Do not invent checks or reweight; deviations from the rubric make runs
+incomparable.
 
 ## Requirements
 
@@ -34,7 +36,7 @@ invent checks or reweight; deviations from the rubric make runs incomparable.
   no arguments before anything else. If it fails or is missing, stop and run the
   `pinmeto-setup` flow first — the audit is meaningless without the PinMeTo baseline.
 - **A browser tool** for GEO: the in-app Browser, Claude in Chrome, or another browser
-  automation surface. GEO evidence comes from the *real* Google Maps and Apple Maps pages —
+  automation surface. GEO evidence comes from the *real* Google, Apple, and Bing Maps pages —
   never from the Places API or MapKit. If no browser is available, run the other three pillars
   and mark every GEO check `warn` (evidence gap) with a note explaining why.
 - **Web fetch** for SEO / AIO / Agent Readiness checks against the brand's site.
@@ -85,7 +87,7 @@ share fetches with Stage 2 — reuse responses instead of re-fetching.
 
 ### Stage 4 — GEO (browser lookups on real maps)
 
-For each sampled location, look it up on Google Maps and Apple Maps **in the browser**,
+For each sampled location, look it up on Google, Apple, and Bing Maps **in the browser**,
 extract the listing facts, and compare against the PinMeTo baseline and the landing page.
 Procedure, URL patterns, extraction fields, and normalization rules in
 [references/geo-browser-checks.md](references/geo-browser-checks.md). This is the slowest

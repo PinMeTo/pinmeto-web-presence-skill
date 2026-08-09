@@ -33,12 +33,13 @@ Record the canonical record per location:
 
 - `network.google.placeId` and `network.google.link` (maps.google.com `?cid=` deep link)
 - `network.apple.link` (`maps.apple.com/place?auid=…`)
-- `network.bing.link` (unscored, but keep it for evidence)
+- `network.bing.link` (`bing.com/maps?ss=ypid.…`)
 
 These deep links are how Stage 4 opens the exact claimed listing instead of searching blind
-(see `geo-browser-checks.md`). A location **missing** a `network.google` or `network.apple`
-entry is itself a finding: the location is not connected/claimed on that platform through
-PinMeTo, which usually foreshadows a parity gap on the map surface.
+(see `geo-browser-checks.md`), and their presence/absence **is** the
+`geo.listing_connected_pinmeto` check: a location missing a `network.<platform>` entry is
+not connected/managed on that platform through PinMeTo, which both fails that check and
+usually foreshadows a parity gap on the map surface.
 
 ## Deterministic sampling (must match across runs)
 

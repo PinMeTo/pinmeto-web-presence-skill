@@ -1,4 +1,4 @@
-# GEO checks — real Google Maps and Apple Maps in the browser (pillar weight 30%)
+# GEO checks — real Google, Apple, and Bing Maps in the browser (pillar weight 30%)
 
 GEO evidence comes from **browsing the actual map surfaces**, not the Places API or MapKit.
 Use the available browser tool (in-app Browser, Claude in Chrome, or equivalent). The point:
@@ -6,8 +6,9 @@ what you see is what a customer — and an AI assistant grounding on these platf
 
 Ground rules:
 
-- **One location at a time**, Google first, then Apple, then move on. Record extracted facts
-  immediately into the location's evidence — don't rely on remembering screens.
+- **One location at a time**, Google first, then Apple, then Bing, then move on. Record
+  extracted facts immediately into the location's evidence — don't rely on remembering
+  screens.
 - **Consent walls:** decline non-essential cookies. If a wall cannot be dismissed, the
   affected checks are `warn` with a note, never a guess.
 - **Never interact beyond reading**: no sign-in, no "suggest an edit", no claiming flows.
@@ -27,15 +28,20 @@ under `network`:
   `https://www.google.com/maps/place/?q=place_id:<placeId>`.
 - `network.apple.link` (`https://maps.apple.com/place?auid=…`) — opens the exact Apple
   listing.
-- `network.bing.link` exists too, but Bing is **not scored** (dropped from the rubric in
-  v2.0.0); at most note obvious errors as prose evidence.
+- `network.bing.link` (`https://www.bing.com/maps?ss=ypid.<YPID>&mkt=…`) — opens the exact
+  Bing listing.
+
+These same entries drive the **`geo.listing_connected_pinmeto`** check — no browser needed:
+per location and platform, `pass` when the `network.<platform>` connection exists in the
+PinMeTo record, `fail` when it doesn't. This measures *managed through PinMeTo*; a listing
+the brand claimed outside PinMeTo still fails, and its fix brief is "connect the location in
+PinMeTo" (so the platform stays in sync automatically), not "claim it on the platform".
 
 Opening by ID removes matching ambiguity and is faster — always prefer it. But it only proves
 what the *claimed* listing says; it cannot prove a customer would find it, and it cannot see
 duplicates. So the procedure per location is: **open by ID for the fact extraction, then run
-one search pass for parity** (steps 1–2 below). A location with no `network.google` /
-`network.apple` entry is likely unconnected or unclaimed — fall back to pure search, and
-record the missing connection itself as evidence on `geo.location_platform_parity`.
+one search pass for parity** (steps 1–2 below). A location with no `network.<platform>` entry
+falls back to pure search on that platform.
 
 ## Per location: Google Maps
 
@@ -72,6 +78,17 @@ record the missing connection itself as evidence on `geo.location_platform_parit
 2. When searching: open the matching place card; two query variants before declaring *no
    Apple listing*. When the auid link was used, still run one search to confirm the listing
    is findable.
+
+## Per location: Bing Maps
+
+1. Open `network.bing.link` (`bing.com/maps?ss=ypid.<YPID>&mkt=…`) when PinMeTo has it;
+   otherwise search `https://www.bing.com/maps?q=<brand name> <street> <city>`. Decline
+   non-essential cookies. Two query variants before declaring *no Bing listing*.
+2. Extract from the place card: **name, address, phone, website URL** (the actual href),
+   and the **pin coordinates** — read the `cp=<lat>~<lng>` parameter from the URL once the
+   card has centered the map, or take them from the share link.
+3. Hours/photos/reviews on Bing are recorded as prose evidence only — Bing is scored on
+   existence + NAP + website + pin (no richness checks).
 3. Extract: **name, address, phone**, and the **pin coordinates** (from the share link:
    `⋯ → Share → Copy Link`, the URL contains `&ll=lat,lng` — or read `coordinate=` in the
    page URL). Hours/photos/URL may be visible; record them as prose evidence, but they are
@@ -97,28 +114,32 @@ Compare listing facts against the **PinMeTo baseline** (Stage 1) and the **landi
 ## Scoring the pillar (see rubric.md for weights)
 
 **Sub-group A — per-platform quality (55% of GEO).** Per location and platform, evaluate the
-accuracy checks (name / address / phone / website(Google) / coords ≤50m) and, for Google, the
-richness checks (hours present, special hours, ≥5 photos, attributes, menu/order links when
-category-applicable, a review within 180 days, no consumer alert). Platform score = share of
-applicable checks passed. Weight platforms Google 60 / Apple 40, average across the sample.
+accuracy checks (connected-in-PinMeTo / name / address / phone / website(Google+Bing) /
+coords ≤50m) and, for Google, the richness checks (hours present, special hours, ≥5 photos,
+attributes, menu/order links when category-applicable, a review within 180 days, no consumer
+alert). Platform score = share of applicable checks passed. Weight platforms
+Google 55 / Apple 30 / Bing 15, average across the sample.
 `geo.location_platform_parity` is **one brand-wide result**, not per-location: fail if any
 sampled location is missing on a platform, has a Google duplicate, or has a stale
-permanently-closed listing; warn if neither platform matched anything (likely a lookup
-problem); pass otherwise.
+permanently-closed listing; warn if no platform matched anything (likely a lookup problem);
+pass otherwise.
 
-**Sub-group B — cross-platform consistency (25%).** Per location where **both** platforms
-have a listing: do Google and Apple agree on name (35), address (35), coords within a 50 m
-cluster (30)? Each field: agree = 100, disagree = 0. Average across locations.
+**Sub-group B — cross-platform consistency (25%).** Per location, across the platforms that
+have a listing (need ≥2 to compare): do they agree on name (35), address (35), coords within
+a 50 m cluster (30)? Each field: all present platforms agree = 100, exactly one disagrees =
+50, all disagree = 0. Average across locations.
 
-**Sub-group C — platform-to-page agreement (20%).** Dominant answer = the value Google and
-Apple agree on; if they disagree, Google wins. Per location, five 20-point fields: JSON-LD
+**Sub-group C — platform-to-page agreement (20%).** Dominant answer = majority vote across
+Google, Apple, and Bing; Google wins ties. Per location, five 20-point fields: JSON-LD
 `name`, JSON-LD `telephone`, JSON-LD `geo` within 50 m, `openingHoursSpecification` matches
 dominant hours, and the **visible** NAP on the rendered page matches dominant.
 
 **Catastrophic rule:** a platform with no listing for a location contributes 0 to sub-group A
 for that location and is excluded from sub-group B for that location. A missing listing is
-also the strongest finding in the report — for Apple, the fix brief is "claim it in Apple
-Business Connect" (a person task, not a code change; say so).
+also the strongest finding in the report. The fix brief depends on the connection state: not
+connected in PinMeTo → "connect the location in PinMeTo"; connected but still absent on the
+platform → escalate (Apple Business Connect / Bing Places person-tasks — say it is not a
+code change).
 
 ## Evidence to keep per location
 
@@ -130,7 +151,9 @@ Business Connect" (a person task, not a code change; say so).
               "lat": 0, "lng": 0, "hours": "…", "photos": "5+", "attributes": ["…"],
               "rating": 4.4, "reviews": 210, "newestReview": "2026-07-30",
               "flags": [], "duplicates": [] },
-  "apple":  { "found": true, "name": "…", "address": "…", "phone": "…", "lat": 0, "lng": 0 },
+  "apple":  { "found": true, "foundVia": "auid|search", "name": "…", "address": "…", "phone": "…", "lat": 0, "lng": 0 },
+  "bing":   { "found": true, "foundVia": "ypid|search", "name": "…", "address": "…", "phone": "…", "website": "…", "lat": 0, "lng": 0 },
+  "connectedInPinMeTo": { "google": true, "apple": true, "bing": false },
   "observedAt": "2026-08-09"
 }
 ```

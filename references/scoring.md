@@ -19,15 +19,18 @@ compute the same numbers. Show your work in a scratch table before writing the r
 **GEO:** three sub-groups, then `geo = 0.55·A + 0.25·B + 0.20·C`:
 
 - **A (per-platform):** per location, per platform: share of applicable checks passed
-  (accuracy + richness for Google; existence/NAP/pin for Apple). No listing on a platform →
-  that platform scores 0 for that location. Location score = 0.6·google + 0.4·apple.
-  A = mean across sampled locations × 100.
-- **B (consistency):** per location with both listings: `0.35·name + 0.35·address +
-  0.30·coords`, each field 1 or 0. Locations with only one listing are excluded from B.
-  B = mean × 100 (if no location has both listings, B is excluded and A/C reweighted
+  (connected-in-PinMeTo + accuracy + richness for Google; connected + existence/NAP/pin for
+  Apple; connected + existence/NAP/website/pin for Bing). No listing on a platform → that
+  platform scores 0 for that location. Location score = 0.55·google + 0.30·apple +
+  0.15·bing. A = mean across sampled locations × 100.
+- **B (consistency):** per location with ≥2 listings: `0.35·name + 0.35·address +
+  0.30·coords`, each field scored across the present platforms — all agree = 1, exactly one
+  disagrees = 0.5, all disagree = 0. Locations with fewer than two listings are excluded
+  from B. B = mean × 100 (if no location qualifies, B is excluded and A/C reweighted
   proportionally — note this in the report).
 - **C (page agreement):** per location: mean of the five 20-point field checks vs the
-  dominant platform answer. C = mean × 100.
+  dominant platform answer (majority across Google/Apple/Bing, Google wins ties).
+  C = mean × 100.
 
 ## 3. Overall score and grade
 

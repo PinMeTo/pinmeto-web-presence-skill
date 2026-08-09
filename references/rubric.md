@@ -1,10 +1,22 @@
-# Rubric — vendored from PinMeTo MLPR rubric v2.8.0
+# Rubric — v2.9.0-skill.1 (skill-line fork of PinMeTo MLPR rubric v2.8.0)
 
-This is the scoring contract. Check IDs, weights, thresholds, and grade bands are **identical**
-to the PinMeTo MLPR product rubric (source of truth:
-`pinmeto-www-reports/docs/rubric.md`, DRI Marcus), so a skill-produced score is comparable
-with a product-produced score. Do not add, drop, or reweight checks in a run; if the rubric
-needs changing, that happens upstream with a version bump.
+This is the scoring contract, derived from the PinMeTo MLPR product rubric v2.8.0 (source of
+truth: `pinmeto-www-reports/docs/rubric.md`, DRI Marcus) with two skill-line changes the
+product cannot run through its APIs:
+
+1. **Bing is a scored GEO platform again** (dropped upstream in v2.0.0 because the Bing Maps
+   Enterprise API is on a retirement path — irrelevant here, since the skill reads the live
+   `bing.com/maps` consumer surface in a browser and PinMeTo supplies the `ypid` deep link).
+   Sub-group A platform weights: Google 55 / Apple 30 / Bing 15 — deliberately below the
+   pre-v2.0.0 25% Bing share, per the traffic-share finding in the upstream decision memo.
+2. **`geo.listing_connected_pinmeto`** — a new accuracy check: is the location connected
+   (claimed/managed) on each platform through PinMeTo, judged from the location record's
+   `network` object.
+
+Consequence: **GEO scores are not 1:1 comparable with MLPR product scores**; SEO, AIO, and
+Agent Readiness remain identical to 2.8.0. Do not add, drop, or reweight checks in a run; if
+the rubric needs changing, change it here with a version bump (and reconcile upstream when
+the product catches up).
 
 When re-running an existing report, keep using the rubric version recorded in that report's
 history for delta narration, and note it if this file has moved on since.
@@ -13,7 +25,8 @@ history for delta narration, and note it if this file has moved on since.
 
 ```json
 {
-  "rubric_version": "2.8.0",
+  "rubric_version": "2.9.0-skill.1",
+  "derived_from": "MLPR 2.8.0",
   "pillar_weights": { "seo": 30, "geo": 30, "aio": 25, "agent_readiness": 15 },
   "grade_thresholds": { "A": 90, "B": 75, "C": 60, "D": 45 },
   "severity_scoring": { "pass": 1, "warn": 0.5, "fail": 0 },
@@ -64,14 +77,15 @@ history for delta narration, and note it if this file has moved on since.
       "sub_groups": {
         "a_per_platform": {
           "weight_inside_geo": 55,
-          "platform_weights": { "google": 60, "apple": 40 },
+          "platform_weights": { "google": 55, "apple": 30, "bing": 15 },
           "accuracy_checks": [
-            { "id": "geo.name_matches_site", "platforms": ["google", "apple"], "normalization": "case+punctuation+legal_suffix" },
-            { "id": "geo.address_matches_site", "platforms": ["google", "apple"], "normalization": "postal" },
-            { "id": "geo.phone_matches_site", "platforms": ["google", "apple"], "normalization": "e164" },
-            { "id": "geo.website_url_on_listing", "platforms": ["google"] },
-            { "id": "geo.coords_within_50m", "platforms": ["google", "apple"] },
-            { "id": "geo.location_platform_parity", "platforms": ["google", "apple"], "notes": "brand-wide rollup: site-vs-platform existence gaps, Google duplicate listings, stale permanently-closed pages" }
+            { "id": "geo.listing_connected_pinmeto", "platforms": ["google", "apple", "bing"], "source": "pinmeto_mcp network object", "notes": "connection/claim managed through PinMeTo: network.google.placeId / network.apple.link / network.bing.link present" },
+            { "id": "geo.name_matches_site", "platforms": ["google", "apple", "bing"], "normalization": "case+punctuation+legal_suffix" },
+            { "id": "geo.address_matches_site", "platforms": ["google", "apple", "bing"], "normalization": "postal" },
+            { "id": "geo.phone_matches_site", "platforms": ["google", "apple", "bing"], "normalization": "e164" },
+            { "id": "geo.website_url_on_listing", "platforms": ["google", "bing"] },
+            { "id": "geo.coords_within_50m", "platforms": ["google", "apple", "bing"] },
+            { "id": "geo.location_platform_parity", "platforms": ["google", "apple", "bing"], "notes": "brand-wide rollup: site-vs-platform existence gaps, Google duplicate listings, stale permanently-closed pages" }
           ],
           "richness_checks": [
             { "id": "geo.hours_present", "platforms": ["google"] },
@@ -90,11 +104,11 @@ history for delta narration, and note it if this file has moved on since.
             { "id": "consistency.address", "weight": 35 },
             { "id": "consistency.coords_50m_cluster", "weight": 30 }
           ],
-          "scoring_rule": "100 if both platforms agree after normalization, 0 otherwise"
+          "scoring_rule": "100 if all present platforms agree after normalization, 50 if exactly one disagrees, 0 if all disagree"
         },
         "c_platform_to_page_agreement": {
           "weight_inside_geo": 20,
-          "dominant_platform_rule": "majority vote across Google + Apple after normalization; Google wins ties",
+          "dominant_platform_rule": "majority vote across Google + Apple + Bing after normalization; Google wins ties",
           "fields": [
             { "id": "page.jsonld_name_matches_dominant", "weight": 20 },
             { "id": "page.jsonld_telephone_matches_dominant", "weight": 20 },
@@ -152,9 +166,14 @@ This skill gathers the **same facts from the real map surfaces in a browser** (s
 - **Checks the product marks "runner pending" are runnable here.** `geo.special_hours_set`,
   `geo.menu_order_reservations`, and `geo.recent_reviews_180d` are visible on a real Google
   Maps listing. Evaluate them normally.
-- **`geo.website_url_on_listing` stays Google-only** even though Apple's web UI sometimes
-  shows a URL — keeping the platform split identical to the product keeps scores comparable.
-  If you see a wrong URL on Apple, record it as evidence prose, not as a scored check.
+- **Bing is scored from `bing.com/maps` in the browser** (see `geo-browser-checks.md`);
+  the upstream API-retirement rationale for dropping it does not apply to the consumer
+  surface. Apple's scored surface stays existence + NAP + pin: even though Apple's web UI
+  sometimes shows a URL or hours, record those as evidence prose, not scored checks.
+- **`geo.listing_connected_pinmeto` is judged from MCP data, not the browser**: the
+  connection exists in PinMeTo (`network.<platform>` entry present) or it doesn't. It
+  measures *managed through PinMeTo* — a listing claimed outside PinMeTo scores fail here,
+  and the fix brief says "connect it in PinMeTo", not "claim it".
 - **`seo.lcp_sample` / `seo.mobile_friendly`**: use the public PageSpeed Insights API
   (`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=...&strategy=mobile`, no
   key needed at low volume) on up to 3 sampled URLs. If it errors or is rate-limited → `warn`.
