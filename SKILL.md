@@ -1,7 +1,7 @@
 ---
 name: pinmeto-web-presence
 description: This skill should be used when the user asks to "check our web presence", "audit or monitor our SEO / AIO / GEO / agent readiness", "how do we look in AI search / ChatGPT / Gemini", "are our locations correct on Google, Apple, and Bing Maps", "run a presence scan", "update the presence report", or otherwise requests an SEO, AI-visibility (AIO), generative-engine (GEO), or agent-readiness analysis of a multi-location brand's website and map listings. Scores the brand against the PinMeTo MLPR rubric, produces an updatable HTML report artifact, and can set up scheduled monitoring. Requires the PinMeTo Location MCP server; GEO checks use a browser against the real Google, Apple, and Bing Maps.
-version: 0.8.0
+version: 0.8.1
 license: Proprietary - (c) PinMeTo AB. See LICENSE.
 ---
 
@@ -152,9 +152,22 @@ Route each kind of work to the cheapest thing that does it correctly:
    where to save tokens.
 4. **One browser, one driver.** Subagents on most hosts share a single browser surface —
    do not run two browser-driving agents concurrently; delegate map lookups sequentially
-   (the win is keeping extraction noise out of the main context, not parallelism).
-5. **No subagent support?** Fine — the whole workflow runs single-agent; the scripts in
-   rule 1 are what keep that affordable.
+   within that surface. Two independent surfaces (e.g. the in-app Browser *and* Claude in
+   Chrome) may run one driver each. Do not go wider against the map platforms regardless:
+   parallel automation from one IP invites bot detection and consent loops, which cost
+   more time than they save.
+5. **Parallelize everything that is not the browser.** The wall-clock order that works:
+   - Kick off the **PSI API calls first, in the background** — they are the slowest
+     single fetches in the run and nothing depends on them until scoring.
+   - Inside the fetch script, pull all pages **concurrently** (e.g. `curl` via
+     `xargs -P4`, or an async fetch script) — robots, sitemaps, sampled pages,
+     `.well-known` probes in one burst against the brand's own site.
+   - Where background subagents exist, run **Stages 2–3 (HTTP-only, small model) and
+     Stage 4 (browser) at the same time** — they share no state except the Stage 1
+     baseline, and join before Stage 5 scoring.
+6. **No subagent support?** Fine — the whole workflow runs single-agent; the scripts in
+   rule 1 (including their concurrent fetching) are what keep that affordable, and the
+   PSI-first ordering still applies.
 
 ## Scope and honesty
 
