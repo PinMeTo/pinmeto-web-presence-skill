@@ -18,12 +18,16 @@ Location Reports skill. It calls the PinMeTo Location MCP tools, so it needs tha
 | --- | --- |
 | `SKILL.md` | The skill: triggers, workflow, output contract |
 | `references/` | Progressive-disclosure detail (vendored rubric, per-pillar check procedures, scoring, report spec, monitoring) |
+| `CHANGELOG.md` | Skill releases. `references/rubric.md` stays authoritative for scoring changes |
 | `package-skill.sh` | Builds the distributable `pinmeto-web-presence-<version>.skill` archive |
 | `.github/workflows/release.yml` | On a `vX.Y.Z` tag: package, release, and notify the marketplace to sync |
 
 ## Releasing
 
-1. Bump `version:` in `SKILL.md`.
+1. Bump `version:` in `SKILL.md`, and add the entry to `CHANGELOG.md`. If the change moves
+   scores, bump `rubric_version` in `references/rubric.md` too and record what moved there:
+   the re-run attribution rule cannot separate rubric drift from real customer progress
+   unless the version moved with the rules.
 2. Tag and push: `git tag v0.10.1 && git push --tags`.
 3. `release.yml` packages the `.skill`, attaches it to a GitHub release, and sends a
    `skill-released` `repository_dispatch` (with `skill_name: pinmeto-web-presence`) to the
