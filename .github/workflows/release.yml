@@ -45,12 +45,17 @@ jobs:
         id: dispatch
         env:
           TOKEN: ${{ secrets.MARKETPLACE_DISPATCH_TOKEN }}
+          VERSION: ${{ steps.v.outputs.version }}
         run: |
           if [ -n "$TOKEN" ]; then
             echo "configured=true" >> "$GITHUB_OUTPUT"
           else
             echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::MARKETPLACE_DISPATCH_TOKEN is not set, so the marketplace was not notified. The release and its .skill artifact were published normally; add the secret and re-run this job, or dispatch the sync manually from PinMeTo/claude-plugins."
+            # Deliberately does not suggest re-running this workflow: a re-run starts
+            # from the first step and calls `gh release create` again for a tag that
+            # now already has a release, which fails. Recovery is the marketplace's
+            # own workflow_dispatch, which is built for exactly this.
+            echo "::warning::MARKETPLACE_DISPATCH_TOKEN is not set, so the marketplace was not notified. The release and its .skill artifact were published normally. To vendor this version, run the 'Sync plugin artifacts' workflow in PinMeTo/claude-plugins with skill_name=pinmeto-web-presence and skill_version=$VERSION, and add the secret so future releases notify automatically."
           fi
 
       - name: Notify the marketplace to sync
