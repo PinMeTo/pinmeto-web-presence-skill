@@ -37,10 +37,32 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: gh release create "$TAG" ./*.skill --title "$TAG" --notes "pinmeto-web-presence $TAG"
 
+      # The release itself is complete at this point. Notifying the marketplace is
+      # a separate concern with a separate credential, so a repo that has not been
+      # wired up yet should skip it loudly rather than fail a good release. The
+      # secrets context is not available to a step-level `if`, hence the probe step.
+      - name: Check whether the marketplace notify is configured
+        id: dispatch
+        env:
+          TOKEN: ${{ secrets.MARKETPLACE_DISPATCH_TOKEN }}
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          if [ -n "$TOKEN" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            # Deliberately does not suggest re-running this workflow: a re-run starts
+            # from the first step and calls `gh release create` again for a tag that
+            # now already has a release, which fails. Recovery is the marketplace's
+            # own workflow_dispatch, which is built for exactly this.
+            echo "::warning::MARKETPLACE_DISPATCH_TOKEN is not set, so the marketplace was not notified. The release and its .skill artifact were published normally. To vendor this version, run the 'Sync plugin artifacts' workflow in PinMeTo/claude-plugins with skill_name=pinmeto-web-presence and skill_version=$VERSION, and add the secret so future releases notify automatically."
+          fi
+
       - name: Notify the marketplace to sync
         # Requires a MARKETPLACE_DISPATCH_TOKEN secret: a token allowed to send
         # repository_dispatch to PinMeTo/claude-plugins. The payload names this
         # skill so the marketplace sync vendors the right registry entry.
+        if: steps.dispatch.outputs.configured == 'true'
         env:
           GH_TOKEN: ${{ secrets.MARKETPLACE_DISPATCH_TOKEN }}
           VERSION: ${{ steps.v.outputs.version }}
