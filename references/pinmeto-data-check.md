@@ -3,16 +3,56 @@
 PinMeTo is the source of truth. Everything on the live web (landing pages, Google Maps,
 Apple Maps) is checked *against* this baseline.
 
-## Pull
+## Pull — token-lean by design
 
 | Tool | Use for |
 | --- | --- |
-| `pinmeto_get_locations` | Canonical NAP, categories, opening hours, per-location URLs, coordinates |
-| `pinmeto_get_google_ratings`, `pinmeto_get_facebook_ratings` | Reputation signal per location and in aggregate |
+| `pinmeto_get_locations` | Fleet size, sampling, canonical NAP/hours/URLs/coordinates/network links |
+| `pinmeto_get_location` | Full record for one sampled location by `storeId` |
+| `pinmeto_get_google_ratings`, `pinmeto_get_facebook_ratings` | Reputation signal — aggregate only |
 | `pinmeto_get_google_keywords` | Queries Google already ties to the locations — context for the report narrative |
-| `pinmeto_get_google_insights` / `_facebook_insights` / `_apple_insights` | Visibility/action context (default `total` aggregation is fine) |
+| `pinmeto_get_google_insights` / `_facebook_insights` / `_apple_insights` | Visibility/action context (`total` aggregation only) |
 
-Fetch locations first; the set defines what to expect on the live site and the map platforms.
+The cardinal rule: **never enumerate the full fleet into context.** Only the sampled
+locations ever need complete records; everything else is counting and selecting.
+
+1. **Size the fleet first:** `pinmeto_get_locations` with `limit: 1` (plus any scope
+   filters — see Scoped reports in `artifact-report.md`) and read `totalCount`. Filter
+   `permanentlyClosed: false`.
+2. **Re-run?** Skip discovery: take the `sample` storeIds from the existing report's
+   history block and fetch exactly those with `pinmeto_get_location`. Replace only
+   locations that are gone or permanently closed (by the selection rule below) and note
+   the substitution in the report.
+3. **First run, fleet ≤ ~50:** one or two pages with
+   `fields: ["storeId","name","locationDescriptor","address","location","contact","network","permanentlyClosed"]`,
+   then select the sample by the deterministic rule below.
+4. **First run, larger fleet:** do NOT paginate everything. Select by **even offsets**:
+   for sample size s, fetch `offset = floor(i × totalCount / s)`, `limit: 1`, minimal
+   `fields`, for i = 0…s−1 (the server's 5-minute cache keeps ordering stable within a
+   scan). For multi-country brands, run the offsets per `country` filter instead so every
+   market is represented. The storeIds you pick get persisted in the report history — from
+   then on the sample is pinned (step 2), so cross-run ordering stability of the API never
+   matters.
+5. **Full records for the sample only** (`pinmeto_get_location` per storeId), and don't
+   echo raw location JSON into the conversation — extract the canonical record fields and
+   move on.
+6. **Aggregates, not per-location pulls,** for ratings/insights/keywords. Per-location
+   reputation detail is only ever fetched for the sampled locations, and only when the
+   narrative needs it.
+
+## Fleet-size playbook
+
+| Fleet size | Sample | Strategy |
+| --- | --- | --- |
+| 3–19 | 5 | Fetch all (minimal fields), sample by sort rule |
+| 20–200 | 10 | Fetch 1–4 pages minimal fields, sample by sort rule |
+| 201–1,000 | 10 | Even-offset selection; recommend per-country scoped reports for coverage |
+| 1,000+ | 10 per report | **Scope required in practice**: one report per country/region (each with its own 5/10 sample and artifact). A single global report is allowed but must state how thin 10-of-N coverage is |
+
+A 10-of-10,000 sample is statistically honest for template-level findings (most checks are
+template checks — one fix repairs every location) but blind to per-location listing drift.
+Scoped reports are how large brands get real coverage: 20 country reports × 10 locations
+beats one global report × 10, and each updates independently on its own schedule.
 
 ## Completeness checks (gaps here are findings)
 
@@ -46,14 +86,17 @@ usually foreshadows a parity gap on the map surface.
 - **Sample size:** 5 locations when the brand has <20; 10 when ≥20.
 - **Minimum:** 3 locations with usable records. Below that, stop and tell the user the fleet
   is too small/incomplete to score meaningfully; offer a qualitative check instead.
-- **Selection:** sort all locations by `"{street} {zip} {city}"` lowercase, and take evenly
-  spaced entries (index `floor(i × N / sample_size)`). This is stable run-over-run as long as
-  the fleet doesn't change, which is what makes trend lines honest.
-- **Geographic diversity:** for multi-country brands, first guarantee ≥1 location per country
-  (picking each country's first location in the same sort), then fill the remainder by the
-  even-spacing rule.
+- **Selection (first run):** small fleets — sort the fetched locations by
+  `"{street} {zip} {city}"` lowercase and take evenly spaced entries
+  (index `floor(i × N / sample_size)`); large fleets — the even-offset fetch above *is* the
+  selection. Either way the chosen storeIds are recorded in the report history, which pins
+  them for every later run.
+- **Geographic diversity:** for multi-country brands (unscoped runs), first guarantee ≥1
+  location per country (each country's first location, or an offset-0 fetch per country
+  filter), then fill the remainder by the even-spacing rule.
 - **Never hand-pick** "good" or "bad" locations — that biases the score. If the user asks to
   include a specific location, add it as an *extra, unscored* case study in the report.
-- **Re-runs:** reuse the previous scan's sample (from the report's history block) when the
-  fleet still contains those locations; replace departed locations by the selection rule and
-  note the substitution in the report.
+- **Re-runs: the sample is pinned.** Read the previous scan's `sample` storeIds from the
+  report's history block and reuse them exactly — this is what makes the trend line measure
+  *change*, not sampling noise. Replace only locations that left the fleet or closed
+  permanently (by the selection rule), and name the substitution in the report.

@@ -7,10 +7,12 @@ place, and an optional schedule that triggers them.
 
 A re-run is the same workflow as a first scan, with three differences:
 
-1. **Find the existing artifact first** (by the stable title `PinMeTo Web Presence —
-   <domain>`), fetch it, and parse `#pmt-scan-history`. Its latest scan supplies the
-   comparison baseline, the previous sample (reuse it — see `pinmeto-data-check.md`), and
-   the rubric version to narrate against.
+1. **Find the existing artifact first** — by the **exact** stable title: `PinMeTo Web
+   Presence — <domain>` or, for a scoped report, `… — <domain> — <Scope>`. Fetch it and
+   parse `#pmt-scan-history`. It supplies the scope filter, the pinned location sample
+   (reuse it — see `pinmeto-data-check.md`), the comparison baseline, and the rubric
+   version to narrate against. When several reports exist for the brand and the request is
+   ambiguous, ask which one; a scheduled run updates only the report it was created for.
 2. **Compute deltas, then narrate them.** The trend section needs: overall delta since last
    scan and since first scan, per-pillar deltas, and the concrete check-level changes
    (`fail→pass`, `pass→fail`, new warns). "What moved" lines come from the check diff, not
@@ -30,9 +32,13 @@ order of preference:
 
 - **Scheduled tasks / routines** (Claude Code `/schedule`, scheduled-task tools, or cron
   jobs): create a recurring task with a prompt like
-  `Run the PinMeTo web presence scan for <domain> and update the existing report artifact
-  "PinMeTo Web Presence — <domain>". Compare against the last scan and lead with what
-  changed.`
+  `Run the PinMeTo web presence scan for <domain>, scope <scope or "whole brand">, and
+  update the existing report artifact "PinMeTo Web Presence — <domain>[ — <Scope>]". Reuse
+  that report's pinned sample and scope filter from its history block. Compare against the
+  last scan and lead with what changed.`
+  **One schedule per report** — a brand with a global report plus three country reports has
+  up to four schedules, each naming its exact artifact title. Stagger them (different days)
+  rather than batching all scopes into one giant run.
 - **No scheduler available** (e.g. plain Claude Desktop): tell the user plainly that runs
   are on-demand here, and give them the exact re-run sentence to say (the same one printed
   in the report's "What to do next" card).

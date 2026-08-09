@@ -7,12 +7,33 @@ load it first, then apply this spec on top.
 
 ## Identity (what makes re-runs update instead of fork)
 
-- **Title:** `PinMeTo Web Presence — <brand domain>` (e.g. `… — pinmeto.com`). Stable across
-  runs; this is how re-runs find the artifact.
+- **Title:** `PinMeTo Web Presence — <brand domain>` for a whole-brand report, or
+  `PinMeTo Web Presence — <brand domain> — <Scope>` for a scoped one (e.g.
+  `… — hm.com — Sweden`, `… — hm.com — DACH`). The title is the identity: exact,
+  stable across runs, scope label capitalized consistently.
 - **Favicon:** `📍`, never changed.
-- **Re-run flow:** list existing artifacts → if the title exists, fetch the published page,
-  parse the `pmt-scan-history` JSON (below), append the new scan, republish **to the same
-  URL** (pass the artifact URL when publishing). Only create fresh when no artifact matches.
+- **Re-run flow:** list existing artifacts → match the **exact** title for the requested
+  scope → fetch the published page, parse the `pmt-scan-history` JSON (below), append the
+  new scan, republish **to the same URL** (pass the artifact URL when publishing). Only
+  create fresh when no artifact matches that exact title. If the user says "update the
+  report" ambiguously and several presence reports exist for the brand, ask which one (or
+  update all on a scheduled run that says so).
+
+## Scoped reports (country / region)
+
+A brand can hold **several living reports at once** — one global, one per country, one per
+region — each with its own artifact, sample, history, and schedule:
+
+- The scope is a filter over the PinMeTo fleet: `country` (maps directly onto
+  `pinmeto_get_locations` filters) or a named region = an explicit list of countries or
+  cities. Sampling (5/10, min 3) applies **within the scope**, so a scoped report of a big
+  brand has real coverage where a global one is thin.
+- The scope is stored in the history block (`scope` field below) so a scheduled or re-run
+  invocation can reconstruct the exact filter without asking.
+- Keep scopes **disjoint** when possible; if a location appears in overlapping reports,
+  that is fine (each report is self-consistent) but say so when the user sets it up.
+- A scoped report never silently widens or narrows: if the user asks for a different scope,
+  that is a **new report** with a new title, not a mutation of an existing one.
 
 ## Brand look (deliberately single-theme)
 
@@ -109,6 +130,7 @@ The artifact carries its own memory. Embed exactly one block:
 {
   "schema": 1,
   "brand": "pinmeto.com",
+  "scope": { "label": "Sweden", "filters": { "country": "Sweden" } },
   "scans": [
     {
       "date": "2026-08-09",
@@ -125,6 +147,9 @@ The artifact carries its own memory. Embed exactly one block:
 </script>
 ```
 
+- `scope` is `null` for a whole-brand report; otherwise `label` (what appears in the title)
+  plus `filters` (machine-usable: `country`, or a list of countries/cities for a region) so
+  re-runs and scheduled runs reconstruct the fleet filter without asking.
 - `scans` is append-only, oldest first. Keep every prior scan verbatim — never recompute old
   numbers, even if the rubric version moved.
 - `checks` records status+ratio for **every** check (compact but complete): it is what lets
