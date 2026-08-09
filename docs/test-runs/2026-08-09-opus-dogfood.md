@@ -7,7 +7,7 @@
 
 ## (a) Run summary
 
-Executed all seven stages except Stage 7 (monitoring setup was intentionally skipped per the test
+Executed stages 0–6; skipped Stage 7 (monitoring setup was intentionally skipped per the test
 brief; I would have offered a weekly scan at the end of the report).
 
 **What I did**

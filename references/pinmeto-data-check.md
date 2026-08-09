@@ -7,8 +7,8 @@ Apple Maps) is checked *against* this baseline.
 
 | Tool | Use for |
 | --- | --- |
-| `pinmeto_get_locations` | Fleet size, sampling, canonical NAP/hours/URLs/coordinates/network links |
-| `pinmeto_get_location` | Full record for one sampled location by `storeId` |
+| `pinmeto_get_locations` | Fleet size, sampling, canonical NAP/hours/URLs/coordinates — **not** `network` (absent from the `fields` enum) |
+| `pinmeto_get_location` | Full record for one sampled location by `storeId` — the only source of the `network` platform deep links |
 | `pinmeto_get_google_ratings`, `pinmeto_get_facebook_ratings` | Reputation signal — aggregate only |
 | `pinmeto_get_google_keywords` | Queries Google already ties to the locations — context for the report narrative |
 | `pinmeto_get_google_insights` / `_facebook_insights` / `_apple_insights` | Visibility/action context (`total` aggregation only) |
@@ -50,7 +50,7 @@ locations ever need complete records; everything else is counting and selecting.
 
 | Fleet size | Sample | Strategy |
 | --- | --- | --- |
-| 3–19 | 5 | Fetch all (minimal fields), sample by sort rule |
+| 3–19 | `min(5, N)` | Fetch all (minimal fields), sample by sort rule |
 | 20–200 | 10 | Fetch 1–4 pages minimal fields, sample by sort rule |
 | 201–1,000 | 10 | Even-offset selection; recommend per-country scoped reports for coverage |
 | 1,000+ | 10 per report | **Scope required in practice**: one report per country/region (each with its own 5/10 sample and artifact). A single global report is allowed but must state how thin 10-of-N coverage is |
@@ -93,7 +93,8 @@ usually foreshadows a parity gap on the map surface.
 
 ## Deterministic sampling (must match across runs)
 
-- **Sample size:** 5 locations when the brand has <20; 10 when ≥20.
+- **Sample size:** `min(5, N)` locations when the brand has <20 — a 3- or 4-location fleet
+  samples every location, since the even-spacing index would otherwise repeat; 10 when ≥20.
 - **Minimum:** 3 locations with usable records. Below that, stop and tell the user the fleet
   is too small/incomplete to score meaningfully; offer a qualitative check instead.
 - **Selection (first run):** small fleets — sort the fetched locations by

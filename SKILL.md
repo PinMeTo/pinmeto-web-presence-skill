@@ -1,7 +1,7 @@
 ---
 name: pinmeto-web-presence
 description: This skill should be used when the user asks to "check our web presence", "audit or monitor our SEO / AIO / GEO / agent readiness", "how do we look in AI search / ChatGPT / Gemini", "are our locations correct on Google, Apple, and Bing Maps", "run a presence scan", "update the presence report", or otherwise requests an SEO, AI-visibility (AIO), generative-engine (GEO), or agent-readiness analysis of a multi-location brand's website and map listings. Scores the brand against the PinMeTo MLPR rubric, produces an updatable HTML report artifact, and can set up scheduled monitoring. Requires the PinMeTo Location MCP server; GEO checks use a browser against the real Google, Apple, and Bing Maps.
-version: 0.10.0
+version: 0.10.1
 license: Proprietary - (c) PinMeTo AB. See LICENSE.
 ---
 
@@ -24,7 +24,7 @@ location data), because most local-SEO and AI-visibility failures are NAP (name/
 and structured-data inconsistencies between PinMeTo and the live web.
 
 The scoring rubric is defined in [references/rubric.md](references/rubric.md) — a skill-line
-fork (v2.12.0-skill.1) of the PinMeTo MLPR product rubric v2.8.0 that re-adds Bing as a scored
+fork (v2.13.0-skill.1) of the PinMeTo MLPR product rubric v2.8.0 that re-adds Bing as a scored
 GEO platform and adds a PinMeTo-connection check; SEO/AIO/Agent Readiness are identical to
 the product. Do not invent checks or reweight; deviations from the rubric make runs
 incomparable.
@@ -42,8 +42,14 @@ incomparable.
   comes from the *real* Google, Apple, and Bing Maps pages — never from the Places API or
   MapKit — and JS-shell pages get their rendered pass in the same browser (see the
   rendering policy in `references/seo-checks.md`). If no browser is available, run the
-  site pillars on served HTML only (rendered-only values score as absent, noted as such)
-  and mark every GEO check `warn` (evidence gap) with a note explaining why.
+  site pillars on served HTML only — a `dual_pass_checks` id whose served pass missed is
+  `warn`, not a scored absence (without the second pass you cannot tell client-rendered
+  from genuinely missing) — and apply the GEO degraded path **per check**:
+  `geo.listing_connected_pinmeto` still scores `pass`/`fail` from the PinMeTo `network`
+  object, `geo.special_hours_set` still scores from `specialOpenHours`, and every check
+  that needs a map surface is `warn` (evidence gap) with a note explaining why. If no GEO
+  observation is possible at all, follow the "GEO could not be observed" path in
+  `references/scoring.md`.
 - **Web fetch** for SEO / AIO / Agent Readiness checks against the brand's site.
 
 ## Inputs to gather from the user

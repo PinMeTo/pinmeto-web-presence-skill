@@ -18,7 +18,7 @@ scored 62 / C.
 | GEO | 78 | **75** | −3 | **100% rubric** (connection downgrade + parity slot, minus special-hours relief) |
 | AIO | 88 | **89** | +1 | measurement correction (markdown probe) |
 | Agent readiness | 65 | **62** | −3 | measurement correction (prior run scored one probe two ways) |
-| pass / warn / fail | 30 / 2 / 27 | 29 / 3 / 27 | | `geo.photos_5_plus` moved fail→warn |
+| pass / warn / fail | 30 / 2 / 27 | 30 / 3 / 26 | | `geo.photos_5_plus` moved fail→warn |
 
 **Nothing on the site changed between the two scans.** All five sampled location pages return the
 same 294,657-byte shell with an identical SHA; robots.txt, `llms.txt`, `llms-full.txt`, the sitemaps
@@ -143,8 +143,10 @@ the last run because its history map happened to omit the id. **This is the sing
 run-to-run drift in GEO and it should be a machine-readable list in `rubric.md`.**
 
 **11. The parity slot is a bigger lever than it looks.** Counting one brand-wide parity fail once per
-location in the Google column costs 1/13 of the Google column on every sampled location ≈ 4.2% of GEO
-≈ 1.3 overall points. That is deliberate per 2.10, but it deserves a sentence saying so, because it is
+location in the Google column costs 1/13 of the Google column on every sampled location — which the
+nested weights carry through as ≈4.2 points of sub-group A (×0.55 Google), ≈2.3 points of GEO (×0.55
+sub-group A weight), ≈0.7 overall points (×0.30 GEO pillar weight). The original note conflated
+sub-group A with GEO. That is deliberate per 2.10, but it deserves a sentence saying so, because it is
 most of why GEO fell here.
 
 **12. The connection downgrade rule has no threshold.** "listing data that is plainly stale against
@@ -222,7 +224,7 @@ suggested edit below — I would have saved the 8 minutes of re-verification too
 ## (d) Correctness worries
 
 1. **`geo.photos_5_plus` is a warn, not a measurement.** Numerically identical to last run's 0.5, so
-   GEO is unaffected, but the pass/warn/fail counts moved for a non-reason (30/2/27 → 29/3/27).
+   GEO is unaffected, but the pass/warn/fail counts moved for a non-reason (30/2/27 → 30/3/26).
 2. **`page.jsonld_telephone_matches_dominant` is inherited, not verified.** My rendered JSON-LD capture
    was truncated at 1400 chars and I never actually saw `telephone` in the Malmö node. The visible page
    shows the number. Passed on the prior run's evidence plus the visible NAP. Low confidence.

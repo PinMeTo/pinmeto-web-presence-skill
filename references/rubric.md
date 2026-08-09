@@ -1,4 +1,13 @@
-# Rubric — v2.12.0-skill.1 (skill-line fork of PinMeTo MLPR rubric v2.8.0)
+# Rubric — v2.13.0-skill.1 (skill-line fork of PinMeTo MLPR rubric v2.8.0)
+
+Changes in 2.13.0-skill.1 (cross-file contract review): `geo.listing_connected_pinmeto` gains
+its browser downgrade rule here, so the rubric and `geo-browser-checks.md` can no longer
+return different results from the same evidence; rendered-only credit restricted to the
+`dual_pass_checks` list (it previously read "any html/json-ld check", which let undeclared
+checks earn it); `seo.lcp_sample` scores over a fixed attempted-URL denominator so a partial
+PageSpeed sample can no longer pass as `1/1`; small-fleet sample capped at `min(5, N)` because
+the even-spacing index repeats below five locations. The §4b GEO collapse is now labelled an
+evidence-only rollup — it never entered a pillar score, so no score moves from that clause.
 
 Changes in 2.12.0-skill.1 (pre-ship adversarial review): `warn` given a defined slot in every
 GEO sub-group and an explicit "GEO not measured at all" path (a browser-less run must not
@@ -52,7 +61,7 @@ Never present a rubric-caused or correction-caused delta as customer progress.
 
 ```json
 {
-  "rubric_version": "2.12.0-skill.1",
+  "rubric_version": "2.13.0-skill.1",
   "derived_from": "MLPR 2.8.0",
   "rendered_only_credit": 0.5,
   "dual_pass_checks": [
@@ -82,6 +91,7 @@ Never present a rubric-caused or correction-caused delta as customer progress.
   "sample_size": {
     "small_brand_locations_lt": 20,
     "small_brand_sample": 5,
+    "small_brand_sample_rule": "min(small_brand_sample, location_count)",
     "large_brand_sample": 10
   },
   "min_locations_for_report": 3,
@@ -250,10 +260,14 @@ This skill gathers the **same facts from the real map surfaces in a browser** (s
   the upstream API-retirement rationale for dropping it does not apply to the consumer
   surface. Apple's scored surface stays existence + NAP + pin: even though Apple's web UI
   sometimes shows a URL or hours, record those as evidence prose, not scored checks.
-- **`geo.listing_connected_pinmeto` is judged from MCP data, not the browser**: the
-  connection exists in PinMeTo (`network.<platform>` entry present) or it doesn't. It
+- **`geo.listing_connected_pinmeto` takes its base result from MCP data, not the browser**:
+  the connection exists in PinMeTo (`network.<platform>` entry present) or it doesn't. It
   measures *managed through PinMeTo* — a listing claimed outside PinMeTo scores fail here,
-  and the fix brief says "connect it in PinMeTo", not "claim it".
+  and the fix brief says "connect it in PinMeTo", not "claim it". The browser can only
+  **downgrade** that base result, never grant it: score `fail` despite a present connection
+  when the surface shows an unclaimed/"Claim This Place" banner, **or** when the listing
+  disagrees with the PinMeTo record on **address or pin**. Full downgrade rule, including
+  what does *not* trigger it, in `geo-browser-checks.md`.
 - **`seo.lcp_sample` / `seo.mobile_friendly`**: use the PageSpeed Insights API
   (`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=...&strategy=mobile`) on
   up to 3 sampled URLs. The anonymous quota is per-IP, shared machine-wide, and frequently
@@ -273,8 +287,8 @@ This skill gathers the **same facts from the real map surfaces in a browser** (s
 **Only the check ids in `gradient_checks` may carry a measured ratio.** Every other check
 scores exactly 1 / 0.5 / 0 — do not invent partial credit for them; a half-satisfied binary
 check is a judgment call that the check's own procedure must resolve, or it scores 0.
-**The rendered-only 0.5 is exempt from this whitelist**: any `html`/`json-ld` check may
-land on 0.5 through the dual-pass rendering policy, because that is the policy's fixed
+**The rendered-only 0.5 is exempt from this whitelist**: any check id in `dual_pass_checks`
+may land on 0.5 through the dual-pass rendering policy, because that is the policy's fixed
 half-credit, not a measured ratio.
 Gradient example: `seo.localbusiness_jsonld_richness` at 55/100 contributes ratio 0.55 —
 status `fail` (below threshold) but partial credit still flows into the pillar score.

@@ -23,8 +23,10 @@ ratio; everything else is exactly 1 / 0.5 / 0.
 | **rendered-only credit** | `fail` (or `pass` if the check's threshold is met at 0.5+) | We measured it: present after JS hydration, absent from the served HTML | A **real half-failure** — listed with its evidence and a fix brief |
 
 Both come from the dual-pass policy in `seo-checks.md` (served = 1, rendered-only = 0.5,
-absent = 0), and the rendered-only 0.5 is legal on **any** html/json-ld check regardless of
-the `gradient_checks` whitelist — it is the policy's fixed credit, not a measured ratio.
+absent = 0), and the rendered-only 0.5 is legal on **every check id listed in
+`dual_pass_checks`** regardless of the `gradient_checks` whitelist — it is the policy's fixed
+credit, not a measured ratio. A check that is not in `dual_pass_checks` never earns rendered
+credit; add it to that list in `rubric.md` first.
 Never conflate the two: one says "we don't know", the other says "half your audience can't
 see this".
 
@@ -124,6 +126,12 @@ contributes 0.5). Status from the collapsed ratio: `pass` ≥0.8 · `warn` only 
 contributing observation was unmeasurable · `fail` otherwise. Record the collapsed value in
 history and show the underlying spread in the row's evidence ("13 of 15 platform checks
 matched; Apple Oslo and Apple Helsinki differ").
+
+This collapsed value is a **reporting rollup across observations, not a check ratio** — it
+never enters a pillar score. GEO is scored only by the sub-group A/B/C arithmetic in §2, where
+each individual observation is still the binary 1 / 0.5 / 0 that `rubric.md`'s `gradient_checks`
+rule requires. The rollup exists so the history block, the pass/warn/fail counts and the trend
+diff have one number per check id; store it there labelled as an observation mean.
 
 ## 5. Honesty in numbers
 

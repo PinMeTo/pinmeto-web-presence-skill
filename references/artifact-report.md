@@ -158,7 +158,9 @@ renders identically in light and dark viewers.
     Google listing actually shows — {Category (vs the category PinMeTo pushes, from
     `network.google.categories.primaryCategory`), Photos ("5+" / "under 5" / "not counted" — never a fabricated exact number; see the reviewer-profile trap in `geo-browser-checks.md`), Latest owner
     post (date or "none"), Newest review (Google's own relative label verbatim — "6 months
-    ago" — not an ISO date derived from it), Newest review (date)}. Photos and review recency feed scored
+    ago" — not an ISO date derived from it; the `newestReviewLabel` field), Newest review
+    (absolute date — the optional `newestReview` field, set only when Google actually
+    displays a date; leave the cell empty otherwise)}. Photos and review recency feed scored
     checks (`geo.photos_5_plus`, `geo.recent_reviews_180d`); category and owner posts are
     **observed, unscored** — label the columns so the distinction is visible. A stale or
     empty "latest owner post" is a natural talking point for PinMeTo's posting features;
@@ -206,7 +208,7 @@ The artifact carries its own memory. Embed exactly one block:
   "scans": [
     {
       "date": "2026-08-09",
-      "rubricVersion": "2.9.0-skill.1",
+      "rubricVersion": "2.13.0-skill.1",
       "label": "Second scan",
       "overall": 63, "grade": "C",
       "pillars": { "seo": 47, "geo": 79, "aio": 45, "agent_readiness": 90 },

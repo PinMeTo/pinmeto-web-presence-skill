@@ -139,9 +139,13 @@ match the JSON-LD items. Both or fail.
 
 ### seo.lcp_sample (10) · seo.mobile_friendly (5)
 Call the public PageSpeed Insights API (`strategy=mobile`) for up to 3 sampled URLs. LCP:
-ratio = URLs with LCP <2.5s ÷ URLs successfully measured; pass at ≥0.8 (use the lab LCP from
-Lighthouse; prefer field data when present). If only some URLs return, score the ratio over
-those and note the missing ones; if none return, `warn`. Mobile-friendly: pass when the viewport is configured and there are no
+ratio = URLs with LCP <2.5s ÷ **URLs attempted** (the fixed 3-URL sample, or fewer only when
+the brand has fewer sampled URLs) — a URL that failed to return stays in the denominator and
+contributes 0, so two failed calls can never let one fast URL pass as `1/1`. Pass at ≥0.8 (use
+the lab LCP from Lighthouse; prefer field data when present). If any attempted URL did not
+return the check cannot `pass`: score `warn` when every URL that *did* return was under 2.5s
+(evidence gap, not a verdict), `fail` when any returned URL was over. If none return, `warn`.
+Mobile-friendly: pass when the viewport is configured and there are no
 tap-target/font-size audit failures. API error, 403 from the site, or rate limiting →
 `warn` for both checks, with the HTTP error as evidence and an unblocking fix brief
 (allow `Chrome-Lighthouse` / `Google-InspectionTool` user agents).
