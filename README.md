@@ -1,9 +1,9 @@
 # PinMeTo Web Presence skill
 
 A Claude skill that audits and **monitors** a multi-location brand's online findability across
-four pillars — **SEO**, **GEO** (real Google Maps / Apple Maps listings, checked in a
+four pillars — **SEO**, **GEO** (real Google, Apple, and Bing Maps listings, checked in a
 browser), **AI visibility (AIO)**, and **Agent Readiness** — scored against the PinMeTo MLPR
-rubric (v2.8.0, vendored from `pinmeto-www-reports`). It produces an updatable HTML report
+rubric (v2.13.0-skill.1, a skill-line fork of the v2.8.0 rubric in `pinmeto-www-reports` that re-adds Bing and adds a PinMeTo-connection check). It produces an updatable HTML report
 artifact in the approved Presence Report design that keeps its own scan history for trends,
 and can be set up as a recurring scheduled scan.
 
@@ -18,13 +18,17 @@ Location Reports skill. It calls the PinMeTo Location MCP tools, so it needs tha
 | --- | --- |
 | `SKILL.md` | The skill: triggers, workflow, output contract |
 | `references/` | Progressive-disclosure detail (vendored rubric, per-pillar check procedures, scoring, report spec, monitoring) |
+| `CHANGELOG.md` | Skill releases. `references/rubric.md` stays authoritative for scoring changes |
 | `package-skill.sh` | Builds the distributable `pinmeto-web-presence-<version>.skill` archive |
 | `.github/workflows/release.yml` | On a `vX.Y.Z` tag: package, release, and notify the marketplace to sync |
 
 ## Releasing
 
-1. Bump `version:` in `SKILL.md`.
-2. Tag and push: `git tag v0.2.0 && git push --tags`.
+1. Bump `version:` in `SKILL.md`, and add the entry to `CHANGELOG.md`. If the change moves
+   scores, bump `rubric_version` in `references/rubric.md` too and record what moved there:
+   the re-run attribution rule cannot separate rubric drift from real customer progress
+   unless the version moved with the rules.
+2. Tag and push: `git tag v0.10.1 && git push --tags`.
 3. `release.yml` packages the `.skill`, attaches it to a GitHub release, and sends a
    `skill-released` `repository_dispatch` (with `skill_name: pinmeto-web-presence`) to the
    marketplace.
@@ -42,7 +46,7 @@ Before the marketplace will vendor this skill, add it to the registry in `claude
 {
   "skills": {
     "pinmeto-location-reports": { "repo": "PinMeTo/pinmeto-location-reports-skill", "version": "1.2.0" },
-    "pinmeto-web-presence":     { "repo": "PinMeTo/pinmeto-web-presence-skill",     "version": "0.2.0" }
+    "pinmeto-web-presence":     { "repo": "PinMeTo/pinmeto-web-presence-skill",     "version": "0.10.1" }
   }
 }
 ```
@@ -52,7 +56,7 @@ lands, every future `vX.Y.Z` tag here syncs automatically.
 
 ## Status
 
-`v0.2.0` — four-pillar methodology aligned with the MLPR product rubric 2.8.0; GEO evidence
+`v0.10.1` — four-pillar methodology on rubric 2.13.0-skill.1 (MLPR 2.8.0 + Bing re-added + PinMeTo-connection check); GEO evidence
 via real map surfaces in a browser (no Places API / MapKit); updatable report with embedded
 scan history. Refine against real audits before v1.
 

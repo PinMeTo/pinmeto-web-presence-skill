@@ -5,6 +5,12 @@ data, answer-shaped content, and the emerging AI-consumption conventions. Run ag
 homepage, the sampled landing pages, and 1–2 key content pages (an article/FAQ page if the
 site has them). Reuse Stage 2 fetches.
 
+The **dual-pass rendering policy in `seo-checks.md` applies to every html/json-ld check in
+this pillar too**: schema present in the served HTML = full credit, present only in the
+rendered DOM = 0.5, absent = 0, provenance in the evidence. AIO is the pillar where the
+distinction bites hardest — the non-rendering AI crawlers are precisely this pillar's
+audience.
+
 ### aio.faqpage_schema_2_types (10)
 `FAQPage` JSON-LD present on at least **two different page types** (e.g. a location page and
 a support/FAQ page). One page type = ratio 0.5.
@@ -13,7 +19,8 @@ a support/FAQ page). One page type = ratio 0.5.
 Heuristic: within the first ~200 words of main content, does the page state the direct answer
 to its own topic (who/what/where, e.g. an intro block naming what the business is and does)?
 Marketing slogans don't count; a concrete declarative sentence does. Evaluate homepage +
-sampled pages; pass at a majority.
+sampled pages, 1.0 or 0 per page (0.5 if only in the rendered pass); ratio = mean across
+pages; pass at ≥0.5.
 
 ### aio.speakable_specification (5)
 `speakable` (SpeakableSpecification) present in JSON-LD on homepage or key pages.
@@ -53,7 +60,9 @@ variants converge on it.
 
 ### aio.haspart_about_mentions_enrichment (10)
 JSON-LD uses entity enrichment: `hasPart`, `about`, or `mentions` linking pages to the
-things they cover (services, locations, topics). Any systematic use = pass; none = fail.
+things they cover (services, locations, topics). "Systematic" means **at least two distinct
+page templates** use any of the three properties: two+ templates = pass (1.0), exactly one
+template = 0.5, none = fail (0).
 
 ### aio.llms_txt_present (10)
 `GET /llms.txt` returns 200 with plausible markdown content (a title line and links). An
@@ -61,6 +70,8 @@ HTML 200 (SPA fallback serving the app shell) is a **fail**, not a pass — chec
 content-type and body.
 
 ### aio.markdown_content_negotiation (10)
-Request the homepage and one sampled page with `Accept: text/markdown`. Pass if the server
-returns markdown (content-type `text/markdown` or an obviously-markdown body). A 200 that
-ignores the Accept header and returns HTML = fail.
+One probe, shared verbatim with `ar.markdown_content_negotiation` (run once, score both
+identically): request three pages with `Accept: text/markdown` — the homepage, one content
+page (blog/product), and one sampled location page. A page passes if the server returns
+markdown (content-type `text/markdown` or an obviously-markdown body); a 200 that ignores
+the Accept header and returns HTML fails. Ratio = passing/3 for both checks; pass at 3/3.

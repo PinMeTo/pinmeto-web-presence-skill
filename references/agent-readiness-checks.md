@@ -34,18 +34,21 @@ Both `/llms.txt` **and** `/llms-full.txt` return 200 markdown. Only one of the t
 0.5. (Related to `aio.llms_txt_present` but stricter — the pair is the convention.)
 
 ### ar.markdown_content_negotiation (10)
-Same probe as `aio.markdown_content_negotiation` (reuse the result): `Accept: text/markdown`
-honored on homepage + one deep page.
+Identical to `aio.markdown_content_negotiation` — run that probe once (homepage + one
+content page + one sampled location page, ratio = passing/3) and record the same status and
+ratio under both check ids. Gradient in AIO, mirrored here; the two must never disagree.
 
 ### ar.rfc8288_link_headers (10)
-Inspect response headers on the homepage for RFC 8288 `Link:` headers with any of
-`rel="api-catalog"`, `rel="describedby"`, `rel="service-desc"`. Any present = pass; partial
-coverage across the expected rels can be scored as a ratio (present/3) when at least one
-exists.
+Inspect response headers on the homepage for RFC 8288 `Link:` headers with
+`rel="api-catalog"`, `rel="describedby"`, `rel="service-desc"`. Ratio = present ÷ 3 always;
+pass at 3/3. (A header advertising a target that 404s does not count as present — check the
+target resolves, and say so in the evidence.)
 
 ### ar.jsonld_present_valid (5)
 At least one sampled page and the homepage carry JSON-LD that parses cleanly. (Deliberately
-redundant with the SEO pillar at a small weight — an agent consumes it too.)
+redundant with the SEO pillar at a small weight — an agent consumes it too.) The dual-pass
+rendering policy from `seo-checks.md` applies: JSON-LD that only exists after hydration
+counts at 0.5.
 
 ### ar.xml_sitemap (5)
 A syntactically valid XML sitemap exists and is referenced from `robots.txt`. Reuse the
