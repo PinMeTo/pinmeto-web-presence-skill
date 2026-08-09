@@ -8,10 +8,29 @@ load it first, then apply this spec on top.
 **Generate, don't hand-write.** A full report is ~60 accordion rows and ~30 drawers;
 hand-authoring that much repeated markup drifts. When a shell is available, hold the
 `CheckResult`s and scan history as a data structure and emit the HTML from a small template
-script (this pairs naturally with the scoring script in `scoring.md`). After publishing,
-**verify via a web fetch of the artifact URL** — the in-app browser is not signed in to
-claude.ai and will show a 404; keep the verification narrow (title, score, history block),
-the page is 200 KB+.
+script (this pairs naturally with the scoring script in `scoring.md`).
+
+**HTML-escape every data-derived string** — check names, why/cost prose, fix steps,
+evidence notes, agent prompts. Evidence routinely *quotes literal markup* (a duplicated
+`<title>`, a missing `<link rel=canonical>`, a JSON-LD snippet); one unescaped RCDATA tag
+like `<title>` in a drawer swallows the entire rest of the document as inert text —
+accordions, drawer, and history block all die silently with no console error. If prose
+needs inline code styling, escape first and re-allow only `<code>`/`</code>`.
+
+**Pre-publish sanity checks** (cheap, catch the whole failure class):
+- exactly **one** `<title>` tag in the file (the page's own);
+- exactly the expected `<script>` tags (the `pmt-scan-history` block + one interactivity
+  script), with the interactivity script last;
+- the history block parses as JSON;
+- interactivity uses `addEventListener` on `data-*` hooks — never inline `onclick=`
+  attributes (hostile to CSP) — and the script sits at the end of the body;
+- when a local browser is available, serve the file and click one accordion, one drawer
+  button, and one filter before publishing (`document.scripts.length` being 0 is the
+  instant tell that markup swallowed the script).
+
+After publishing, **verify via a web fetch of the artifact URL** — the in-app browser is
+not signed in to claude.ai and will show a 404; keep the verification narrow (title,
+score, history block), the page is 200 KB+.
 
 ## Identity (what makes re-runs update instead of fork)
 
