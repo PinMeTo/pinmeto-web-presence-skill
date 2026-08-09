@@ -185,7 +185,12 @@ Google 55 / Apple 30 / Bing 15, average across the sample.
 `geo.location_platform_parity` is **one brand-wide result**, not per-location: fail if any
 sampled location is missing on a platform, has a Google duplicate, or has a stale
 permanently-closed listing; warn if no platform matched anything (likely a lookup problem);
-pass otherwise. **Its slot in the arithmetic:** the brand-wide parity result is counted as
+pass otherwise. **Precedence when both clauses fit** — a run where nothing was observed at
+all satisfies "missing on a platform" and "nothing matched" simultaneously. Resolve it by
+observation, never by the missing-listing clause: an *observed* absence is a `fail`, an
+unobserved one is a `warn`. If no sampled location produced an observation on any platform,
+this check never fails — GEO takes the "could not be observed" path in `scoring.md` and is
+rendered **Not measured** instead of scored. **Its slot in the arithmetic:** the brand-wide parity result is counted as
 one additional applicable check in the **Google column only**, repeated for every sampled
 location — it does not appear in the Apple or Bing columns (their gaps already zero those
 columns via the catastrophic rule, and counting parity there would double-punish).

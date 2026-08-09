@@ -138,7 +138,12 @@ match the JSON-LD items. Both or fail.
 ## PageSpeed checks (3 URLs max)
 
 ### seo.lcp_sample (10) · seo.mobile_friendly (5)
-Call the public PageSpeed Insights API (`strategy=mobile`) for up to 3 sampled URLs. LCP:
+Call the public PageSpeed Insights API (`strategy=mobile`) for 3 sampled URLs. **Which 3 is
+fixed, not free choice** — take the landing pages of the first three locations in the pinned
+sample order recorded in the report history (fewer only when the sample itself is smaller),
+and list the chosen URLs in the check's evidence. Picking them freshly each run would let LCP
+and mobile-friendly move without the site changing, which is exactly the drift the pinned
+sample exists to prevent. LCP:
 ratio = URLs with LCP <2.5s ÷ **URLs attempted** (the fixed 3-URL sample, or fewer only when
 the brand has fewer sampled URLs) — a URL that failed to return stays in the denominator and
 contributes 0, so two failed calls can never let one fast URL pass as `1/1`. Pass at ≥0.8 (use

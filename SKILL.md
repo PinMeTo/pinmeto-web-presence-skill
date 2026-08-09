@@ -1,7 +1,7 @@
 ---
 name: pinmeto-web-presence
 description: This skill should be used when the user asks to "check our web presence", "audit or monitor our SEO / AIO / GEO / agent readiness", "how do we look in AI search / ChatGPT / Gemini", "are our locations correct on Google, Apple, and Bing Maps", "run a presence scan", "update the presence report", or otherwise requests an SEO, AI-visibility (AIO), generative-engine (GEO), or agent-readiness analysis of a multi-location brand's website and map listings. Scores the brand against the PinMeTo MLPR rubric, produces an updatable HTML report artifact, and can set up scheduled monitoring. Requires the PinMeTo Location MCP server; GEO checks use a browser against the real Google, Apple, and Bing Maps.
-version: 0.10.1
+version: 0.10.2
 license: Proprietary - (c) PinMeTo AB. See LICENSE.
 ---
 
@@ -24,7 +24,7 @@ location data), because most local-SEO and AI-visibility failures are NAP (name/
 and structured-data inconsistencies between PinMeTo and the live web.
 
 The scoring rubric is defined in [references/rubric.md](references/rubric.md) — a skill-line
-fork (v2.13.0-skill.1) of the PinMeTo MLPR product rubric v2.8.0 that re-adds Bing as a scored
+fork (v2.14.0-skill.1) of the PinMeTo MLPR product rubric v2.8.0 that re-adds Bing as a scored
 GEO platform and adds a PinMeTo-connection check; SEO/AIO/Agent Readiness are identical to
 the product. Do not invent checks or reweight; deviations from the rubric make runs
 incomparable.
@@ -83,7 +83,9 @@ fleet can be 10 or 10,000 locations, and the budget must survive to the report e
 
 - Size the fleet from `totalCount` (limit 1, with the scope's country/city filters); never
   paginate the whole fleet into context, and never echo raw location JSON.
-- Sample: 5 locations if the (scoped) fleet has <20, 10 if ≥20, minimum 3 to score at all.
+- Sample: `min(5, N)` open locations if the (scoped) fleet has <20, 10 if ≥20, minimum 3 to
+  score at all. Count only `permanentlyClosed: false` records — the exact rule and the
+  selection order live in `references/pinmeto-data-check.md`; do not restate it differently.
   On re-runs the sample is **pinned** — reuse the storeIds recorded in the report's history
   block. Full records (`pinmeto_get_location`) are fetched for sampled locations only.
 - Ratings/keywords/insights tools in aggregate for reputation and context.

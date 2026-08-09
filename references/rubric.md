@@ -1,4 +1,15 @@
-# Rubric — v2.13.0-skill.1 (skill-line fork of PinMeTo MLPR rubric v2.8.0)
+# Rubric — v2.14.0-skill.1 (skill-line fork of PinMeTo MLPR rubric v2.8.0)
+
+Changes in 2.14.0-skill.1 (second cross-file contract review, first review of the shipped
+2.13.0): the `geo.listing_connected_pinmeto` browser downgrade is now **encoded in the
+machine-readable entry** (`browser_downgrade`), not just prose — a scorer consuming the JSON
+alone previously returned `pass` where the procedure requires `fail`; `seo.lcp_sample` and
+`seo.mobile_friendly` name *which* three URLs they measure (first three of the pinned sample),
+so a re-run cannot move those scores without the site changing; `geo.location_platform_parity`
+gains explicit precedence for the all-unobserved run, which previously satisfied both its fail
+and its warn clause; multi-country sampling is pinned to one global slot budget rather than
+`s` offsets per country; and `SKILL.md`'s Stage 1 summary now states `min(5, N)` and
+open-locations-only instead of contradicting `pinmeto-data-check.md`.
 
 Changes in 2.13.0-skill.1 (cross-file contract review): `geo.listing_connected_pinmeto` gains
 its browser downgrade rule here, so the rubric and `geo-browser-checks.md` can no longer
@@ -64,7 +75,7 @@ Never present a rubric-caused or correction-caused delta as customer progress.
 
 ```json
 {
-  "rubric_version": "2.13.0-skill.1",
+  "rubric_version": "2.14.0-skill.1",
   "derived_from": "MLPR 2.8.0",
   "rendered_only_credit": 0.5,
   "dual_pass_checks": [
@@ -162,7 +173,7 @@ Never present a rubric-caused or correction-caused delta as customer progress.
             "note": "These lists ARE the denominator for sub-group A ('share of applicable checks passed'). Do not assemble them by hand from prose; drift here is the largest source of run-to-run GEO variance."
           },
           "accuracy_checks": [
-            { "id": "geo.listing_connected_pinmeto", "platforms": ["google", "apple", "bing"], "source": "pinmeto_mcp network object", "notes": "connection/claim managed through PinMeTo: network.google.placeId / network.apple.link / network.bing.link present" },
+            { "id": "geo.listing_connected_pinmeto", "platforms": ["google", "apple", "bing"], "source": "pinmeto_mcp network object", "notes": "connection/claim managed through PinMeTo: network.google.placeId / network.apple.link / network.bing.link present", "base_result": "pass when the network.<platform> entry exists, else fail", "browser_downgrade": { "applies_when_observed": true, "forces": "fail", "conditions": ["surface shows an unclaimed / 'Claim This Place' banner", "listing disagrees with the PinMeTo record on address", "listing disagrees with the PinMeTo record on map pin"], "not_triggered_by": ["phone mismatch", "name mismatch"], "note": "MCP presence is the base result; the browser can only downgrade it, never grant it. A scorer reading this JSON alone must apply this override or it will return pass where the procedure requires fail. Full rule in geo-browser-checks.md." } },
             { "id": "geo.name_matches_site", "platforms": ["google", "apple", "bing"], "normalization": "case+punctuation+legal_suffix" },
             { "id": "geo.address_matches_site", "platforms": ["google", "apple", "bing"], "normalization": "postal" },
             { "id": "geo.phone_matches_site", "platforms": ["google", "apple", "bing"], "normalization": "e164" },

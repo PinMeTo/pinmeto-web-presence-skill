@@ -208,7 +208,7 @@ The artifact carries its own memory. Embed exactly one block:
   "scans": [
     {
       "date": "2026-08-09",
-      "rubricVersion": "2.13.0-skill.1",
+      "rubricVersion": "2.14.0-skill.1",
       "label": "First scan",
       "overall": 63, "grade": "C",
       "pillars": { "seo": 47, "geo": 79, "aio": 45, "agent_readiness": 90 },
@@ -227,6 +227,12 @@ The artifact carries its own memory. Embed exactly one block:
   re-runs and scheduled runs reconstruct the fleet filter without asking.
 - `scans` is append-only, oldest first. Keep every prior scan verbatim — never recompute old
   numbers, even if the rubric version moved.
+- `pillars.geo` is **nullable**. When no sampled location produced an observation on any
+  platform, `scoring.md` renders GEO as "Not measured" and drops it from the overall; record
+  `"geo": null` for that scan, keep `overall` as the value actually computed from the
+  reweighted three pillars, and name the degraded run in `notes`. A renderer must treat null
+  as "not plotted" — never as 0, and never recompute the overall with the standard weights,
+  or a scan nobody could measure prints as a collapse. The other three pillars are never null.
 - `checks` records status+ratio for **every** check (compact but complete): it is what lets
   the next run say "internal linking hasn't moved across four scans" without guessing, and
   it is the input to the trend section's mechanical diff.

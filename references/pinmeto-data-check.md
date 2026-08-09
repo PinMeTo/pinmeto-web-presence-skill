@@ -35,8 +35,11 @@ locations ever need complete records; everything else is counting and selecting.
 4. **First run, larger fleet:** do NOT paginate everything. Select by **even offsets**:
    for sample size s, fetch `offset = floor(i × totalCount / s)`, `limit: 1`, minimal
    `fields`, for i = 0…s−1 (the server's 5-minute cache keeps ordering stable within a
-   scan). For multi-country brands, run the offsets per `country` filter instead so every
-   market is represented. The storeIds you pick get persisted in the report history — from
+   scan). For multi-country brands the offsets run per `country` filter so every market is
+   represented, but **`s` stays the whole report's budget, not a per-country one** — reserve
+   one slot per country first, then spend the remaining slots by even spacing, and dedupe
+   `storeId` before persisting. The exact rule is under Geographic diversity below; a 10-slot
+   sample stays 10 locations however many countries the scope spans. The storeIds you pick get persisted in the report history — from
    then on the sample is pinned (step 2), so cross-run ordering stability of the API never
    matters.
 5. **Full records for the sample only** (`pinmeto_get_location` per storeId), and don't
