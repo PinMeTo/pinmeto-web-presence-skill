@@ -19,7 +19,8 @@ a support/FAQ page). One page type = ratio 0.5.
 Heuristic: within the first ~200 words of main content, does the page state the direct answer
 to its own topic (who/what/where, e.g. an intro block naming what the business is and does)?
 Marketing slogans don't count; a concrete declarative sentence does. Evaluate homepage +
-sampled pages; pass at a majority.
+sampled pages, 1.0 or 0 per page (0.5 if only in the rendered pass); ratio = mean across
+pages; pass at ≥0.5.
 
 ### aio.speakable_specification (5)
 `speakable` (SpeakableSpecification) present in JSON-LD on homepage or key pages.

@@ -92,7 +92,8 @@ uniqueness (two missing = duplicate empty).
 
 ### seo.h1_unique_has_location (5)
 Exactly one `<h1>`, unique across the sample, containing the location's name or city (compare
-against the PinMeTo baseline record, case-insensitive). Pass at ≥80% of pages.
+against the PinMeTo baseline record, case-insensitive). Per page 1.0 when all three hold,
+else 0 (0.5 if satisfied only in the rendered pass). Ratio = mean across pages; pass at ≥0.8.
 
 ### seo.og_twitter_per_location (5)
 `og:title`, `og:description`, `og:image`, and `twitter:card` all present, with og values
@@ -123,8 +124,10 @@ Parse `robots.txt`; evaluate each sampled URL against the rules for `*` and for
 
 ### seo.internal_linking_depth (10)
 Breadth-first crawl of `<a href>` links from the homepage, same host only, up to depth 3
-(homepage = 0). Cap the crawl at ~50 pages — prioritize nav links and anything whose URL
-looks like a locator/index. Pass if every sampled location URL is reached by depth ≤3;
+(homepage = 0). **Deterministic order:** strict BFS; within a depth level visit URLs in
+ascending lexicographic order of the absolute URL; dedupe by URL without fragment; cap at
+exactly **50 fetched pages** and record that the cap was hit. (Fuzzy ordering here makes two
+runs crawl different subsets and report different depths.) Pass if every sampled location URL is reached by depth ≤3;
 ratio = reached / sampled. JS-only links (buttons, `onclick`) do not count — that is the
 point of the check.
 
@@ -136,8 +139,9 @@ match the JSON-LD items. Both or fail.
 
 ### seo.lcp_sample (10) · seo.mobile_friendly (5)
 Call the public PageSpeed Insights API (`strategy=mobile`) for up to 3 sampled URLs. LCP:
-pass if <2.5s on ≥80% of measured URLs (use the lab LCP from Lighthouse; prefer field data
-when present). Mobile-friendly: pass when the viewport is configured and there are no
+ratio = URLs with LCP <2.5s ÷ URLs successfully measured; pass at ≥0.8 (use the lab LCP from
+Lighthouse; prefer field data when present). If only some URLs return, score the ratio over
+those and note the missing ones; if none return, `warn`. Mobile-friendly: pass when the viewport is configured and there are no
 tap-target/font-size audit failures. API error, 403 from the site, or rate limiting →
 `warn` for both checks, with the HTTP error as evidence and an unblocking fix brief
 (allow `Chrome-Lighthouse` / `Google-InspectionTool` user agents).

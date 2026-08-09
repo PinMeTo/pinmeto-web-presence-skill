@@ -39,10 +39,10 @@ content page + one sampled location page, ratio = passing/3) and record the same
 ratio under both check ids. Gradient in AIO, mirrored here; the two must never disagree.
 
 ### ar.rfc8288_link_headers (10)
-Inspect response headers on the homepage for RFC 8288 `Link:` headers with any of
-`rel="api-catalog"`, `rel="describedby"`, `rel="service-desc"`. Any present = pass; partial
-coverage across the expected rels can be scored as a ratio (present/3) when at least one
-exists.
+Inspect response headers on the homepage for RFC 8288 `Link:` headers with
+`rel="api-catalog"`, `rel="describedby"`, `rel="service-desc"`. Ratio = present ÷ 3 always;
+pass at 3/3. (A header advertising a target that 404s does not count as present — check the
+target resolves, and say so in the evidence.)
 
 ### ar.jsonld_present_valid (5)
 At least one sampled page and the homepage carry JSON-LD that parses cleanly. (Deliberately

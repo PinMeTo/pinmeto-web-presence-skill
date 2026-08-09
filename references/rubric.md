@@ -1,4 +1,11 @@
-# Rubric — v2.11.0-skill.1 (skill-line fork of PinMeTo MLPR rubric v2.8.0)
+# Rubric — v2.12.0-skill.1 (skill-line fork of PinMeTo MLPR rubric v2.8.0)
+
+Changes in 2.12.0-skill.1 (pre-ship adversarial review): `warn` given a defined slot in every
+GEO sub-group and an explicit "GEO not measured at all" path (a browser-less run must not
+print a mid-50s GEO score for listings nobody looked at); dual-pass scope pinned to an
+explicit `dual_pass_checks` list instead of the `source` string; sub-group B scored against
+the PinMeTo record as reference value (removes the two-platform tie); per-check ratio
+formulas for the remaining gradient checks; rounding and GEO-collapse rules made explicit.
 
 Changes in 2.11.0-skill.1: dual-pass rendering policy — `source: html`/`json-ld` checks are
 evaluated on served HTML first, then on the browser-rendered DOM for SPA pages; values
@@ -45,9 +52,21 @@ Never present a rubric-caused or correction-caused delta as customer progress.
 
 ```json
 {
-  "rubric_version": "2.11.0-skill.1",
+  "rubric_version": "2.12.0-skill.1",
   "derived_from": "MLPR 2.8.0",
   "rendered_only_credit": 0.5,
+  "dual_pass_checks": [
+    "seo.localbusiness_jsonld_present", "seo.localbusiness_jsonld_richness",
+    "seo.canonical_present", "seo.meta_title_unique", "seo.meta_description_unique",
+    "seo.h1_unique_has_location", "seo.og_twitter_per_location", "seo.image_alt_text",
+    "seo.hreflang_correct", "seo.breadcrumbs_structured", "seo.internal_linking_depth",
+    "aio.faqpage_schema_2_types", "aio.quick_answer_first_200w",
+    "aio.speakable_specification", "aio.entity_consistent_brand_naming",
+    "aio.eeat_article_signals", "aio.graph_jsonld_pattern",
+    "aio.inlanguage_matches_html_lang", "aio.organization_schema_complete",
+    "aio.breadcrumblist_matches_visible_nav", "aio.haspart_about_mentions_enrichment",
+    "ar.webmcp_tools_registered", "ar.jsonld_present_valid"
+  ],
   "gradient_checks": [
     "seo.localbusiness_jsonld_present", "seo.localbusiness_jsonld_richness",
     "seo.h1_unique_has_location", "seo.sitemap_lists_locations",
@@ -155,7 +174,7 @@ Never present a rubric-caused or correction-caused delta as customer progress.
             { "id": "consistency.address", "weight": 35 },
             { "id": "consistency.coords_50m_cluster", "weight": 30 }
           ],
-          "scoring_rule": "100 if all present platforms agree after normalization, 50 if exactly one disagrees, 0 if all disagree"
+          "scoring_rule": "Scored against the PinMeTo record as the reference value: 100 if every observed platform matches it after normalization, 50 if exactly one platform deviates, 0 if two or more deviate. Using the record as reference removes the two-platform tie (whichever listing deviates from PinMeTo is the deviant)."
         },
         "c_platform_to_page_agreement": {
           "weight_inside_geo": 20,
@@ -210,10 +229,12 @@ Never present a rubric-caused or correction-caused delta as customer progress.
 
 ## Skill adaptations (evidence source only — never scoring)
 
-- **Dual-pass rendering** for all `source: html`/`json-ld` checks (SEO, AIO, and
-  `ar.jsonld_present_valid`): served HTML = full credit, rendered-DOM-only =
-  `rendered_only_credit` (0.5), absent = 0. Full policy and the SPA detection procedure in
-  `seo-checks.md`; it applies pillar-wide, not just to SEO.
+- **Dual-pass rendering** applies to every check that reads **page markup**, whatever its
+  `source` string says (the `source` field is a provenance hint, not the policy's scope):
+  served HTML = full credit, rendered-DOM-only = `rendered_only_credit` (0.5), absent = 0.
+  The exact set is `dual_pass_checks` in the JSON above. Everything else — `robots.txt`,
+  sitemaps, HTTP headers, `.well-known` paths, PSI, and all GEO checks — has **no rendered
+  pass**; it is what the server returns. Full policy and SPA detection in `seo-checks.md`.
 
 The product gathers GEO evidence through the Google Places API and Apple MapKit Server API.
 This skill gathers the **same facts from the real map surfaces in a browser** (see

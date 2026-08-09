@@ -1,7 +1,7 @@
 ---
 name: pinmeto-web-presence
 description: This skill should be used when the user asks to "check our web presence", "audit or monitor our SEO / AIO / GEO / agent readiness", "how do we look in AI search / ChatGPT / Gemini", "are our locations correct on Google, Apple, and Bing Maps", "run a presence scan", "update the presence report", or otherwise requests an SEO, AI-visibility (AIO), generative-engine (GEO), or agent-readiness analysis of a multi-location brand's website and map listings. Scores the brand against the PinMeTo MLPR rubric, produces an updatable HTML report artifact, and can set up scheduled monitoring. Requires the PinMeTo Location MCP server; GEO checks use a browser against the real Google, Apple, and Bing Maps.
-version: 0.9.0
+version: 0.10.0
 license: Proprietary - (c) PinMeTo AB. See LICENSE.
 ---
 
@@ -24,7 +24,7 @@ location data), because most local-SEO and AI-visibility failures are NAP (name/
 and structured-data inconsistencies between PinMeTo and the live web.
 
 The scoring rubric is defined in [references/rubric.md](references/rubric.md) — a skill-line
-fork (v2.11.0-skill.1) of the PinMeTo MLPR product rubric v2.8.0 that re-adds Bing as a scored
+fork (v2.12.0-skill.1) of the PinMeTo MLPR product rubric v2.8.0 that re-adds Bing as a scored
 GEO platform and adds a PinMeTo-connection check; SEO/AIO/Agent Readiness are identical to
 the product. Do not invent checks or reweight; deviations from the rubric make runs
 incomparable.
@@ -32,8 +32,10 @@ incomparable.
 ## Requirements
 
 - **PinMeTo Location MCP** server (the `.mcpb` Desktop Extension, or the npm package in Claude
-  Code) with its `pinmeto_*` tools connected. Confirm by calling `pinmeto_get_locations` with
-  no arguments before anything else. If it fails or is missing, stop and run the
+  Code) with its `pinmeto_*` tools connected. Confirm by calling
+  `pinmeto_get_locations({limit: 1, fields: ["storeId"]})` before anything else — never with
+  no arguments, which returns fifty complete location records (~125k tokens) just to prove
+  the server answers. If it fails or is missing, stop and run the
   `pinmeto-setup` flow first — the audit is meaningless without the PinMeTo baseline.
 - **A browser tool** — for GEO always, and for SEO/AIO whenever the site client-renders:
   the in-app Browser, Claude in Chrome, or another browser automation surface. GEO evidence
@@ -143,10 +145,14 @@ Route each kind of work to the cheapest thing that does it correctly:
 2. **Delegate only the identity-and-position reads to a small, fast model** when the host
    supports subagents with model selection (e.g. a Haiku-class model in Claude Code):
    listing **existence, name, address, phone, website href, coordinates** — every one of
-   which is verifiable against the PinMeTo baseline, so a wrong value is caught — plus the
-   `.well-known`/`llms.txt`/markdown-negotiation probes. Give the subagent the recipe and
-   the evidence schema, require `null` plus a note when a field cannot be read, and
-   **reject any value prefixed `~` or "approx"** on arrival.
+   which is verifiable against the PinMeTo baseline, so a wrong value is caught. Give the
+   subagent the recipe and the evidence schema, require `null` plus a note when a field
+   cannot be read, and **reject any value prefixed `~` or "approx"** on arrival.
+   **Do not delegate the `.well-known`/`llms.txt`/markdown-negotiation probes**: nothing
+   verifies them, so "200 JSON" reported for a path that actually 301s into an HTML 404 is
+   an unfalsifiable pass — and it becomes a public claim that the customer implements a
+   standard they don't. They are cheap `curl` calls; run them in the fetch script and read
+   the status, content-type and first bytes yourself.
 3. **Keep judgment *and* the unverifiable reads on the primary model:** the Google richness
    fields (weekly hours table, photo count, attribute chips, review recency), normalization
    calls (does "Karhumäkivägen 3, Vanda" match "Karhumäentie 3, Vantaa"?), severity

@@ -52,6 +52,10 @@ disconnected, no browser for GEO), produce the report anyway with the affected c
 
 - Respect the same evidence budget: sampled pages, 2–4 min per location per platform on maps.
 - If the PinMeTo fleet changed materially (>20% locations added/removed), flag it in the
-  report — the trend line comparability is weakened and the sample was re-drawn.
+  report — the trend line's comparability is weakened. **The sample is still not re-drawn:**
+  pinned locations that remain in the fleet stay in the sample (see `pinmeto-data-check.md`);
+  only departed locations are replaced. Re-drawing would make the trend measure sampling
+  noise while claiming to measure change. If the user wants coverage of the new locations,
+  that is a *new* scoped report, not a mutation of this one.
 - If two consecutive scheduled runs end mostly-warn (site unreachable, consent walls), stop
   the schedule and tell the user instead of accumulating junk scans in the history.

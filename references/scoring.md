@@ -28,30 +28,63 @@ the `gradient_checks` whitelist — it is the policy's fixed credit, not a measu
 Never conflate the two: one says "we don't know", the other says "half your audience can't
 see this".
 
-## 2. Pillar scores (0–100, round half up to integers at the end only)
+## 2. Pillar scores (0–100)
+
+Compute in full precision; round **only** at the points named in §3. "Round half up" means
+`floor(x + 0.5)` — do **not** use a language's default rounding (Python's `round()` is
+banker's rounding: `round(22.5) == 22`, while JS gives 23; that discrepancy already produced
+a report whose hero said 22 and whose history said 23).
 
 **SEO / AIO / Agent Readiness:** `pillar = Σ (check_weight × ratio)` — the weights in
 `rubric.md` already sum to 100 per pillar.
 
 **GEO:** three sub-groups, then `geo = 0.55·A + 0.25·B + 0.20·C`:
 
-- **A (per-platform):** per location, per platform: share of applicable checks passed
-  (connected-in-PinMeTo + accuracy + richness for Google; connected + existence/NAP/pin for
-  Apple; connected + existence/NAP/website/pin for Bing). No listing on a platform → that
-  platform scores 0 for that location. Location score = 0.55·google + 0.30·apple +
-  0.15·bing. A = mean across sampled locations × 100.
-- **B (consistency):** per location with ≥2 listings: `0.35·name + 0.35·address +
-  0.30·coords`, each field scored across the present platforms — all agree = 1, exactly one
-  disagrees = 0.5, all disagree = 0. Locations with fewer than two listings are excluded
-  from B. B = mean × 100 (if no location qualifies, B is excluded and A/C reweighted
-  proportionally — note this in the report).
+- **A (per-platform):** per location, per platform: `Σ ratio over the platform's
+  applicable_checks ÷ count of those checks` (the lists are machine-readable in
+  `rubric.md`; a conditional check excluded for this location leaves the denominator).
+  A `warn` inside that sum contributes 0.5, a `fail` 0, a `pass` 1. **No listing on a
+  platform → that platform scores 0 for that location** (a measured absence, not a warn).
+  Location score = 0.55·google + 0.30·apple + 0.15·bing. A = mean across sampled
+  locations × 100.
+- **B (consistency):** per location with **≥2 observed listings**: `0.35·name +
+  0.35·address + 0.30·coords`. Score each field against the **PinMeTo record as the
+  reference value**: every observed platform matches it = 1 · exactly one platform deviates
+  = 0.5 · two or more deviate = 0. (Using the record as reference removes the two-platform
+  ambiguity — with two listings that disagree, whichever one deviates from PinMeTo is the
+  deviant; if both deviate, 0.) Locations with fewer than two observed listings are excluded
+  from B. B = mean × 100; if no location qualifies, B is excluded and its 25 is redistributed
+  to A and C in proportion (A 0.733, C 0.267) — note the reweight in the report.
 - **C (page agreement):** per location: mean of the five 20-point field checks vs the
   dominant platform answer (majority across Google/Apple/Bing, Google wins ties).
-  C = mean × 100.
+  C = mean × 100. If no platform observation exists for a location, that location is
+  excluded from C; if no location qualifies, C is excluded and its 20 is redistributed to
+  A and B in proportion (A 0.688, B 0.312).
+
+### When GEO could not be observed at all
+
+If **no sampled location produced an observation on any platform** — no browser available,
+every lookup blocked by a consent wall — do **not** compute a GEO score from warns. A
+pillar assembled entirely from 0.5s prints a mid-50s number for listings nobody looked at,
+under a PinMeTo logo. Instead:
+
+- render GEO as **"Not measured"** in the scorecard, with the reason,
+- **exclude it from the overall**, reweighting the other three pillars proportionally
+  (SEO 0.43, AIO 0.357, Agent Readiness 0.214), and say in the hero sub-line and the
+  methodology that the overall covers three pillars,
+- record `"geo": null` in the history block for that scan so the trend never plots it as a
+  drop, and flag the run as degraded in `notes`.
+
+Partial observation (some locations or platforms seen) scores normally — the unseen parts
+are `warn` at 0.5 and are listed under "could not be measured".
 
 ## 3. Overall score and grade
 
-`overall = 0.30·seo + 0.30·geo + 0.25·aio + 0.15·agent_readiness`, rounded to an integer.
+`overall = 0.30·seo + 0.30·geo + 0.25·aio + 0.15·agent_readiness`, computed from the
+**unrounded** pillar values, then rounded half up to an integer. Round the pillar values
+half up for display only. The grade is read from the rounded overall, so a 74.5 becomes 75
+and grades B — decide it once, here, and store both the rounded numbers and the grade in the
+history block so the report renders from them rather than recomputing.
 
 | Grade | Overall |
 | --- | --- |
@@ -70,14 +103,27 @@ For each failing (not warn) check:
 
 `points_returned = check_weight × (1 − ratio) × pillar_weight / 100`
 
-…expressed in overall-score points. For GEO, treat a sub-group field's effective weight as
-`field_share × subgroup_weight × 0.30`. Group related checks that one fix resolves (e.g. a
+…expressed in overall-score points. For GEO, a sub-group A check's effective weight is
+`(1 ÷ count of that platform's applicable_checks) × platform_weight × 0.55 × 0.30`, and a
+sub-group B/C field's is `field_share × subgroup_weight × 0.30`. Group related checks that one fix resolves (e.g. a
 template change fixing H1 + title + description) and sum their points — the report's "Fix
 these first" section shows the **three highest-point fixes**, each with its combined point
 value ("Worth ~4 points"), a plain-English headline, and the coding-agent brief.
 
 Tie-breakers: fleet-wide template fixes beat per-location manual edits; person-tasks (claim a
 listing) rank on points but are labeled as not-a-code-change.
+
+## 4b. Collapsing GEO results to one value per check id
+
+A GEO check like `geo.name_matches_site` produces up to (locations × platforms) results, but
+the history block, the accordion result labels, the pass/warn/fail counts and the trend diff
+all consume **one value per check id**. Collapse by the **mean of its effective ratios
+across every location × platform where the check was applicable** (a platform with no
+listing contributes 0 for that location; a location where the check was unmeasurable
+contributes 0.5). Status from the collapsed ratio: `pass` ≥0.8 · `warn` only when *every*
+contributing observation was unmeasurable · `fail` otherwise. Record the collapsed value in
+history and show the underlying spread in the row's evidence ("13 of 15 platform checks
+matched; Apple Oslo and Apple Helsinki differ").
 
 ## 5. Honesty in numbers
 

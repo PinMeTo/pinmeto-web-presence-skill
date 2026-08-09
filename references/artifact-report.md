@@ -156,8 +156,9 @@ renders identically in light and dark viewers.
    must be exactly right per the GEO evidence.
 10. **Listing content table** (directly after the matrix): per sampled location, what the
     Google listing actually shows — {Category (vs the category PinMeTo pushes, from
-    `network.google.categories.primaryCategory`), Photos (count, ≥5 target), Latest owner
-    post (date or "none"), Newest review (date)}. Photos and review recency feed scored
+    `network.google.categories.primaryCategory`), Photos ("5+" / "under 5" / "not counted" — never a fabricated exact number; see the reviewer-profile trap in `geo-browser-checks.md`), Latest owner
+    post (date or "none"), Newest review (Google's own relative label verbatim — "6 months
+    ago" — not an ISO date derived from it), Newest review (date)}. Photos and review recency feed scored
     checks (`geo.photos_5_plus`, `geo.recent_reviews_180d`); category and owner posts are
     **observed, unscored** — label the columns so the distinction is visible. A stale or
     empty "latest owner post" is a natural talking point for PinMeTo's posting features;

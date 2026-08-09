@@ -97,7 +97,14 @@ misbehaves. Never use `javascript_tool` to *change* anything on the page.
    - **Latest owner post** (the "Updates"/"From the owner" section): date of the newest
      post, or "none" — observed evidence for the listing-content table (unscored; a stale
      post stream is a natural PinMeTo talking point)
-   - **Reviews**: rating, count, and the date of the most recent review (sort by newest)
+   - **Reviews**: rating, count, and the newest review's date — **record Google's label
+     verbatim** ("a year ago", "edited 6 months ago"); it is relative, and converting it to
+     an ISO date invents precision the page never showed (a dogfood subagent did exactly
+     that). Store the label in `newestReviewLabel`. Only set an ISO `newestReview` when an
+     absolute date is actually displayed. For `geo.recent_reviews_180d`: labels of "today"
+     through "5 months ago" pass, "7 months ago" or older fails, and **"6 months ago" is
+     `warn`** — the label's granularity straddles the 180-day line and a coin-flip must not
+     read as a measurement
    - **Warnings**: any consumer-alert banner, "Permanently closed" or "Temporarily closed"
      label, or "suggest an edit" oddities
 4. **Coordinates**: read the pin position from the URL after the card settles — the
@@ -135,8 +142,15 @@ misbehaves. Never use `javascript_tool` to *change* anything on the page.
 
 ## Normalization before comparing
 
-Compare listing facts against the **PinMeTo baseline** (Stage 1) and the **landing page**
-(Stage 2 fetches):
+**Reference value: the PinMeTo record, always.** Sub-group A's accuracy checks
+(`geo.*_matches_site`) score the platform listing against the **PinMeTo baseline** from
+Stage 1 — despite the `_site` in the ids, which is inherited naming. The landing page is
+scored separately by sub-group C (page vs dominant platform), so comparing to the page here
+would double-count it, and on a client-rendered site the served page carries no NAP to
+compare against at all. Record the page's values as context in evidence when they differ
+from both, but never score sub-group A against them.
+
+Normalization rules for every comparison:
 
 - **Name**: case-insensitive; strip punctuation and legal suffixes (AB, GmbH, Ltd, Inc, Oy).
   "PinMeTo Malmö" vs "Pinmeto AB - Malmö" → match. A different city/descriptor → mismatch.
