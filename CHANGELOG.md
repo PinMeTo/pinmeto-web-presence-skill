@@ -21,7 +21,8 @@ specified the same behaviour differently ([`70d428f`](https://github.com/PinMeTo
 - Rendered-only 0.5 credit restricted to the `dual_pass_checks` list (it read "any html/json-ld
   check", which let undeclared checks earn it)
 - `seo.lcp_sample` scores over a fixed attempted-URL denominator, so a partial PageSpeed sample
-  can no longer pass as `1/1`; a measurement gap warns instead of failing
+  can no longer pass as `1/1`; a measurement gap warns instead of failing, but a URL that
+  returned over 2.5s outranks an errored sibling and keeps the check at `fail`
 - Small-fleet sample capped at `min(5, N)`: the even-spacing index repeats below five locations
 - The no-browser GEO path is applied per check, not by warning every GEO check
 - §4b's GEO collapse labelled an evidence-only reporting rollup, reconciling it with the
@@ -90,14 +91,16 @@ Report changes from a review of the dogfood output
 Escape data-derived strings in the report, plus pre-publish sanity checks
 ([`42ac261`](https://github.com/PinMeTo/pinmeto-web-presence-skill/commit/42ac261)). The dogfood
 artifact's accordions and drawers were dead: an evidence note quoted a literal `<title>` tag
-unescaped, and `title` is RCDATA, so the parser silently swallowed the rest of the document
-(remaining drawers, the scan-history JSON, the interactivity script) as inert text.
+unescaped, and the contents of a `<title>` element are parsed as RCDATA, so the parser
+silently swallowed the rest of the document (remaining drawers, the scan-history JSON, the
+interactivity script) as inert text.
 
 ## v0.6.0 · 2026-08-09 · rubric 2.11.0-skill.1
 
 Dual-pass rendering policy
 ([`0a42629`](https://github.com/PinMeTo/pinmeto-web-presence-skill/commit/0a42629)). Googlebot,
-Bingbot and agentic browsers render JS; AI training and index crawlers do not. Served-only
+Bingbot and agentic browsers render JS; the AI crawlers that feed training and retrieval
+(GPTBot, ClaudeBot, PerplexityBot) do not. Served-only
 scoring over-punished client-rendered sites and rendered-only would have hidden the
 non-rendering-crawler gap, so markup checks now run both passes: served HTML earns full credit,
 rendered-DOM-only earns `rendered_only_credit` (0.5) with provenance in the evidence, absent

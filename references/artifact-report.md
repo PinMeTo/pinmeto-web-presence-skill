@@ -209,7 +209,7 @@ The artifact carries its own memory. Embed exactly one block:
     {
       "date": "2026-08-09",
       "rubricVersion": "2.13.0-skill.1",
-      "label": "Second scan",
+      "label": "First scan",
       "overall": 63, "grade": "C",
       "pillars": { "seo": 47, "geo": 79, "aio": 45, "agent_readiness": 90 },
       "counts": { "pass": 40, "warn": 2, "fail": 14 },

@@ -5,7 +5,9 @@ its browser downgrade rule here, so the rubric and `geo-browser-checks.md` can n
 return different results from the same evidence; rendered-only credit restricted to the
 `dual_pass_checks` list (it previously read "any html/json-ld check", which let undeclared
 checks earn it); `seo.lcp_sample` scores over a fixed attempted-URL denominator so a partial
-PageSpeed sample can no longer pass as `1/1`; small-fleet sample capped at `min(5, N)` because
+PageSpeed sample can no longer pass as `1/1`, and a URL that returned over 2.5s outranks an
+errored sibling, so the check stays `fail` rather than softening to `warn`; small-fleet sample
+capped at `min(5, N)` because
 the even-spacing index repeats below five locations. The §4b GEO collapse is now labelled an
 evidence-only rollup — it never entered a pillar score, so no score moves from that clause.
 
@@ -19,7 +21,8 @@ formulas for the remaining gradient checks; rounding and GEO-collapse rules made
 Changes in 2.11.0-skill.1: dual-pass rendering policy — `source: html`/`json-ld` checks are
 evaluated on served HTML first, then on the browser-rendered DOM for SPA pages; values
 present only after rendering earn `rendered_only_credit` (0.5), because Googlebot/Bingbot
-and agentic browsers render JS while AI training/index crawlers do not. Replaces
+and agentic browsers render JS while the AI crawlers that feed training and retrieval
+(GPTBot, ClaudeBot, PerplexityBot) do not. Replaces
 2.10.0-skill.1's served-only policy, which over-punished client-rendered sites.
 
 Changes in 2.10.0-skill.1 (from the 2026-08-09 dogfood run): parity's arithmetic slot

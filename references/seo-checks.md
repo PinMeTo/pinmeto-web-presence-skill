@@ -147,5 +147,9 @@ return the check cannot `pass`: score `warn` when every URL that *did* return wa
 (evidence gap, not a verdict), `fail` when any returned URL was over. If none return, `warn`.
 Mobile-friendly: pass when the viewport is configured and there are no
 tap-target/font-size audit failures. API error, 403 from the site, or rate limiting →
-`warn` for both checks, with the HTTP error as evidence and an unblocking fix brief
-(allow `Chrome-Lighthouse` / `Google-InspectionTool` user agents).
+`warn`, with the HTTP error as evidence and an unblocking fix brief (allow
+`Chrome-Lighthouse` / `Google-InspectionTool` user agents). For `seo.mobile_friendly` that
+error rule applies unconditionally. **For `seo.lcp_sample` it is subordinate to the
+precedence above**: a URL that returned over 2.5s is a measurement, not a gap, so the check
+stays `fail` however many sibling calls errored; `warn` applies only when nothing that
+returned actually failed.
