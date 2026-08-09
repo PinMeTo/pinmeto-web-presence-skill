@@ -74,6 +74,11 @@ misbehaves. Never use `javascript_tool` to *change* anything on the page.
    (brand+street, brand+city) → record *no Google listing* (catastrophic rule below).
 3. Extract from the card, top to bottom:
    - **Name** (exact string)
+   - **Displayed category** (the line under the name, e.g. "Internet marketing service") —
+     compare against what PinMeTo pushes
+     (`network.google.categories.primaryCategory.name`); a divergence is **observed
+     evidence** for the report's listing-content table, not a scored check (categories were
+     dropped from scoring upstream)
    - **Address** (exact string)
    - **Phone**
    - **Website URL** (the actual href, not the display text)
@@ -81,6 +86,9 @@ misbehaves. Never use `javascript_tool` to *change* anything on the page.
    - **Photos**: rough count — open the photo strip; "5+" is enough precision
    - **Attributes/services** (the "About" tab chips: accessibility, service options, …)
    - **Menu / order / reserve links** if the category warrants them
+   - **Latest owner post** (the "Updates"/"From the owner" section): date of the newest
+     post, or "none" — observed evidence for the listing-content table (unscored; a stale
+     post stream is a natural PinMeTo talking point)
    - **Reviews**: rating, count, and the date of the most recent review (sort by newest)
    - **Warnings**: any consumer-alert banner, "Permanently closed" or "Temporarily closed"
      label, or "suggest an edit" oddities
@@ -132,6 +140,14 @@ Compare listing facts against the **PinMeTo baseline** (Stage 1) and the **landi
   translated street/city name for the same place as a match.
 - **Phone**: reduce both to E.164 (strip spaces, dashes, parentheses; resolve the country
   prefix from the location's country). `+46 40-123 456` == `040-123456` for a Swedish site.
+- **Website URL (`geo.website_url_on_listing`) — "correct" means the right page, not just
+  the right domain.** Strip tracking params (`utm_*`, `gclid`, and PinMeTo's
+  `{{network}}`/`{{storeid}}` template placeholders), follow redirects, and require the
+  final URL to be **that location's own landing page** (the `contact.homepage`/`url` in its
+  PinMeTo record, or the site's per-location URL pattern). The brand homepage, the locator
+  root, or another location's page = **fail**, with the observed final URL in evidence. A
+  URL that errors (4xx/5xx) or redirect-loops = fail. Domain-matches-but-wrong-page is the
+  common drift mode and the whole reason the check exists.
 - **Coordinates**: haversine distance; ≤50 m is a match. (Quick approximation: 0.00045° of
   latitude ≈ 50 m; scale longitude by cos(latitude).)
 - **Hours**: compare the weekly table semantically (Mon–Sun open/close pairs), not textually.
@@ -175,8 +191,11 @@ code change).
 {
   "locationId": "…", "name": "…",
   "ids": { "googlePlaceId": "ChIJ…", "appleAuid": "…", "bingYpid": "…" },
-  "google": { "found": true, "foundVia": "place_id|search", "name": "…", "address": "…", "phone": "…", "website": "…",
+  "google": { "found": true, "foundVia": "place_id|search", "name": "…", "address": "…", "phone": "…",
+              "website": "…", "websiteResolvesTo": "…", "websiteCorrectPage": true,
+              "category": "…", "categoryMatchesPinMeTo": true,
               "lat": 0, "lng": 0, "hours": "…", "photos": "5+", "attributes": ["…"],
+              "latestOwnerPost": "2026-06-12|none",
               "rating": 4.4, "reviews": 210, "newestReview": "2026-07-30",
               "flags": [], "duplicates": [] },
   "apple":  { "found": true, "foundVia": "auid|search", "name": "…", "address": "…", "phone": "…", "lat": 0, "lng": 0 },
