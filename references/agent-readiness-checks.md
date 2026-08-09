@@ -34,8 +34,9 @@ Both `/llms.txt` **and** `/llms-full.txt` return 200 markdown. Only one of the t
 0.5. (Related to `aio.llms_txt_present` but stricter — the pair is the convention.)
 
 ### ar.markdown_content_negotiation (10)
-Same probe as `aio.markdown_content_negotiation` (reuse the result): `Accept: text/markdown`
-honored on homepage + one deep page.
+Identical to `aio.markdown_content_negotiation` — run that probe once (homepage + one
+content page + one sampled location page, ratio = passing/3) and record the same status and
+ratio under both check ids. Gradient in AIO, mirrored here; the two must never disagree.
 
 ### ar.rfc8288_link_headers (10)
 Inspect response headers on the homepage for RFC 8288 `Link:` headers with any of

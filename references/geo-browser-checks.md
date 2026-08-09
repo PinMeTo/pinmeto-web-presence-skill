@@ -31,17 +31,37 @@ under `network`:
 - `network.bing.link` (`https://www.bing.com/maps?ss=ypid.<YPID>&mkt=…`) — opens the exact
   Bing listing.
 
-These same entries drive the **`geo.listing_connected_pinmeto`** check — no browser needed:
-per location and platform, `pass` when the `network.<platform>` connection exists in the
-PinMeTo record, `fail` when it doesn't. This measures *managed through PinMeTo*; a listing
-the brand claimed outside PinMeTo still fails, and its fix brief is "connect the location in
-PinMeTo" (so the platform stays in sync automatically), not "claim it on the platform".
+These same entries drive the **`geo.listing_connected_pinmeto`** check: per location and
+platform, `pass` when the `network.<platform>` connection exists in the PinMeTo record,
+`fail` when it doesn't. This measures *managed through PinMeTo*; a listing the brand claimed
+outside PinMeTo still fails, and its fix brief is "connect the location in PinMeTo" (so the
+platform stays in sync automatically), not "claim it on the platform".
+**Downgrade rule:** if the map surface contradicts the record — an unclaimed/"Claim This
+Place" banner, or listing data that is plainly stale against PinMeTo — score `fail` even
+though the connection exists, with evidence "connected in PinMeTo but not taking effect on
+the platform". A green check next to an obviously broken listing is not credible.
 
 Opening by ID removes matching ambiguity and is faster — always prefer it. But it only proves
 what the *claimed* listing says; it cannot prove a customer would find it, and it cannot see
 duplicates. So the procedure per location is: **open by ID for the fact extraction, then run
 one search pass for parity** (steps 1–2 below). A location with no `network.<platform>` entry
 falls back to pure search on that platform.
+
+## Extracting from map surfaces (browser mechanics)
+
+Map surfaces defeat the standard accessibility-tree loop: `read_page` typically returns an
+empty tree on Google/Bing Maps (so `find` has nothing to search), and `computer{scroll}`
+can time out without moving the page. Do not fight this; extract with **one targeted
+`javascript_tool` call per listing** — for this skill's read-only extraction that is the
+sanctioned path, not a workaround. On Google Maps read `location.href` (coordinates),
+`a[data-item-id="authority"]` (website href), `button[data-item-id="address"]`,
+`button[data-item-id^="phone"]`, the rating container, and narrow `innerText` slices for
+hours/photos/review dates. A targeted extraction is ~200 tokens per listing where a full
+`get_page_text` is ~1,500 (reviews, "people also search for", nearby places) — across a
+10-location sample that difference is what keeps the stage affordable. Selectors drift;
+when one misses, fall back to a screenshot + `zoom` to read the card visually and say so in
+the evidence. Consent buttons can be clicked via `javascript_tool` too when `computer`
+misbehaves. Never use `javascript_tool` to *change* anything on the page.
 
 ## Per location: Google Maps
 
@@ -76,24 +96,26 @@ falls back to pure search on that platform.
    search `https://maps.apple.com/?q=<brand name> <street> <city>` (the web app works in any
    modern browser; if it redirects to a marketing page, use `https://beta.maps.apple.com`).
 2. When searching: open the matching place card; two query variants before declaring *no
-   Apple listing*. When the auid link was used, still run one search to confirm the listing
-   is findable.
+   Apple listing*. **Apple's `?q=` search resolves to cities and neighbourhoods when no
+   business matches** — a result whose name is a place name rather than the brand counts as
+   *not found*, not as an ambiguous result to refine. When the auid link was used, still run
+   one search to confirm the listing is findable.
+3. Extract: **name, address, phone**, and the **pin coordinates** (from the share link:
+   `⋯ → Share → Copy Link`, the URL contains `&ll=lat,lng` — or read `coordinate=` in the
+   page URL). Hours/photos/URL may be visible; record them as prose evidence, but they are
+   **not scored** for Apple (the rubric scores Apple on existence + NAP + pin only).
 
 ## Per location: Bing Maps
 
 1. Open `network.bing.link` (`bing.com/maps?ss=ypid.<YPID>&mkt=…`) when PinMeTo has it;
    otherwise search `https://www.bing.com/maps?q=<brand name> <street> <city>`. Decline
    non-essential cookies. Two query variants before declaring *no Bing listing*.
-2. Extract from the place card: **name, address, phone, website URL** (the actual href),
-   and the **pin coordinates** — read the `cp=<lat>~<lng>` parameter from the URL once the
-   card has centered the map, or take them from the share link.
+2. Extract from the place card: **name, address, phone, website URL**, and the **pin
+   coordinates** — read the `cp=<lat>~<lng>` parameter from the URL once the card has
+   centered the map, or take them from the share link. Bing wraps outbound links as
+   `bing.com/alink/link?url=<encoded>` — decode the `url` parameter to get the real target.
 3. Hours/photos/reviews on Bing are recorded as prose evidence only — Bing is scored on
    existence + NAP + website + pin (no richness checks).
-3. Extract: **name, address, phone**, and the **pin coordinates** (from the share link:
-   `⋯ → Share → Copy Link`, the URL contains `&ll=lat,lng` — or read `coordinate=` in the
-   page URL). Hours/photos/URL may be visible; record them as prose evidence, but they are
-   **not scored** for Apple (the rubric scores Apple on existence + NAP + pin only, to stay
-   comparable with the product).
 
 ## Normalization before comparing
 
@@ -104,7 +126,10 @@ Compare listing facts against the **PinMeTo baseline** (Stage 1) and the **landi
   "PinMeTo Malmö" vs "Pinmeto AB - Malmö" → match. A different city/descriptor → mismatch.
 - **Address**: normalize street abbreviations (St/Street, Rd/Road, local equivalents),
   unit ordering, and postcode spacing. Compare street + number + postcode + city as facts,
-  not as strings.
+  not as strings. **Map surfaces localize place names** (Google can serve
+  "Karhumäkivägen 3, Vanda" for "Karhumäentie 3, Vantaa" depending on the browser locale) —
+  compare the numeric and postal components before calling a mismatch, and treat a
+  translated street/city name for the same place as a match.
 - **Phone**: reduce both to E.164 (strip spaces, dashes, parentheses; resolve the country
   prefix from the location's country). `+46 40-123 456` == `040-123456` for a Swedish site.
 - **Coordinates**: haversine distance; ≤50 m is a match. (Quick approximation: 0.00045° of
@@ -122,7 +147,10 @@ Google 55 / Apple 30 / Bing 15, average across the sample.
 `geo.location_platform_parity` is **one brand-wide result**, not per-location: fail if any
 sampled location is missing on a platform, has a Google duplicate, or has a stale
 permanently-closed listing; warn if no platform matched anything (likely a lookup problem);
-pass otherwise.
+pass otherwise. **Its slot in the arithmetic:** the brand-wide parity result is counted as
+one additional applicable check in the **Google column only**, repeated for every sampled
+location — it does not appear in the Apple or Bing columns (their gaps already zero those
+columns via the catastrophic rule, and counting parity there would double-punish).
 
 **Sub-group B — cross-platform consistency (25%).** Per location, across the platforms that
 have a listing (need ≥2 to compare): do they agree on name (35), address (35), coords within

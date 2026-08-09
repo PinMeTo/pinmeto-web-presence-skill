@@ -16,16 +16,22 @@ Apple Maps) is checked *against* this baseline.
 The cardinal rule: **never enumerate the full fleet into context.** Only the sampled
 locations ever need complete records; everything else is counting and selecting.
 
-1. **Size the fleet first:** `pinmeto_get_locations` with `limit: 1` (plus any scope
-   filters — see Scoped reports in `artifact-report.md`) and read `totalCount`. Filter
-   `permanentlyClosed: false`.
+1. **Size the fleet first:** `pinmeto_get_locations` with `limit: 1` **and
+   `fields: ["storeId"]`** (plus any scope filters — see Scoped reports in
+   `artifact-report.md`) and read `totalCount`. Never call `limit: 1` without `fields` —
+   one bare location record is ~2,500 tokens of attributes and descriptions, fetched just
+   to read an integer. Filter `permanentlyClosed: false`.
 2. **Re-run?** Skip discovery: take the `sample` storeIds from the existing report's
    history block and fetch exactly those with `pinmeto_get_location`. Replace only
    locations that are gone or permanently closed (by the selection rule below) and note
    the substitution in the report.
 3. **First run, fleet ≤ ~50:** one or two pages with
-   `fields: ["storeId","name","locationDescriptor","address","location","contact","network","permanentlyClosed"]`,
-   then select the sample by the deterministic rule below.
+   `fields: ["storeId","name","locationDescriptor","address","location","contact","permanentlyClosed"]`,
+   then select the sample by the deterministic rule below. Note: `network` is **not** in
+   the `fields` enum — the platform deep links only come back on the full record from
+   `pinmeto_get_location` (which takes no `fields` parameter), so budget one full record
+   (~1,300 tokens) per sampled location; that cost is unavoidable and is why full records
+   are fetched for the sample only. `response_format: "markdown"` does not shrink it.
 4. **First run, larger fleet:** do NOT paginate everything. Select by **even offsets**:
    for sample size s, fetch `offset = floor(i × totalCount / s)`, `limit: 1`, minimal
    `fields`, for i = 0…s−1 (the server's 5-minute cache keeps ordering stable within a
@@ -93,7 +99,10 @@ usually foreshadows a parity gap on the map surface.
   them for every later run.
 - **Geographic diversity:** for multi-country brands (unscoped runs), first guarantee ≥1
   location per country (each country's first location, or an offset-0 fetch per country
-  filter), then fill the remainder by the even-spacing rule.
+  filter), then fill the remainder by the even-spacing rule. **When the scope has more
+  countries than sample slots**, take one location per country in sort order of country
+  name until the sample is full, and name the unrepresented markets in the report's
+  methodology section.
 - **Never hand-pick** "good" or "bad" locations — that biases the score. If the user asks to
   include a specific location, add it as an *extra, unscored* case study in the report.
 - **Re-runs: the sample is pinned.** Read the previous scan's `sample` storeIds from the

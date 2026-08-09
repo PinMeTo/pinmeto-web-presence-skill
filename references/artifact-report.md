@@ -5,6 +5,14 @@ alone. The layout below reproduces the approved PinMeTo "Presence Report" design
 section by section rather than improvising. If the host provides an artifact-design skill,
 load it first, then apply this spec on top.
 
+**Generate, don't hand-write.** A full report is ~60 accordion rows and ~30 drawers;
+hand-authoring that much repeated markup drifts. When a shell is available, hold the
+`CheckResult`s and scan history as a data structure and emit the HTML from a small template
+script (this pairs naturally with the scoring script in `scoring.md`). After publishing,
+**verify via a web fetch of the artifact URL** — the in-app browser is not signed in to
+claude.ai and will show a 404; keep the verification narrow (title, score, history block),
+the page is 200 KB+.
+
 ## Identity (what makes re-runs update instead of fork)
 
 - **Title:** `PinMeTo Web Presence — <brand domain>` for a whole-brand report, or

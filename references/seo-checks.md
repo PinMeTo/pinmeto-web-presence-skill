@@ -4,6 +4,25 @@ Run against: the homepage, the store locator, `robots.txt`, the XML sitemap(s), 
 sampled landing page. Fetch each URL once and reuse the response across checks. Record the
 HTTP status, final URL after redirects, and fetch date for evidence.
 
+## Rendering policy (read this first — it decides scores)
+
+Evaluate every `source: html` check against the **raw served HTTP response**, never against
+a browser-rendered DOM. When a value is absent from the served HTML but appears after
+JS hydration, the check **fails**, and the evidence row records the rendered value with the
+words "client-rendered only". Rationale: non-rendering AI crawlers (GPTBot, ClaudeBot,
+PerplexityBot) are a first-class audience for this rubric, and a fixed policy is what keeps
+re-runs comparable — the served-vs-rendered choice can swing SEO by tens of points. The one
+deliberate exception is GEO sub-group C's "visible NAP", which is explicitly scored on the
+rendered page (see `geo-browser-checks.md`).
+
+## Fetch tooling
+
+Use plain HTTP tooling — `curl` or a small fetch script in the shell when available,
+capturing headers and the exact body. Do **not** use a markdown-converting fetch tool for
+these checks: canonical tags, JSON-LD blocks, meta/OG tags, and `Link:` headers do not
+survive markdown conversion, and those are precisely what the checks read. Extract facts
+from the responses; never quote whole HTML documents into the conversation.
+
 For every check, produce a `CheckResult` with concrete evidence rows (`{url, note}`). For
 failing checks, also write `fixSteps` (3–4 imperative steps) and `agentPrompt` (a
 self-contained brief a developer can paste into a coding agent — name the template/file kind
@@ -43,7 +62,9 @@ against the PinMeTo baseline record, case-insensitive). Pass at ≥80% of pages.
 
 ### seo.og_twitter_per_location (5)
 `og:title`, `og:description`, `og:image`, and `twitter:card` all present, with og values
-specific to the location (not identical across the sample). Pass at ≥80%.
+specific to the location (not identical across the sample). Per page: 1.0 when all four are
+present and location-specific, 0.5 when all four are present but generic/identical across
+the sample, 0 when any tag is missing. Ratio = mean across pages; pass at ≥0.8.
 
 ### seo.image_alt_text (5)
 Count `<img>` elements with non-empty `alt` across sampled pages (ignore `role="presentation"`

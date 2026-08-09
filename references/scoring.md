@@ -1,7 +1,11 @@
 # Scoring — from check results to the score on the report
 
 Deterministic arithmetic over the `CheckResult` list. Given the same results, every host must
-compute the same numbers. Show your work in a scratch table before writing the report.
+compute the same numbers. Record the check results as a data structure and compute the
+pillar scores with a small script (Python/Node) when a shell is available — keep the script;
+it is the audit trail for the next run. Only fall back to a hand-worked scratch table when
+no runtime exists. Only checks listed in the rubric's `gradient_checks` may carry a measured
+ratio; everything else is exactly 1 / 0.5 / 0.
 
 ## 1. Effective ratio per check
 

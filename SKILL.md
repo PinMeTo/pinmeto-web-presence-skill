@@ -1,7 +1,7 @@
 ---
 name: pinmeto-web-presence
 description: This skill should be used when the user asks to "check our web presence", "audit or monitor our SEO / AIO / GEO / agent readiness", "how do we look in AI search / ChatGPT / Gemini", "are our locations correct on Google, Apple, and Bing Maps", "run a presence scan", "update the presence report", or otherwise requests an SEO, AI-visibility (AIO), generative-engine (GEO), or agent-readiness analysis of a multi-location brand's website and map listings. Scores the brand against the PinMeTo MLPR rubric, produces an updatable HTML report artifact, and can set up scheduled monitoring. Requires the PinMeTo Location MCP server; GEO checks use a browser against the real Google, Apple, and Bing Maps.
-version: 0.4.0
+version: 0.5.0
 license: Proprietary - (c) PinMeTo AB. See LICENSE.
 ---
 
@@ -24,7 +24,7 @@ location data), because most local-SEO and AI-visibility failures are NAP (name/
 and structured-data inconsistencies between PinMeTo and the live web.
 
 The scoring rubric is defined in [references/rubric.md](references/rubric.md) — a skill-line
-fork (v2.9.0-skill.1) of the PinMeTo MLPR product rubric v2.8.0 that re-adds Bing as a scored
+fork (v2.10.0-skill.1) of the PinMeTo MLPR product rubric v2.8.0 that re-adds Bing as a scored
 GEO platform and adds a PinMeTo-connection check; SEO/AIO/Agent Readiness are identical to
 the product. Do not invent checks or reweight; deviations from the rubric make runs
 incomparable.
@@ -81,8 +81,11 @@ Baseline gaps (missing URL, hours, category, coordinates) are findings in their 
 
 ### Stage 2 — SEO (site checks on the sample)
 
-Fetch the locator, sitemap, robots.txt, and each sampled landing page. Run the 15 rubric
-checks per [references/seo-checks.md](references/seo-checks.md).
+Fetch the locator, sitemap, robots.txt, and each sampled landing page — with plain HTTP
+tooling (`curl`/fetch script), not a markdown-converting fetcher, and evaluate against the
+**served HTML, never the rendered DOM** (the rendering policy in
+[references/seo-checks.md](references/seo-checks.md) — it can swing SEO by tens of points
+and is what keeps re-runs comparable). Run the 15 rubric checks per that file.
 
 ### Stage 3 — AIO and Agent Readiness (site + homepage checks)
 

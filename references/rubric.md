@@ -1,4 +1,9 @@
-# Rubric — v2.9.0-skill.1 (skill-line fork of PinMeTo MLPR rubric v2.8.0)
+# Rubric — v2.10.0-skill.1 (skill-line fork of PinMeTo MLPR rubric v2.8.0)
+
+Changes in 2.10.0-skill.1 (from the 2026-08-09 dogfood run): parity's arithmetic slot
+defined (Google column only), `geo.listing_connected_pinmeto` downgrade rule when the map
+surface contradicts the record, `geo.special_hours_set` scored from PinMeTo outside the
+holiday window, and an explicit `gradient_checks` whitelist. Prior scans keep their scores.
 
 This is the scoring contract, derived from the PinMeTo MLPR product rubric v2.8.0 (source of
 truth: `pinmeto-www-reports/docs/rubric.md`, DRI Marcus) with two skill-line changes the
@@ -25,8 +30,17 @@ history for delta narration, and note it if this file has moved on since.
 
 ```json
 {
-  "rubric_version": "2.9.0-skill.1",
+  "rubric_version": "2.10.0-skill.1",
   "derived_from": "MLPR 2.8.0",
+  "gradient_checks": [
+    "seo.localbusiness_jsonld_present", "seo.localbusiness_jsonld_richness",
+    "seo.h1_unique_has_location", "seo.sitemap_lists_locations",
+    "seo.og_twitter_per_location", "seo.lcp_sample", "seo.image_alt_text",
+    "seo.internal_linking_depth", "aio.faqpage_schema_2_types",
+    "aio.quick_answer_first_200w", "aio.organization_schema_complete",
+    "aio.haspart_about_mentions_enrichment", "aio.markdown_content_negotiation",
+    "ar.markdown_content_negotiation", "ar.llms_txt_full", "ar.rfc8288_link_headers"
+  ],
   "pillar_weights": { "seo": 30, "geo": 30, "aio": 25, "agent_readiness": 15 },
   "grade_thresholds": { "A": 90, "B": 75, "C": 60, "D": 45 },
   "severity_scoring": { "pass": 1, "warn": 0.5, "fail": 0 },
@@ -163,9 +177,12 @@ The product gathers GEO evidence through the Google Places API and Apple MapKit 
 This skill gathers the **same facts from the real map surfaces in a browser** (see
 `geo-browser-checks.md`). Consequences:
 
-- **Checks the product marks "runner pending" are runnable here.** `geo.special_hours_set`,
-  `geo.menu_order_reservations`, and `geo.recent_reviews_180d` are visible on a real Google
-  Maps listing. Evaluate them normally.
+- **Checks the product marks "runner pending" are runnable here.**
+  `geo.menu_order_reservations` and `geo.recent_reviews_180d` are visible on a real Google
+  Maps listing; evaluate them normally. `geo.special_hours_set` mostly is **not** — Google
+  only surfaces holiday hours near the date. Outside that window, score it from the PinMeTo
+  `specialOpenHours` array (non-empty with at least one future entry = pass) and say so in
+  the evidence.
 - **Bing is scored from `bing.com/maps` in the browser** (see `geo-browser-checks.md`);
   the upstream API-retirement rationale for dropping it does not apply to the consumer
   surface. Apple's scored surface stays existence + NAP + pin: even though Apple's web UI
@@ -174,9 +191,11 @@ This skill gathers the **same facts from the real map surfaces in a browser** (s
   connection exists in PinMeTo (`network.<platform>` entry present) or it doesn't. It
   measures *managed through PinMeTo* — a listing claimed outside PinMeTo scores fail here,
   and the fix brief says "connect it in PinMeTo", not "claim it".
-- **`seo.lcp_sample` / `seo.mobile_friendly`**: use the public PageSpeed Insights API
-  (`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=...&strategy=mobile`, no
-  key needed at low volume) on up to 3 sampled URLs. If it errors or is rate-limited → `warn`.
+- **`seo.lcp_sample` / `seo.mobile_friendly`**: use the PageSpeed Insights API
+  (`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=...&strategy=mobile`) on
+  up to 3 sampled URLs. The anonymous quota is per-IP, shared machine-wide, and frequently
+  already exhausted — expect `warn` without a key. If these 15 SEO points matter to the
+  user, ask them for a (free) PSI API key and pass it as `&key=`. Errors → `warn`.
 - Anything unmeasurable in the current host (no browser, blocked fetch, consent wall you
   cannot decline) → `warn`, with the reason in evidence. Never guess a value to avoid a warn.
 
@@ -188,5 +207,8 @@ This skill gathers the **same facts from the real map surfaces in a browser** (s
 | `warn` | 0.5 | Evidence gap — could not be evaluated |
 | `fail` | 0 (or the measured ratio for gradient checks) | Evaluated, failed |
 
+**Only the check ids in `gradient_checks` may carry a measured ratio.** Every other check
+scores exactly 1 / 0.5 / 0 — do not invent partial credit for them; a half-satisfied binary
+check is a judgment call that the check's own procedure must resolve, or it scores 0.
 Gradient example: `seo.localbusiness_jsonld_richness` at 55/100 contributes ratio 0.55 —
 status `fail` (below threshold) but partial credit still flows into the pillar score.
