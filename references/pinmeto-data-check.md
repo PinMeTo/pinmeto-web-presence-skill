@@ -28,7 +28,17 @@ Flag per location:
 - **Long tail of zero-rating locations** — either genuinely new or disconnected profiles.
 
 Record the canonical record per location:
-`{name, street, zip, city, country, phone, primaryCategory, hours, url, lat, lng}`.
+`{name, street, zip, city, country, phone, primaryCategory, hours, url, lat, lng}` —
+**plus the platform connections** from the record's `network` object:
+
+- `network.google.placeId` and `network.google.link` (maps.google.com `?cid=` deep link)
+- `network.apple.link` (`maps.apple.com/place?auid=…`)
+- `network.bing.link` (unscored, but keep it for evidence)
+
+These deep links are how Stage 4 opens the exact claimed listing instead of searching blind
+(see `geo-browser-checks.md`). A location **missing** a `network.google` or `network.apple`
+entry is itself a finding: the location is not connected/claimed on that platform through
+PinMeTo, which usually foreshadows a parity gap on the map surface.
 
 ## Deterministic sampling (must match across runs)
 

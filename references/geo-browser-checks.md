@@ -17,12 +17,35 @@ Ground rules:
 - **Budget:** ~2–4 minutes per location per platform. With a sample of 10 this is the longest
   stage of the audit; tell the user before starting.
 
+## Use PinMeTo's platform IDs first
+
+For locations connected in PinMeTo, the Stage 1 baseline record carries **direct deep links**
+under `network`:
+
+- `network.google.placeId` (a `ChIJ…` Place ID) and `network.google.link`
+  (`https://maps.google.com/maps?cid=…`) — open either directly; the Place ID form is
+  `https://www.google.com/maps/place/?q=place_id:<placeId>`.
+- `network.apple.link` (`https://maps.apple.com/place?auid=…`) — opens the exact Apple
+  listing.
+- `network.bing.link` exists too, but Bing is **not scored** (dropped from the rubric in
+  v2.0.0); at most note obvious errors as prose evidence.
+
+Opening by ID removes matching ambiguity and is faster — always prefer it. But it only proves
+what the *claimed* listing says; it cannot prove a customer would find it, and it cannot see
+duplicates. So the procedure per location is: **open by ID for the fact extraction, then run
+one search pass for parity** (steps 1–2 below). A location with no `network.google` /
+`network.apple` entry is likely unconnected or unclaimed — fall back to pure search, and
+record the missing connection itself as evidence on `geo.location_platform_parity`.
+
 ## Per location: Google Maps
 
 1. Navigate to `https://www.google.com/maps/search/<brand name> <street> <city>` (URL-encode).
-   If ambiguous results, refine with the postcode.
-2. Open the matching place card. **No plausible match after two query variants** (brand+street,
-   brand+city) → record *no Google listing* for this location (catastrophic rule below).
+   If ambiguous results, refine with the postcode. This search pass answers: does the listing
+   surface for a normal query, and are there duplicate listings alongside it?
+2. Open the place card — via the search result, or directly via the Place ID link when
+   PinMeTo has one (compare: if the ID link works but the search never surfaces the listing,
+   that is a discoverability finding). **No listing after the ID link and two query variants**
+   (brand+street, brand+city) → record *no Google listing* (catastrophic rule below).
 3. Extract from the card, top to bottom:
    - **Name** (exact string)
    - **Address** (exact string)
@@ -43,9 +66,12 @@ Ground rules:
 
 ## Per location: Apple Maps
 
-1. Navigate to `https://maps.apple.com/?q=<brand name> <street> <city>` (the web app works in
-   any modern browser; if it redirects to a marketing page, use `https://beta.maps.apple.com`).
-2. Open the matching place card; two query variants before declaring *no Apple listing*.
+1. Open `network.apple.link` (`maps.apple.com/place?auid=…`) when PinMeTo has it; otherwise
+   search `https://maps.apple.com/?q=<brand name> <street> <city>` (the web app works in any
+   modern browser; if it redirects to a marketing page, use `https://beta.maps.apple.com`).
+2. When searching: open the matching place card; two query variants before declaring *no
+   Apple listing*. When the auid link was used, still run one search to confirm the listing
+   is findable.
 3. Extract: **name, address, phone**, and the **pin coordinates** (from the share link:
    `⋯ → Share → Copy Link`, the URL contains `&ll=lat,lng` — or read `coordinate=` in the
    page URL). Hours/photos/URL may be visible; record them as prose evidence, but they are
@@ -99,7 +125,8 @@ Business Connect" (a person task, not a code change; say so).
 ```json
 {
   "locationId": "…", "name": "…",
-  "google": { "found": true, "name": "…", "address": "…", "phone": "…", "website": "…",
+  "ids": { "googlePlaceId": "ChIJ…", "appleAuid": "…", "bingYpid": "…" },
+  "google": { "found": true, "foundVia": "place_id|search", "name": "…", "address": "…", "phone": "…", "website": "…",
               "lat": 0, "lng": 0, "hours": "…", "photos": "5+", "attributes": ["…"],
               "rating": 4.4, "reviews": 210, "newestReview": "2026-07-30",
               "flags": [], "duplicates": [] },
