@@ -143,7 +143,11 @@ renders identically in light and dark viewers.
    Map pin, URL}. Each cell shows **one chip per platform** where the field applies and a
    listing exists — a small **G / A / B** (Google, Apple, Bing) letter chip, green
    `#D8F3E7` = matches the PinMeTo record, orange `#FFE0D1` = differs, grey `#F2F3F4` =
-   no listing on that platform. So an Oslo/Address cell reads `G✓ A! B✓` at a glance
+   searched and **no listing found** (`lookup: "not_found"`). A platform that could **not be
+   checked** (`lookup: "unobserved"`) gets a distinct hollow chip — grey outline, no fill, `?`
+   instead of the glyph — with the reason in its tooltip; rendering it as a plain grey chip
+   would tell the customer they have no listing when nobody looked. So an Oslo/Address cell
+   reads `G✓ A! B✓` at a glance
    instead of one flattened "!". Each orange chip carries a `title` tooltip with the
    observed value vs the PinMeTo value ("Apple: Ruseløkkveien 34 · PinMeTo: Dronning
    Eufemias gate 16"). Fields that are scored on fewer platforms show only those chips
@@ -208,7 +212,7 @@ The artifact carries its own memory. Embed exactly one block:
   "scans": [
     {
       "date": "2026-08-09",
-      "rubricVersion": "2.13.0-skill.1",
+      "rubricVersion": "2.14.0-skill.1",
       "label": "First scan",
       "overall": 63, "grade": "C",
       "pillars": { "seo": 47, "geo": 79, "aio": 45, "agent_readiness": 90 },
@@ -227,6 +231,13 @@ The artifact carries its own memory. Embed exactly one block:
   re-runs and scheduled runs reconstruct the fleet filter without asking.
 - `scans` is append-only, oldest first. Keep every prior scan verbatim — never recompute old
   numbers, even if the rubric version moved.
+- `pillars.geo` is **nullable**. When **every** sampled lookup came back `unobserved` (not
+  merely when none was `observed` — an all-`not_found` run is measured and scores normally),
+  `scoring.md` renders GEO as "Not measured" and drops it from the overall; record
+  `"geo": null` for that scan, keep `overall` as the value actually computed from the
+  reweighted three pillars, and name the degraded run in `notes`. A renderer must treat null
+  as "not plotted" — never as 0, and never recompute the overall with the standard weights,
+  or a scan nobody could measure prints as a collapse. The other three pillars are never null.
 - `checks` records status+ratio for **every** check (compact but complete): it is what lets
   the next run say "internal linking hasn't moved across four scans" without guessing, and
   it is the input to the trend section's mechanical diff.

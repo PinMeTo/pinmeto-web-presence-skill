@@ -11,6 +11,43 @@ A rubric bump is required whenever a change moves scores, because the re-run att
 in `references/rubric.md` can only separate rubric drift from real customer progress if the
 version moved with the rules.
 
+## v0.10.2 · 2026-08-09 · rubric 2.14.0-skill.1
+
+Eight contract fixes, found when CodeRabbit re-read the shipped `2.13.0` files as the vendored
+copy in `claude-plugins` ([#3](https://github.com/PinMeTo/pinmeto-web-presence-skill/pull/3)).
+Fixed at source: the vendored tree is a snapshot of the release, so edits there would be
+reverted by the next sync.
+
+Scoring behaviour:
+
+- **Three-state platform lookup** (`observed` / `not_found` / `unobserved`) replaces the `found`
+  boolean. Only `not_found` is a measured absence scoring 0; `unobserved` scores 0.5, drops out
+  of sub-group B, and can never satisfy the parity check's fail clause. A blocked Apple lookup
+  previously scored the same as a brand with no Apple listing, turning an evidence gap into a fix
+  brief for an unverified problem. Runs with partially blocked platforms score higher than under
+  2.13.0 — that is a rubric change, not customer progress
+- `geo.listing_connected_pinmeto`'s browser downgrade is now encoded in the machine-readable
+  entry as `browser_downgrade`, with its conditions and the two mismatches that do *not* trigger
+  it. 2.13.0 added it to prose only, which left a JSON-consuming scorer returning `pass` where
+  the procedure requires `fail`
+- `seo.lcp_sample` and `seo.mobile_friendly` name which three URLs they measure (the first three
+  of the pinned sample, listed in evidence). 2.13.0 fixed the denominator at three without
+  saying which three, so a re-run could move the score with no site change
+- `geo.location_platform_parity` gains explicit precedence for a run with no observations, which
+  satisfied both its fail clause and its warn clause
+- Multi-country sampling is pinned to one global slot budget; per-country offsets could select
+  the full sample size *per country*
+- `SKILL.md`'s Stage 1 summary states `min(5, N)` and open locations only, instead of
+  contradicting the rule 2.13.0 introduced
+
+Documentation of existing behaviour, no score moves:
+
+- The history schema documents nullable `pillars.geo` and the reweighted overall for a degraded
+  run, so a renderer cannot plot an unmeasurable scan as a collapse
+- The no-duplicate-artifact rule is scoped to the exact report identity, rather than forbidding
+  the several-living-reports design the report spec permits
+- History supplies prior scores to diff against, not a data baseline
+
 ## v0.10.1 · 2026-08-09 · rubric 2.13.0-skill.1
 
 Twelve CodeRabbit review threads, all cross-file contract inconsistencies where two documents

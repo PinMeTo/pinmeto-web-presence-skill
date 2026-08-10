@@ -10,16 +10,23 @@ A re-run is the same workflow as a first scan, with three differences:
 1. **Find the existing artifact first** — by the **exact** stable title: `PinMeTo Web
    Presence — <domain>` or, for a scoped report, `… — <domain> — <Scope>`. Fetch it and
    parse `#pmt-scan-history`. It supplies the scope filter, the pinned location sample
-   (reuse it — see `pinmeto-data-check.md`), the comparison baseline, and the rubric
-   version to narrate against. When several reports exist for the brand and the request is
+   (reuse it — see `pinmeto-data-check.md`), the **prior scores to diff against**, and the
+   rubric version **those prior scores were computed under** — metadata for the comparison
+   narrative, never the version to score with. This run always scores with the rubric in the
+   current `rubric.md`, and old scans are never recomputed. It is not a data baseline: a re-run re-pulls the
+   PinMeTo record every time (that is why it is "the same workflow as a first scan"), so
+   NAP, hours, coordinates and `network` always come from the MCP, never from history. When several reports exist for the brand and the request is
    ambiguous, ask which one; a scheduled run updates only the report it was created for.
 2. **Compute deltas, then narrate them.** The trend section needs: overall delta since last
    scan and since first scan, per-pillar deltas, and the concrete check-level changes
    (`fail→pass`, `pass→fail`, new warns). "What moved" lines come from the check diff, not
    from vibes. Checks that have never moved across ≥3 scans deserve a call-out — stagnation
    on a top fix is the most useful thing a monitor can say.
-3. **Republish to the same URL.** Never mint a second artifact for the same brand; two
-   living scorecards is worse than none.
+3. **Republish to the same URL.** Never mint a second artifact for the **same report
+   identity** — the exact title *and* scope matched in step 1; two living scorecards for one
+   scope is worse than none. A brand legitimately holds several reports at once (global plus
+   per-country or per-region, see `artifact-report.md`), so a different scope is a *new*
+   report with its own artifact, not a duplicate. Reuse a URL only after the identity matches.
 
 If the user asks for a one-off comparison ("what changed since April?"), answer from the
 history block — no new scan needed unless they want fresh data.

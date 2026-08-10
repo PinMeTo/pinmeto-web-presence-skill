@@ -1,4 +1,23 @@
-# Rubric — v2.13.0-skill.1 (skill-line fork of PinMeTo MLPR rubric v2.8.0)
+# Rubric — v2.14.0-skill.1 (skill-line fork of PinMeTo MLPR rubric v2.8.0)
+
+Changes in 2.14.0-skill.1 (second cross-file contract review, first review of the shipped
+2.13.0): the `geo.listing_connected_pinmeto` browser downgrade is now **encoded in the
+machine-readable entry** (`browser_downgrade`), not just prose — a scorer consuming the JSON
+alone previously returned `pass` where the procedure requires `fail`; `seo.lcp_sample` and
+`seo.mobile_friendly` name *which* three URLs they measure (first three of the pinned sample),
+so a re-run cannot move those scores without the site changing; `geo.location_platform_parity`
+gains explicit precedence for the all-unobserved run, which previously satisfied both its fail
+and its warn clause; multi-country sampling is pinned to one global slot budget rather than
+`s` offsets per country; and `SKILL.md`'s Stage 1 summary now states `min(5, N)` and
+open-locations-only instead of contradicting `pinmeto-data-check.md`.
+
+The largest change in 2.14.0 is a **three-state platform lookup** (`observed` / `not_found` /
+`unobserved`) replacing the old `found` boolean. Only `not_found` is a measured absence scoring
+0; `unobserved` scores 0.5 across that platform's checks, is excluded from sub-group B, and can
+never satisfy `geo.location_platform_parity`'s fail clause. Previously a blocked Apple lookup
+scored identically to a brand with no Apple listing, which turned an evidence gap into a fix
+brief for an unverified problem. Runs with partially blocked platforms will score **higher**
+under 2.14.0 than under 2.13.0; attribute that to the rubric, not to customer progress.
 
 Changes in 2.13.0-skill.1 (cross-file contract review): `geo.listing_connected_pinmeto` gains
 its browser downgrade rule here, so the rubric and `geo-browser-checks.md` can no longer
@@ -64,7 +83,7 @@ Never present a rubric-caused or correction-caused delta as customer progress.
 
 ```json
 {
-  "rubric_version": "2.13.0-skill.1",
+  "rubric_version": "2.14.0-skill.1",
   "derived_from": "MLPR 2.8.0",
   "rendered_only_credit": 0.5,
   "dual_pass_checks": [
@@ -162,7 +181,7 @@ Never present a rubric-caused or correction-caused delta as customer progress.
             "note": "These lists ARE the denominator for sub-group A ('share of applicable checks passed'). Do not assemble them by hand from prose; drift here is the largest source of run-to-run GEO variance."
           },
           "accuracy_checks": [
-            { "id": "geo.listing_connected_pinmeto", "platforms": ["google", "apple", "bing"], "source": "pinmeto_mcp network object", "notes": "connection/claim managed through PinMeTo: network.google.placeId / network.apple.link / network.bing.link present" },
+            { "id": "geo.listing_connected_pinmeto", "platforms": ["google", "apple", "bing"], "source": "pinmeto_mcp network object", "notes": "connection/claim managed through PinMeTo: network.google.placeId / network.apple.link / network.bing.link present", "base_result": "pass when the network.<platform> entry exists, else fail", "browser_downgrade": { "applies_when": "lookup == 'observed'", "forces": "fail", "any_of": [ { "id": "unclaimed_banner", "field": "flags", "test": "contains an unclaimed / 'Claim This Place' banner" }, { "id": "address_mismatch", "field": "address", "compare_to": "pinmeto.address", "test": "postal components differ", "normalization": "postal" }, { "id": "pin_mismatch", "field": "lat,lng", "compare_to": "pinmeto.lat,pinmeto.lng", "test": "haversine distance > threshold", "threshold_m": 50 } ], "not_triggered_by": ["phone_mismatch", "name_mismatch"], "note": "MCP presence is the base result; the browser can only downgrade it, never grant it, and only when the platform was actually observed. A scorer reading this JSON alone must apply this override or it will return pass where the procedure requires fail. Full rule in geo-browser-checks.md." } },
             { "id": "geo.name_matches_site", "platforms": ["google", "apple", "bing"], "normalization": "case+punctuation+legal_suffix" },
             { "id": "geo.address_matches_site", "platforms": ["google", "apple", "bing"], "normalization": "postal" },
             { "id": "geo.phone_matches_site", "platforms": ["google", "apple", "bing"], "normalization": "e164" },
@@ -201,7 +220,7 @@ Never present a rubric-caused or correction-caused delta as customer progress.
           ]
         }
       },
-      "catastrophic_fail_rule": "If a platform has no listing for a location, that platform contributes 0 to sub-group A for that location AND is excluded from sub-group B's agreement math for that location."
+      "catastrophic_fail_rule": "If a platform's lookup is 'not_found' for a location (searched, no listing), that platform contributes 0 to sub-group A for that location AND is excluded from sub-group B's agreement math for that location. A lookup of 'unobserved' (could not look) is NOT this rule: its applicable checks score 0.5 each and it is likewise excluded from sub-group B. geo.location_platform_parity is brand-wide and exempt from the 'unobserved' fallback — a 'not_found' on any platform still fails it. Lookup states are defined in geo-browser-checks.md."
     },
     "aio": {
       "name": "AIO",
