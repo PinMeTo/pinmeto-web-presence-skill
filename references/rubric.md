@@ -11,6 +11,14 @@ and its warn clause; multi-country sampling is pinned to one global slot budget 
 `s` offsets per country; and `SKILL.md`'s Stage 1 summary now states `min(5, N)` and
 open-locations-only instead of contradicting `pinmeto-data-check.md`.
 
+The largest change in 2.14.0 is a **three-state platform lookup** (`observed` / `not_found` /
+`unobserved`) replacing the old `found` boolean. Only `not_found` is a measured absence scoring
+0; `unobserved` scores 0.5 across that platform's checks, is excluded from sub-group B, and can
+never satisfy `geo.location_platform_parity`'s fail clause. Previously a blocked Apple lookup
+scored identically to a brand with no Apple listing, which turned an evidence gap into a fix
+brief for an unverified problem. Runs with partially blocked platforms will score **higher**
+under 2.14.0 than under 2.13.0; attribute that to the rubric, not to customer progress.
+
 Changes in 2.13.0-skill.1 (cross-file contract review): `geo.listing_connected_pinmeto` gains
 its browser downgrade rule here, so the rubric and `geo-browser-checks.md` can no longer
 return different results from the same evidence; rendered-only credit restricted to the
@@ -173,7 +181,7 @@ Never present a rubric-caused or correction-caused delta as customer progress.
             "note": "These lists ARE the denominator for sub-group A ('share of applicable checks passed'). Do not assemble them by hand from prose; drift here is the largest source of run-to-run GEO variance."
           },
           "accuracy_checks": [
-            { "id": "geo.listing_connected_pinmeto", "platforms": ["google", "apple", "bing"], "source": "pinmeto_mcp network object", "notes": "connection/claim managed through PinMeTo: network.google.placeId / network.apple.link / network.bing.link present", "base_result": "pass when the network.<platform> entry exists, else fail", "browser_downgrade": { "applies_when_observed": true, "forces": "fail", "conditions": ["surface shows an unclaimed / 'Claim This Place' banner", "listing disagrees with the PinMeTo record on address", "listing disagrees with the PinMeTo record on map pin"], "not_triggered_by": ["phone mismatch", "name mismatch"], "note": "MCP presence is the base result; the browser can only downgrade it, never grant it. A scorer reading this JSON alone must apply this override or it will return pass where the procedure requires fail. Full rule in geo-browser-checks.md." } },
+            { "id": "geo.listing_connected_pinmeto", "platforms": ["google", "apple", "bing"], "source": "pinmeto_mcp network object", "notes": "connection/claim managed through PinMeTo: network.google.placeId / network.apple.link / network.bing.link present", "base_result": "pass when the network.<platform> entry exists, else fail", "browser_downgrade": { "applies_when": "lookup == 'observed'", "forces": "fail", "any_of": [ { "id": "unclaimed_banner", "field": "flags", "test": "contains an unclaimed / 'Claim This Place' banner" }, { "id": "address_mismatch", "field": "address", "compare_to": "pinmeto.address", "test": "postal components differ", "normalization": "postal" }, { "id": "pin_mismatch", "field": "lat,lng", "compare_to": "pinmeto.lat,pinmeto.lng", "test": "haversine distance > threshold", "threshold_m": 50 } ], "not_triggered_by": ["phone_mismatch", "name_mismatch"], "note": "MCP presence is the base result; the browser can only downgrade it, never grant it, and only when the platform was actually observed. A scorer reading this JSON alone must apply this override or it will return pass where the procedure requires fail. Full rule in geo-browser-checks.md." } },
             { "id": "geo.name_matches_site", "platforms": ["google", "apple", "bing"], "normalization": "case+punctuation+legal_suffix" },
             { "id": "geo.address_matches_site", "platforms": ["google", "apple", "bing"], "normalization": "postal" },
             { "id": "geo.phone_matches_site", "platforms": ["google", "apple", "bing"], "normalization": "e164" },

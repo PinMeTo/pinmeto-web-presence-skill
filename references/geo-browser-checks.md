@@ -74,7 +74,9 @@ misbehaves. Never use `javascript_tool` to *change* anything on the page.
 2. Open the place card — via the search result, or directly via the Place ID link when
    PinMeTo has one (compare: if the ID link works but the search never surfaces the listing,
    that is a discoverability finding). **No listing after the ID link and two query variants**
-   (brand+street, brand+city) → record *no Google listing* (catastrophic rule below).
+   (brand+street, brand+city) → record `lookup: "not_found"` (catastrophic rule below). If the
+   lookup could not be completed at all — consent wall, repeated timeout, no browser — record
+   `lookup: "unobserved"` with the reason instead; that is an evidence gap, not an absence.
 3. Extract from the card, top to bottom:
    - **Name** (exact string)
    - **Displayed category** (the line under the name, e.g. "Internet marketing service") —
@@ -174,6 +176,23 @@ Normalization rules for every comparison:
   latitude ≈ 50 m; scale longitude by cos(latitude).)
 - **Hours**: compare the weekly table semantically (Mon–Sun open/close pairs), not textually.
 
+## Lookup state — the difference between "no listing" and "we never looked"
+
+Read this before the scoring rules below; every one of them keys off it. Each platform
+observation carries exactly one of three states:
+
+| `lookup` | Means | How it scores |
+| --- | --- | --- |
+| `observed` | The listing was found and read | Its checks score normally |
+| `not_found` | Searched properly (ID link plus two query variants) and no listing exists | A **measured absence**: that platform scores 0 for that location |
+| `unobserved` | Could not look — no browser, consent wall you cannot decline, repeated timeout, host blocked | An **evidence gap**: that platform's checks are `warn` (0.5), never 0 |
+
+Record `lookupError` alongside `unobserved` with the reason. Collapsing `not_found` and
+`unobserved` into one boolean is the single easiest way to publish a false failure: a blocked
+Apple lookup would score exactly like a brand that never created an Apple listing, and the
+report would hand the customer a fix brief for a problem nobody verified. When in doubt about
+which state applies, it is `unobserved` — you can only claim an absence you actually searched for.
+
 ## Scoring the pillar (see rubric.md for weights)
 
 **Sub-group A — per-platform quality (55% of GEO).** Per location and platform, evaluate the
@@ -185,12 +204,12 @@ Google 55 / Apple 30 / Bing 15, average across the sample.
 `geo.location_platform_parity` is **one brand-wide result**, not per-location: fail if any
 sampled location is missing on a platform, has a Google duplicate, or has a stale
 permanently-closed listing; warn if no platform matched anything (likely a lookup problem);
-pass otherwise. **Precedence when both clauses fit** — a run where nothing was observed at
-all satisfies "missing on a platform" and "nothing matched" simultaneously. Resolve it by
-observation, never by the missing-listing clause: an *observed* absence is a `fail`, an
-unobserved one is a `warn`. If no sampled location produced an observation on any platform,
-this check never fails — GEO takes the "could not be observed" path in `scoring.md` and is
-rendered **Not measured** instead of scored. **Its slot in the arithmetic:** the brand-wide parity result is counted as
+pass otherwise. **Read "missing on a platform" strictly as `lookup: "not_found"`** (see the
+lookup-state table above) — an `unobserved` platform is never evidence of a missing listing and
+must not reach this check's fail clause. That resolves both ambiguous cases: partial coverage
+(Google observed, Apple blocked) fails only on what was actually searched, and a run where
+*nothing* was observed cannot fail at all — it warns, and GEO takes the "could not be observed"
+path in `scoring.md`, rendering **Not measured** rather than a score. **Its slot in the arithmetic:** the brand-wide parity result is counted as
 one additional applicable check in the **Google column only**, repeated for every sampled
 location — it does not appear in the Apple or Bing columns (their gaps already zero those
 columns via the catastrophic rule, and counting parity there would double-punish).
@@ -205,8 +224,9 @@ Google, Apple, and Bing; Google wins ties. Per location, five 20-point fields: J
 `name`, JSON-LD `telephone`, JSON-LD `geo` within 50 m, `openingHoursSpecification` matches
 dominant hours, and the **visible** NAP on the rendered page matches dominant.
 
-**Catastrophic rule:** a platform with no listing for a location contributes 0 to sub-group A
-for that location and is excluded from sub-group B for that location. A missing listing is
+**Catastrophic rule:** a platform whose lookup is **`not_found`** contributes 0 to sub-group A
+for that location and is excluded from sub-group B for that location. (`unobserved` is *not* this
+rule — it warns at 0.5 and is likewise excluded from B.) A missing listing is
 also the strongest finding in the report. The fix brief depends on the connection state: not
 connected in PinMeTo → "connect the location in PinMeTo"; connected but still absent on the
 platform → escalate (Apple Business Connect / Bing Places person-tasks — say it is not a
@@ -218,15 +238,16 @@ code change).
 {
   "locationId": "…", "name": "…",
   "ids": { "googlePlaceId": "ChIJ…", "appleAuid": "…", "bingYpid": "…" },
-  "google": { "found": true, "foundVia": "place_id|search", "name": "…", "address": "…", "phone": "…",
+  "google": { "lookup": "observed|not_found|unobserved", "lookupError": null,
+              "foundVia": "place_id|search", "name": "…", "address": "…", "phone": "…",
               "website": "…", "websiteResolvesTo": "…", "websiteCorrectPage": true,
               "category": "…", "categoryMatchesPinMeTo": true,
               "lat": 0, "lng": 0, "hours": "…", "photos": "5+", "attributes": ["…"],
               "latestOwnerPost": "2026-06-12|none",
               "rating": 4.4, "reviews": 210, "newestReview": "2026-07-30",
               "flags": [], "duplicates": [] },
-  "apple":  { "found": true, "foundVia": "auid|search", "name": "…", "address": "…", "phone": "…", "lat": 0, "lng": 0 },
-  "bing":   { "found": true, "foundVia": "ypid|search", "name": "…", "address": "…", "phone": "…", "website": "…", "lat": 0, "lng": 0 },
+  "apple":  { "lookup": "observed", "lookupError": null, "foundVia": "auid|search", "name": "…", "address": "…", "phone": "…", "lat": 0, "lng": 0 },
+  "bing":   { "lookup": "observed", "lookupError": null, "foundVia": "ypid|search", "name": "…", "address": "…", "phone": "…", "website": "…", "lat": 0, "lng": 0 },
   "connectedInPinMeTo": { "google": true, "apple": true, "bing": false },
   "observedAt": "2026-08-09"
 }

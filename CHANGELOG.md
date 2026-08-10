@@ -20,6 +20,12 @@ reverted by the next sync.
 
 Scoring behaviour:
 
+- **Three-state platform lookup** (`observed` / `not_found` / `unobserved`) replaces the `found`
+  boolean. Only `not_found` is a measured absence scoring 0; `unobserved` scores 0.5, drops out
+  of sub-group B, and can never satisfy the parity check's fail clause. A blocked Apple lookup
+  previously scored the same as a brand with no Apple listing, turning an evidence gap into a fix
+  brief for an unverified problem. Runs with partially blocked platforms score higher than under
+  2.13.0 — that is a rubric change, not customer progress
 - `geo.listing_connected_pinmeto`'s browser downgrade is now encoded in the machine-readable
   entry as `browser_downgrade`, with its conditions and the two mismatches that do *not* trigger
   it. 2.13.0 added it to prose only, which left a JSON-consuming scorer returning `pass` where

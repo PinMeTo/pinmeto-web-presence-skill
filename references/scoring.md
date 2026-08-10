@@ -45,11 +45,16 @@ a report whose hero said 22 and whose history said 23).
 - **A (per-platform):** per location, per platform: `Σ ratio over the platform's
   applicable_checks ÷ count of those checks` (the lists are machine-readable in
   `rubric.md`; a conditional check excluded for this location leaves the denominator).
-  A `warn` inside that sum contributes 0.5, a `fail` 0, a `pass` 1. **No listing on a
-  platform → that platform scores 0 for that location** (a measured absence, not a warn).
+  A `warn` inside that sum contributes 0.5, a `fail` 0, a `pass` 1. **A platform with
+  `lookup: "not_found"` scores 0 for that location** (a measured absence, not a warn) — but a
+  platform with `lookup: "unobserved"` scores **0.5 across its applicable checks** instead: we
+  never looked, so we cannot claim the listing is absent. The tri-state is defined in
+  `geo-browser-checks.md`; conflating the two publishes a fix brief for an unverified problem.
   Location score = 0.55·google + 0.30·apple + 0.15·bing. A = mean across sampled
   locations × 100.
-- **B (consistency):** per location with **≥2 observed listings**: `0.35·name +
+- **B (consistency):** per location with **≥2 listings whose `lookup` is `observed`** —
+  `not_found` and `unobserved` platforms both drop out here, the first because there is nothing
+  to compare and the second because we never read it: `0.35·name +
   0.35·address + 0.30·coords`. Score each field against the **PinMeTo record as the
   reference value**: every observed platform matches it = 1 · exactly one platform deviates
   = 0.5 · two or more deviate = 0. (Using the record as reference removes the two-platform
@@ -65,8 +70,10 @@ a report whose hero said 22 and whose history said 23).
 
 ### When GEO could not be observed at all
 
-If **no sampled location produced an observation on any platform** — no browser available,
-every lookup blocked by a consent wall — do **not** compute a GEO score from warns. A
+If **no sampled location produced a `lookup: "observed"` on any platform** — no browser
+available, every lookup blocked by a consent wall — do **not** compute a GEO score from warns.
+(A run where every platform came back `not_found` is a different thing entirely: those are real
+measurements and GEO scores normally, at or near zero.) A
 pillar assembled entirely from 0.5s prints a mid-50s number for listings nobody looked at,
 under a PinMeTo logo. Instead:
 

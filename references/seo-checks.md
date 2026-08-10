@@ -139,9 +139,13 @@ match the JSON-LD items. Both or fail.
 
 ### seo.lcp_sample (10) · seo.mobile_friendly (5)
 Call the public PageSpeed Insights API (`strategy=mobile`) for 3 sampled URLs. **Which 3 is
-fixed, not free choice** — take the landing pages of the first three locations in the pinned
-sample order recorded in the report history (fewer only when the sample itself is smaller),
-and list the chosen URLs in the check's evidence. Picking them freshly each run would let LCP
+fixed, not free choice** — walk the pinned sample in its recorded order and take the landing
+pages of the **first three locations that declare a URL**, skipping any whose PinMeTo record has
+none (that gap is already its own finding from Stage 1, so it must not also consume a PageSpeed
+slot). Fewer than three only when the sample itself is smaller, or when fewer than three sampled
+locations declare a URL at all — in which case the denominator is that smaller count and the
+evidence says so. List the chosen URLs in the check's evidence so the next run can reproduce the
+selection exactly. Picking them freshly each run would let LCP
 and mobile-friendly move without the site changing, which is exactly the drift the pinned
 sample exists to prevent. LCP:
 ratio = URLs with LCP <2.5s ÷ **URLs attempted** (the fixed 3-URL sample, or fewer only when

@@ -36,10 +36,14 @@ locations ever need complete records; everything else is counting and selecting.
    for sample size s, fetch `offset = floor(i × totalCount / s)`, `limit: 1`, minimal
    `fields`, for i = 0…s−1 (the server's 5-minute cache keeps ordering stable within a
    scan). For multi-country brands the offsets run per `country` filter so every market is
-   represented, but **`s` stays the whole report's budget, not a per-country one** — reserve
-   one slot per country first, then spend the remaining slots by even spacing, and dedupe
-   `storeId` before persisting. The exact rule is under Geographic diversity below; a 10-slot
-   sample stays 10 locations however many countries the scope spans. The storeIds you pick get persisted in the report history — from
+   represented **when slots permit** (with more countries than slots, some markets go
+   unrepresented and are named in the methodology — see Geographic diversity below), but
+   **`s` stays the whole report's budget, not a per-country one** — reserve one slot per
+   country first, then spend the remaining slots by even spacing, and dedupe `storeId` before
+   persisting. Each country filter has its own `totalCount`, so a country's offsets are
+   computed as `floor(i × countryTotal / countrySlots)` over the slots that country was
+   allocated — never over the global `s`, which would overshoot the budget. A 10-slot sample
+   stays 10 locations however many countries the scope spans. The storeIds you pick get persisted in the report history — from
    then on the sample is pinned (step 2), so cross-run ordering stability of the API never
    matters.
 5. **Full records for the sample only** (`pinmeto_get_location` per storeId), and don't

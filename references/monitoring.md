@@ -11,7 +11,9 @@ A re-run is the same workflow as a first scan, with three differences:
    Presence — <domain>` or, for a scoped report, `… — <domain> — <Scope>`. Fetch it and
    parse `#pmt-scan-history`. It supplies the scope filter, the pinned location sample
    (reuse it — see `pinmeto-data-check.md`), the **prior scores to diff against**, and the
-   rubric version to narrate against. It is not a data baseline: a re-run re-pulls the
+   rubric version **those prior scores were computed under** — metadata for the comparison
+   narrative, never the version to score with. This run always scores with the rubric in the
+   current `rubric.md`, and old scans are never recomputed. It is not a data baseline: a re-run re-pulls the
    PinMeTo record every time (that is why it is "the same workflow as a first scan"), so
    NAP, hours, coordinates and `network` always come from the MCP, never from history. When several reports exist for the brand and the request is
    ambiguous, ask which one; a scheduled run updates only the report it was created for.
