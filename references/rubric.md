@@ -220,7 +220,7 @@ Never present a rubric-caused or correction-caused delta as customer progress.
           ]
         }
       },
-      "catastrophic_fail_rule": "If a platform has no listing for a location, that platform contributes 0 to sub-group A for that location AND is excluded from sub-group B's agreement math for that location."
+      "catastrophic_fail_rule": "If a platform's lookup is 'not_found' for a location (searched, no listing), that platform contributes 0 to sub-group A for that location AND is excluded from sub-group B's agreement math for that location. A lookup of 'unobserved' (could not look) is NOT this rule: its applicable checks score 0.5 each and it is likewise excluded from sub-group B. geo.location_platform_parity is brand-wide and exempt from the 'unobserved' fallback — a 'not_found' on any platform still fails it. Lookup states are defined in geo-browser-checks.md."
     },
     "aio": {
       "name": "AIO",

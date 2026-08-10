@@ -143,7 +143,11 @@ renders identically in light and dark viewers.
    Map pin, URL}. Each cell shows **one chip per platform** where the field applies and a
    listing exists — a small **G / A / B** (Google, Apple, Bing) letter chip, green
    `#D8F3E7` = matches the PinMeTo record, orange `#FFE0D1` = differs, grey `#F2F3F4` =
-   no listing on that platform. So an Oslo/Address cell reads `G✓ A! B✓` at a glance
+   searched and **no listing found** (`lookup: "not_found"`). A platform that could **not be
+   checked** (`lookup: "unobserved"`) gets a distinct hollow chip — grey outline, no fill, `?`
+   instead of the glyph — with the reason in its tooltip; rendering it as a plain grey chip
+   would tell the customer they have no listing when nobody looked. So an Oslo/Address cell
+   reads `G✓ A! B✓` at a glance
    instead of one flattened "!". Each orange chip carries a `title` tooltip with the
    observed value vs the PinMeTo value ("Apple: Ruseløkkveien 34 · PinMeTo: Dronning
    Eufemias gate 16"). Fields that are scored on fewer platforms show only those chips
@@ -227,8 +231,9 @@ The artifact carries its own memory. Embed exactly one block:
   re-runs and scheduled runs reconstruct the fleet filter without asking.
 - `scans` is append-only, oldest first. Keep every prior scan verbatim — never recompute old
   numbers, even if the rubric version moved.
-- `pillars.geo` is **nullable**. When no sampled location produced an observation on any
-  platform, `scoring.md` renders GEO as "Not measured" and drops it from the overall; record
+- `pillars.geo` is **nullable**. When **every** sampled lookup came back `unobserved` (not
+  merely when none was `observed` — an all-`not_found` run is measured and scores normally),
+  `scoring.md` renders GEO as "Not measured" and drops it from the overall; record
   `"geo": null` for that scan, keep `overall` as the value actually computed from the
   reweighted three pillars, and name the degraded run in `notes`. A renderer must treat null
   as "not plotted" — never as 0, and never recompute the overall with the standard weights,

@@ -50,6 +50,11 @@ a report whose hero said 22 and whose history said 23).
   platform with `lookup: "unobserved"` scores **0.5 across its applicable checks** instead: we
   never looked, so we cannot claim the listing is absent. The tri-state is defined in
   `geo-browser-checks.md`; conflating the two publishes a fix brief for an unverified problem.
+  **`geo.location_platform_parity` is exempt from that fallback.** It only *borrows* a slot in
+  the Google column — it is a brand-wide result computed across every platform — so an
+  `unobserved` Google lookup must not soften it to 0.5. Score parity from its own evidence: a
+  `not_found` on any platform still fails it even when Google was never read. Apply the
+  lookup-state fallback to **platform-scoped checks only**.
   Location score = 0.55·google + 0.30·apple + 0.15·bing. A = mean across sampled
   locations × 100.
 - **B (consistency):** per location with **≥2 listings whose `lookup` is `observed`** —
@@ -64,16 +69,19 @@ a report whose hero said 22 and whose history said 23).
   to A and C in proportion (A 0.733, C 0.267) — note the reweight in the report.
 - **C (page agreement):** per location: mean of the five 20-point field checks vs the
   dominant platform answer (majority across Google/Apple/Bing, Google wins ties).
-  C = mean × 100. If no platform observation exists for a location, that location is
+  C = mean × 100. If no platform for that location has `lookup: "observed"` — whether the
+  lookups came back `not_found` or never ran — there is no dominant answer to compare against, so
+  that location is
   excluded from C; if no location qualifies, C is excluded and its 20 is redistributed to
   A and B in proportion (A 0.688, B 0.312).
 
 ### When GEO could not be observed at all
 
-If **no sampled location produced a `lookup: "observed"` on any platform** — no browser
-available, every lookup blocked by a consent wall — do **not** compute a GEO score from warns.
-(A run where every platform came back `not_found` is a different thing entirely: those are real
-measurements and GEO scores normally, at or near zero.) A
+If **every sampled lookup came back `unobserved`** — no browser available, every lookup blocked
+by a consent wall — do **not** compute a GEO score from warns. State the condition that way, not
+as "nothing was observed": an all-`not_found` run also has zero `observed` lookups, but those are
+real measurements, so GEO scores normally at or near zero and this branch must not fire. A single
+`not_found` anywhere in the sample is enough to make the run measured. A
 pillar assembled entirely from 0.5s prints a mid-50s number for listings nobody looked at,
 under a PinMeTo logo. Instead:
 

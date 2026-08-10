@@ -74,9 +74,12 @@ misbehaves. Never use `javascript_tool` to *change* anything on the page.
 2. Open the place card — via the search result, or directly via the Place ID link when
    PinMeTo has one (compare: if the ID link works but the search never surfaces the listing,
    that is a discoverability finding). **No listing after the ID link and two query variants**
-   (brand+street, brand+city) → record `lookup: "not_found"` (catastrophic rule below). If the
-   lookup could not be completed at all — consent wall, repeated timeout, no browser — record
-   `lookup: "unobserved"` with the reason instead; that is an evidence gap, not an absence.
+   (brand+street, brand+city) → record `lookup: "not_found"` (catastrophic rule below). When
+   PinMeTo has no `network.<platform>` entry there is no ID link to try, so **both query variants
+   alone** are the complete procedure and a miss is still `not_found`. What `not_found` claims is
+   that the required lookups ran and surfaced nothing — not that no listing exists anywhere. If
+   the lookup could not be completed at all — consent wall, repeated timeout, no browser —
+   record `lookup: "unobserved"` with the reason instead; that is an evidence gap, not an absence.
 3. Extract from the card, top to bottom:
    - **Name** (exact string)
    - **Displayed category** (the line under the name, e.g. "Internet marketing service") —
@@ -184,7 +187,7 @@ observation carries exactly one of three states:
 | `lookup` | Means | How it scores |
 | --- | --- | --- |
 | `observed` | The listing was found and read | Its checks score normally |
-| `not_found` | Searched properly (ID link plus two query variants) and no listing exists | A **measured absence**: that platform scores 0 for that location |
+| `not_found` | The required lookup procedure completed and surfaced no listing — the ID link (when PinMeTo has one) plus both query variants, or both query variants alone when it doesn't | A **measured absence**: that platform scores 0 for that location |
 | `unobserved` | Could not look — no browser, consent wall you cannot decline, repeated timeout, host blocked | An **evidence gap**: that platform's checks are `warn` (0.5), never 0 |
 
 Record `lookupError` alongside `unobserved` with the reason. Collapsing `not_found` and
@@ -206,10 +209,15 @@ sampled location is missing on a platform, has a Google duplicate, or has a stal
 permanently-closed listing; warn if no platform matched anything (likely a lookup problem);
 pass otherwise. **Read "missing on a platform" strictly as `lookup: "not_found"`** (see the
 lookup-state table above) — an `unobserved` platform is never evidence of a missing listing and
-must not reach this check's fail clause. That resolves both ambiguous cases: partial coverage
-(Google observed, Apple blocked) fails only on what was actually searched, and a run where
-*nothing* was observed cannot fail at all — it warns, and GEO takes the "could not be observed"
-path in `scoring.md`, rendering **Not measured** rather than a score. **Its slot in the arithmetic:** the brand-wide parity result is counted as
+must not reach this check's fail clause. So partial coverage (Google observed, Apple blocked)
+fails only on what was actually searched. The warn clause is narrower than "nothing was
+observed": it applies when **every** sampled lookup came back `unobserved` — that is a lookup
+problem, and GEO then takes the "could not be observed" path in `scoring.md` and renders **Not
+measured**. A run where lookups completed and came back `not_found` is the opposite case: those
+are real measurements, parity fails, and GEO scores normally at or near zero.
+Because parity is brand-wide rather than platform-scoped, it is **exempt from the per-platform
+`unobserved` → 0.5 fallback** (see `scoring.md`): a `not_found` anywhere still fails it even if
+the Google lookup, whose column it borrows a slot in, was never read. **Its slot in the arithmetic:** the brand-wide parity result is counted as
 one additional applicable check in the **Google column only**, repeated for every sampled
 location — it does not appear in the Apple or Bing columns (their gaps already zero those
 columns via the catastrophic rule, and counting parity there would double-punish).
