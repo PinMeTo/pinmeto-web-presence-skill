@@ -59,12 +59,12 @@ order of preference:
   are on-demand here, and give them the exact re-run sentence to say (the same one printed
   in the report's "What to do next" card).
 
-Scheduled runs are non-interactive: they must not stall on questions. Reuse the stored sample
-and inputs from the history block. If the PinMeTo MCP is disconnected or its baseline call
-fails, stop the run, leave the report unchanged, and surface a setup-required failure; do not
-append an unscorable scan. If the browser is unavailable or a site/map surface cannot be
-observed, keep the documented `warn` degradation and add a visible banner naming the evidence
-gap.
+Scheduled runs are non-interactive: they must not stall on questions. Reuse the pinned sample
+and scope filter from the history block. Re-fetch NAP, hours, coordinates, and `network` from
+the PinMeTo MCP for every scan. If the PinMeTo MCP is disconnected or its baseline call fails,
+stop the run, leave the report unchanged, and surface a setup-required failure; do not append
+an unscorable scan. If the browser is unavailable or a site/map surface cannot be observed,
+keep the documented `warn` degradation and add a visible banner naming the evidence gap.
 
 ## Guardrails for scheduled runs
 
