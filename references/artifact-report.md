@@ -1,38 +1,58 @@
-# The report artifact — PinMeTo Presence Report design
+# Report delivery — PinMeTo Presence Report design
 
-One self-contained HTML artifact. A stakeholder opens the link, not the chat — it must stand
-alone. The layout below reproduces the approved PinMeTo "Presence Report" design; follow it
-section by section rather than improvising. If the host provides an artifact-design skill,
-load it first, then apply this spec on top.
+The deliverable is a standalone, published report that a stakeholder opens from a link. The
+host determines the container, while the content, identity, embedded history, and update-in-place
+contract remain the same:
+
+- **ChatGPT / Codex:** load and follow `sites-building`, then `sites-hosting`; create an actual
+  Site and return its deployed URL as the primary deliverable. Do not substitute an HTML
+  artifact, attachment, canvas, or local-only preview. If Sites or its required hosting
+  capability is unavailable, stop and explain that Sites must be enabled before the report can
+  be delivered.
+- **Claude:** create one self-contained HTML artifact using the host's artifact capability.
+
+The layout below reproduces the approved PinMeTo "Presence Report" design; follow it section by
+section rather than improvising. On Claude, load an artifact-design skill first if the host
+provides one. On ChatGPT/Codex, the Sites workflows govern project setup, implementation,
+validation, preview, and hosting; this file governs the report-specific UI and data contract.
 
 **Generate, don't hand-write.** A full report is ~60 accordion rows and ~30 drawers;
-hand-authoring that much repeated markup drifts. When a shell is available, hold the
-`CheckResult`s and scan history as a data structure and emit the HTML from a small template
-script (this pairs naturally with the scoring script in `scoring.md`).
+hand-authoring that much repeated markup drifts. Hold the `CheckResult`s and scan history as
+data and render repeated UI from them. In a Site, keep the data in a module and map it into
+components. For an HTML artifact, emit the document from a small template script. Both pair
+naturally with the scoring script in `scoring.md`.
 
-**HTML-escape every data-derived string** — check names, why/cost prose, fix steps,
-evidence notes, agent prompts. Evidence routinely *quotes literal markup* (a duplicated
-`<title>`, a missing `<link rel=canonical>`, a JSON-LD snippet); one unescaped RCDATA tag
-like `<title>` in a drawer swallows the entire rest of the document as inert text —
-accordions, drawer, and history block all die silently with no console error. If prose
-needs inline code styling, escape first and re-allow only `<code>`/`</code>`.
+**Render every data-derived string safely** — check names, why/cost prose, fix steps, evidence
+notes, agent prompts. In a Site, render these as framework text nodes; do not pass them to
+`dangerouslySetInnerHTML`. In an HTML artifact, HTML-escape them. Evidence routinely *quotes
+literal markup* (a duplicated `<title>`, a missing `<link rel=canonical>`, a JSON-LD snippet);
+one unescaped RCDATA tag like `<title>` can swallow the rest of a hand-generated document. If
+prose needs inline code styling, escape first and re-allow only `<code>`/`</code>`.
+Serialize the history block as JSON and escape every literal `<` as `\u003c` before placing it
+inside the script element; do not HTML-escape JSON quotes, which would make the block invalid.
+Validate every data-derived URL before placing it in `href`, `src`, CSS, or another navigable
+attribute. Allow same-page `#` anchors, `https:`, and `http:` only when the observed or cited
+resource genuinely requires HTTP. Reject `javascript:`, `data:`, `blob:`, `file:`, malformed,
+and other schemes; render a rejected value as inert text instead of a link or embedded resource.
 
 **Pre-publish sanity checks** (cheap, catch the whole failure class):
-- exactly **one** `<title>` tag in the file (the page's own);
-- exactly the expected `<script>` tags (the `pmt-scan-history` block + one interactivity
-  script), with the interactivity script last;
-- the history block parses as JSON;
-- interactivity uses `addEventListener` on `data-*` hooks — never inline `onclick=`
-  attributes (hostile to CSP) — and the script sits at the end of the body;
-- when a local browser is available, serve the file and click one accordion, one drawer
-  button, and one filter before publishing (`document.scripts.length` being 0 is the
-  instant tell that markup swallowed the script);
-- escape non-ASCII inside CSS `content:` rules as `\00B7`-style escapes — a served page
-  without a charset header renders raw bytes there as mojibake.
 
-After publishing, **verify via a web fetch of the artifact URL** — the in-app browser is
-not signed in to claude.ai and will show a 404; keep the verification narrow (title,
-score, history block), the page is 200 KB+.
+- in both modes, the history block parses as JSON and the visible hero/scorecards render from
+  that same history entry;
+- for Sites, complete the build and validation required by `sites-building`, then publish via
+  `sites-hosting`; keep the report on one route unless the data genuinely needs more;
+- for HTML artifacts, require exactly one `<title>` tag and the expected `<script>` tags (the
+  `pmt-scan-history` block plus one interactivity script), with the interactivity script last;
+- artifact interactivity uses `addEventListener` on `data-*` hooks — never inline `onclick=`
+  attributes — and the script sits at the end of the body;
+- when artifact browser QA is available, serve the file and click one accordion, one drawer
+  button, and one filter before publishing (`document.scripts.length` being 0 is the instant
+  tell that malformed markup swallowed the script);
+- escape non-ASCII inside artifact CSS `content:` rules as `\00B7`-style escapes.
+
+After publishing, verify the deployed Site using the Sites hosting workflow. For a Claude
+artifact, verify via a narrow web fetch of the artifact URL (title, score, history block); the
+in-app browser may be signed out of claude.ai and show a 404.
 
 ## Identity (what makes re-runs update instead of fork)
 
@@ -41,25 +61,44 @@ score, history block), the page is 200 KB+.
   `… — hm.com — Sweden`, `… — hm.com — DACH`). The title is the identity: exact,
   stable across runs, scope label capitalized consistently.
 - **Favicon:** `📍`, never changed.
-- **Re-run flow:** list existing artifacts → match the **exact** title for the requested
-  scope → fetch the published page, parse the `pmt-scan-history` JSON (below), append the
-  new scan, republish **to the same URL** (pass the artifact URL when publishing). Only
-  create fresh when no artifact matches that exact title. If the user says "update the
-  report" ambiguously and several presence reports exist for the brand, ask which one (or
-  update all on a scheduled run that says so).
-- **Reading the previous history block, cheaply.** Fetch the artifact URL **once** with the
-  host's web-fetch tool. Do not ask the fetch prompt to transcribe the history block — it
-  won't, and the response dumps ~10k tokens of page head into context. The fetch tool saves
-  the full HTML to a local path; read *that file* and extract the block with a regex —
-  `re.search(r'<script type="application/json" id="pmt-scan-history">(.*?)</script>', html, re.S)`
-  — for a couple of hundred tokens. Never `curl` an artifact URL (you get the SPA shell or
-  a 403) and never use a markdown-converting fetcher (it strips
-  `<script type="application/json">` entirely).
+- **ChatGPT / Codex re-run:** find the existing Sites project for the exact title and scope.
+  Prefer the project source and its `.openai/hosting.json`; reuse its `project_id`. Read the
+  history from the source data or rendered `pmt-scan-history` block, append the scan, save a
+  new version, and redeploy the **same project** so its URL remains stable. Only create a new
+  Site when no project matches that report identity. Keep each scope in its own project
+  directory so one `.openai/hosting.json` never points two report identities at one Site.
+- **Claude re-run:** list existing artifacts, match the exact title for the requested scope,
+  fetch the published page, parse the history block, append the scan, and republish to the
+  same artifact URL. Only create fresh when no artifact matches.
+- If the user says "update the report" ambiguously and several presence reports exist for the
+  brand, ask which one (or update all only when a scheduled run explicitly says so).
+- **Reading the previous history block, cheaply.** Prefer local Site source/state when it is
+  available. Otherwise fetch the published URL once and extract
+  `<script type="application/json" id="pmt-scan-history">…</script>` from the saved full HTML
+  rather than asking a markdown converter to transcribe it. On Claude, never `curl` an
+  artifact URL (it may return the SPA shell or a 403); use the artifact-aware fetch path.
+
+### Single-writer update guard
+
+The scan history is append-only, so two runs must never publish from the same stale base.
+Serialize updates per exact report identity with a per-project lock when the host supports one.
+When it offers conditional saves or an expected parent version, use them. If neither mechanism
+exists, allow only one active run for that report; if overlap cannot be ruled out, do not publish
+and ask the user to retry after the other run finishes. The following optimistic check is an
+additional guard, not a substitute for serialization: capture a fingerprint of the history read
+at the start, then re-read the authoritative history immediately before publishing.
+
+- If the fingerprint is unchanged, append and publish normally.
+- If another run appended scans, preserve those entries verbatim, append this run to the latest
+  history, and regenerate deltas and trend prose against its new immediate predecessor before
+  publishing.
+- If the latest history cannot be read or merged exactly, do not publish. Leave the current
+  report untouched and surface the conflict. Never let last-writer-wins erase a scan.
 
 ## Scoped reports (country / region)
 
 A brand can hold **several living reports at once** — one global, one per country, one per
-region — each with its own artifact, sample, history, and schedule:
+region — each with its own Site or artifact, sample, history, and schedule:
 
 - The scope is a filter over the PinMeTo fleet: `country` (maps directly onto
   `pinmeto_get_locations` filters) or a named region = an explicit list of countries or
@@ -171,7 +210,7 @@ renders identically in light and dark viewers.
     keep it factual, not salesy.
 11. **What to do next** (navy card): "Ship the fixes, then scan again" — 3 numbered steps
     (hand briefs to a developer / any person-tasks like claiming an Apple listing / re-run),
-    and a literal re-run prompt the customer can say to Claude:
+    and a literal re-run prompt the customer can say to ChatGPT, Codex, or Claude:
     `"Re-run the presence scan for <domain> and show me what changed since <date>."`
 12. **Methodology**: the four pillar weights with one-line descriptions, rubric version, scan
     date, and sources ("Google, Apple, and Bing Maps as observed in a browser, your website
@@ -201,7 +240,7 @@ but prefer the drawer) opened from any check row or top fix. Contents, in order:
 
 ## Embedded state — the scan history contract
 
-The artifact carries its own memory. Embed exactly one block:
+The report carries its own memory. Embed exactly one block in the rendered page:
 
 ```html
 <script type="application/json" id="pmt-scan-history">
@@ -244,9 +283,13 @@ The artifact carries its own memory. Embed exactly one block:
 - `notes` (optional) records **measurement corrections** discovered about *that* scan — so
   a later run can see "this check was mis-scored" without re-deriving it. Append notes to
   the older entry when you find the error; never edit its scores.
-- On re-run: fetch the live artifact, extract this block, append, republish. If the block is
-  missing or unparseable (hand-edited artifact), say so, start a fresh history with the
-  current scan, and keep the old visual sections out of the history math.
+- On re-run: read this block from Site source/state or the live report, append, and redeploy or
+  republish in place, following the single-writer guard above. If a matching report's block is
+  missing or unparseable, do **not** reset or overwrite that report. Preserve its source and
+  published payload. On an interactive run, explain the problem and require explicit approval
+  before restoring a prior valid history or deliberately resetting it; on a scheduled run,
+  abort and leave the report unchanged. Create a new report identity only when the user
+  explicitly requests one.
 
 ## Writing style inside the report
 
