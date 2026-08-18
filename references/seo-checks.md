@@ -59,8 +59,10 @@ from the responses; never quote whole HTML documents into the conversation.
 
 For every check, produce a `CheckResult` with concrete evidence rows (`{url, note}`). For
 failing checks, also write `fixSteps` (3–4 imperative steps) and `agentPrompt` (a
-self-contained brief a developer can paste into a coding agent — name the template/file kind
-of change, the acceptance condition, and ask for proof; see `artifact-report.md`).
+self-contained brief a developer can paste into a coding agent), plus `skillLinks` and
+`docLinks` when verified references exist. Every `agentPrompt` must use the exact
+`Goal` / `Issue` / `Fix` / `Skill` / `Docs` format and source rules in
+`artifact-report.md`.
 
 ## Per-page checks (evaluate on each sampled landing page)
 

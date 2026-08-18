@@ -230,13 +230,70 @@ but prefer the drawer) opened from any check row or top fix. Contents, in order:
 - **why** (2–3 sentences, customer-priced: what it costs them today),
 - **How to fix it** — numbered steps (3–4, imperative),
 - **Copy to your coding agent** — a bordered block with a copy button and the
-  `agentPrompt`: a fully self-contained brief naming the artifact to change ("our location
-  page template…"), the exact acceptance criteria, and a demand for proof ("show me the
-  diff and the check"). Written so pasting it into any coding agent produces the right PR.
-  Person-tasks (e.g. claim a listing in Apple Business Connect) say "this one is not a code
-  change" and give the operational steps instead.
-- **What we found** — the evidence rows `{url, note}`, plus one reference link to the
-  relevant spec/doc (schema.org, Google Search docs, RFC…).
+  `agentPrompt`. Every prompt uses the exact five-field format below so it can be pasted into
+  any coding agent without rewriting. Person-tasks (e.g. claim a listing in Apple Business
+  Connect) use the same format; the `Fix` must say that it is not a code change and give the
+  operational steps instead.
+- **What we found** — the evidence rows `{url, note}`, plus one or more verified reference
+  links to the relevant spec/docs (schema.org, Google Search docs, RFC…).
+
+### Coding-agent prompt format
+
+Write exactly these five labeled fields, in this order. Keep each field self-contained and do
+not add an introduction, closing paragraph, or extra heading inside the copy block.
+
+```text
+Goal: <the concrete outcome, affected production host, and route/page scope>
+Issue: <what the affected URLs return today, with representative URLs or a route pattern and the missing/incorrect values>
+Fix: <which repository surface to find, exactly what output to produce, standalone acceptance tests, and a request to show the diff and results>
+Skill: <approved skill link(s), or None>
+Docs: <verified standards or best-practice documentation link(s), or None>
+```
+
+- Assume the coding agent receives **only this five-field block and the target repository**. It
+  cannot see the report, its evidence drawer, sampled-location table, check IDs, scores, or scan
+  history. The block must contain every fact needed to locate, implement, and verify the change.
+- `Goal` describes the desired end state and names the production hostname plus the affected
+  route or template scope.
+- `Issue` stays concise but includes the concrete production context: at least one representative
+  URL when available (otherwise an exact route pattern), what the raw/rendered/listing surface
+  returns today, and which expected value is absent or wrong. State only observed facts; do not
+  turn an evidence gap or `warn` into a confirmed defect.
+- `Fix` names the artifact to change (for example, the location-page template or edge/CDN
+  configuration), tells the agent how to locate it when the repository's filenames are unknown,
+  specifies the exact output and required fields, and gives standalone acceptance tests against
+  concrete routes or endpoints. End by asking the coding agent to show the diff and verification
+  results.
+- Never use report-dependent shorthand such as “all five sampled pages,” “this check,” “the
+  evidence above,” “rendered only · 5/5,” or “record proof in the next scan” unless the same field
+  also names the affected URLs/routes and explains the measurement in ordinary implementation
+  language.
+- Before publishing, apply the **context-free handoff test**: hide the report and read only the
+  five-field block. If a coding agent with the repository could not identify the affected surface,
+  reproduce the issue, implement the expected output, and verify success, rewrite the prompt.
+- `Skill` is optional in substance but the line is required. Suggest a skill only when it is
+  relevant and approved. For agent-readiness findings, skill links surfaced in the Resources
+  section of `https://isitagentready.com/<audited-host>` are approved, including the
+  `https://isitagentready.com/.well-known/agent-skills/.../SKILL.md` links shown there. Use the
+  exact surfaced URL; never construct a skill URL from a guessed slug. A skill explicitly
+  approved by the user or their organization and available in the coding agent's environment
+  may also be named. Otherwise write `Skill: None`. Never link to an unverified third-party
+  skill.
+- `Docs` links to the primary specification or official best-practice documentation for the
+  finding. Resource links surfaced by the audited host's Is It Agent Ready report are verified
+  for this purpose. Prefer official publishers such as an RFC, standards body, schema.org, or
+  the relevant search/platform documentation. Do not invent or guess URLs; write `Docs: None`
+  when no verified reference is known.
+
+Example:
+
+```text
+Goal: Serve LocalBusiness JSON-LD in the initial HTML for every https://www.pinmeto.com/locations/<storeId> page.
+Issue: A raw HTTP GET of https://www.pinmeto.com/locations/171206 returns only generic Organization/WebSite JSON-LD; the location's LocalBusiness node appears only after JavaScript executes. The same served-HTML gap was observed across the audited /locations/<storeId> route.
+Fix: Find the server route or shared location-page template that renders /locations/<storeId>. Serialize one valid LocalBusiness node into the initial HTML inside <script type="application/ld+json"> using that location's name, postal address, latitude/longitude, canonical URL, telephone, and opening hours. Keep the hydrated output equivalent. Add a regression test that requests at least /locations/171206 without executing JavaScript, parses every JSON-LD block, and asserts that a LocalBusiness node with those required fields exists. Show the diff plus the raw-response and test results.
+Skill: None
+Docs: https://developers.google.com/search/docs/appearance/structured-data/local-business, https://schema.org/LocalBusiness
+```
 
 ## Embedded state — the scan history contract
 

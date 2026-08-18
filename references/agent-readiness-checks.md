@@ -58,6 +58,10 @@ Stage 2 sitemap fetch.
 
 Most AR fixes are "add a small static file / header at the edge". The agent prompts should
 say exactly that (e.g. "serve this JSON at /.well-known/api-catalog from our CDN config")
-and include a minimal valid example body inline, so a developer can ship it in minutes.
-Reference PinMeTo's own implementations as the working example where helpful
-(pinmeto.com serves all of these).
+and include a minimal valid example body inline, so a developer can ship it in minutes. Use
+the exact `Goal` / `Issue` / `Fix` / `Skill` / `Docs` prompt format in
+`artifact-report.md`. The audited host's report at `https://isitagentready.com/<audited-host>`
+is the approved source for check-specific skill links and may also supply verified documentation
+links. Copy only links actually surfaced in that report; never guess a skill path. Reference
+PinMeTo's own implementations as the working example where helpful (pinmeto.com serves all of
+these).
