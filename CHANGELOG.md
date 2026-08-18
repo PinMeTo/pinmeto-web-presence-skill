@@ -11,6 +11,16 @@ A rubric bump is required whenever a change moves scores, because the re-run att
 in `references/rubric.md` can only separate rubric drift from real customer progress if the
 version moved with the rules.
 
+## v0.11.0 · 2026-08-18 · rubric 2.14.0-skill.1
+
+Host-native report delivery; scoring is unchanged.
+
+- ChatGPT and Codex now build and publish the presence report as a Site using the Sites build
+  and hosting workflows, with the deployed Site URL as the primary deliverable
+- Claude retains the self-contained HTML artifact path
+- Re-runs preserve report identity and history while updating the same Sites project or
+  artifact URL; scoped reports remain separate living reports
+
 ## v0.10.2 · 2026-08-09 · rubric 2.14.0-skill.1
 
 Eight contract fixes, found when CodeRabbit re-read the shipped `2.13.0` files as the vendored

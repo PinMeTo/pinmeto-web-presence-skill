@@ -1,7 +1,7 @@
 ---
 name: pinmeto-web-presence
-description: This skill should be used when the user asks to "check our web presence", "audit or monitor our SEO / AIO / GEO / agent readiness", "how do we look in AI search / ChatGPT / Gemini", "are our locations correct on Google, Apple, and Bing Maps", "run a presence scan", "update the presence report", or otherwise requests an SEO, AI-visibility (AIO), generative-engine (GEO), or agent-readiness analysis of a multi-location brand's website and map listings. Scores the brand against the PinMeTo MLPR rubric, produces an updatable HTML report artifact, and can set up scheduled monitoring. Requires the PinMeTo Location MCP server; GEO checks use a browser against the real Google, Apple, and Bing Maps.
-version: 0.10.2
+description: This skill should be used when the user asks to "check our web presence", "audit or monitor our SEO / AIO / GEO / agent readiness", "how do we look in AI search / ChatGPT / Gemini", "are our locations correct on Google, Apple, and Bing Maps", "run a presence scan", "update the presence report", or otherwise requests an SEO, AI-visibility (AIO), generative-engine (GEO), or agent-readiness analysis of a multi-location brand's website and map listings. Scores the brand against the PinMeTo MLPR rubric, produces an updatable report as a Site in ChatGPT/Codex or an HTML artifact in Claude, and can set up scheduled monitoring. Requires the PinMeTo Location MCP server; GEO checks use a browser against the real Google, Apple, and Bing Maps.
+version: 0.11.0
 license: Proprietary - (c) PinMeTo AB. See LICENSE.
 ---
 
@@ -61,12 +61,12 @@ Ask only for what is not obvious, one thing at a time:
 2. **Website root and store locator URL** — e.g. `https://brand.com` and `/stores`. Often
    derivable from the PinMeTo location records' `url` fields; confirm rather than ask cold.
 3. **Scope** — the whole brand, or one country/region. Scoped runs produce **separate,
-   independently updatable reports** (own artifact, own sample, own schedule); for brands
+   independently updatable reports** (own Site or artifact, own sample, own schedule); for brands
    with more than ~1,000 locations, recommend per-country reports outright — a 10-location
    sample of a 10,000-location fleet only catches template-level issues.
 4. **Target markets / languages**, if multi-country (affects hreflang and sampling).
 5. Whether this is a **first scan** or a **re-run** of an existing report (re-runs update the
-   same artifact and reuse its pinned location sample — see Output below).
+   same Site or artifact and reuse its pinned location sample — see Output below).
 
 ## Workflow
 
@@ -124,17 +124,24 @@ Compute pillar scores (0–100) and the weighted overall score + grade exactly p
 [references/scoring.md](references/scoring.md). Then rank failing checks by points returned
 (check weight × pillar weight × how far from passing) to pick the **top 3 fixes**.
 
-### Stage 6 — Report (updatable artifact)
+### Stage 6 — Report (host-native, updatable)
 
-Produce the report per [references/artifact-report.md](references/artifact-report.md) — a
-single self-contained HTML artifact matching the PinMeTo Presence Report design, with a
-fix-brief drawer (including a copy-paste coding-agent prompt) for every failing check.
+Produce the report per [references/artifact-report.md](references/artifact-report.md), matching
+the PinMeTo Presence Report design and including a fix-brief drawer (with a copy-paste
+coding-agent prompt) for every failing check. Choose the delivery path from the host:
 
-**Updatability is not optional.** The artifact embeds its own scan history JSON (including
-its scope and pinned sample); on a re-run, find the existing artifact by its **exact title**
-(scoped reports have the scope in the title), read its history, append the new scan, and
-republish to the **same URL**. A brand can keep several living reports at once — global plus
-per-country/region — and a re-run must update the right one, never a different-scope one.
+- **ChatGPT / Codex:** use the `sites-building` workflow and then `sites-hosting`. Build and
+  publish an actual Site; do not return a standalone HTML artifact or file as the primary
+  deliverable. Re-runs update and redeploy the same Site project.
+- **Claude:** publish the report as a single self-contained HTML artifact, preserving the
+  existing artifact workflow.
+
+**Updatability is not optional.** The report embeds its own scan history JSON (including its
+scope and pinned sample); on a re-run, find the existing report by its **exact title** (scoped
+reports have the scope in the title), read its history, append the new scan, and publish a new
+version to the **same Site project or artifact URL**. A brand can keep several living reports
+at once — global plus per-country/region — and a re-run must update the right one, never a
+different-scope one.
 
 ### Stage 7 — Offer monitoring
 
@@ -197,7 +204,7 @@ Route each kind of work to the cheapest thing that does it correctly:
   Never imply full-site or full-fleet coverage.
 - **Work compact.** The token budget must survive to Stage 6: request only the MCP `fields`
   you need, extract facts from fetched pages instead of quoting HTML, record evidence as
-  short `{url, note}` rows as you go, and keep chat narration brief — the report artifact is
+  short `{url, note}` rows as you go, and keep chat narration brief — the published report is
   the deliverable, not a running commentary.
 - **Evidence over assertion.** Every non-pass finding cites what was observed: a URL, a missing
   field, a PinMeTo-vs-listing mismatch. No generic best-practice lectures.
