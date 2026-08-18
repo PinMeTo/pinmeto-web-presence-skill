@@ -132,7 +132,9 @@ coding-agent prompt) for every failing check. Choose the delivery path from the 
 
 - **ChatGPT / Codex:** use the `sites-building` workflow and then `sites-hosting`. Build and
   publish an actual Site; do not return a standalone HTML artifact or file as the primary
-  deliverable. Re-runs update and redeploy the same Site project.
+  deliverable. If either Sites workflow or its required hosting capability is unavailable,
+  stop and tell the user that Sites must be enabled; do not fall back to an artifact. Re-runs
+  update and redeploy the same Site project.
 - **Claude:** publish the report as a single self-contained HTML artifact, preserving the
   existing artifact workflow.
 

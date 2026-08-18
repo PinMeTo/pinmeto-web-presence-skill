@@ -32,6 +32,10 @@ A re-run is the same workflow as a first scan, with three differences:
    report with its own Site or artifact, not a duplicate. Reuse a URL only after the identity
    matches.
 
+Apply the per-report single-writer and pre-publish history check in `artifact-report.md` to
+manual and scheduled runs alike. A run that cannot prove it is appending to the latest history
+must leave the live report unchanged rather than risk losing another scan.
+
 If the user asks for a one-off comparison ("what changed since April?"), answer from the
 history block — no new scan needed unless they want fresh data.
 
@@ -55,10 +59,12 @@ order of preference:
   are on-demand here, and give them the exact re-run sentence to say (the same one printed
   in the report's "What to do next" card).
 
-Scheduled runs are non-interactive: they must not stall on questions. Reuse the stored
-sample and inputs from the history block; if something essential is missing (MCP
-disconnected, no browser for GEO), produce the report anyway with the affected checks as
-`warn` and a visible banner naming what needs fixing before the next run.
+Scheduled runs are non-interactive: they must not stall on questions. Reuse the stored sample
+and inputs from the history block. If the PinMeTo MCP is disconnected or its baseline call
+fails, stop the run, leave the report unchanged, and surface a setup-required failure; do not
+append an unscorable scan. If the browser is unavailable or a site/map surface cannot be
+observed, keep the documented `warn` degradation and add a visible banner naming the evidence
+gap.
 
 ## Guardrails for scheduled runs
 

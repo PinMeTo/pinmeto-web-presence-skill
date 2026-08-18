@@ -6,7 +6,9 @@ contract remain the same:
 
 - **ChatGPT / Codex:** load and follow `sites-building`, then `sites-hosting`; create an actual
   Site and return its deployed URL as the primary deliverable. Do not substitute an HTML
-  artifact, attachment, canvas, or local-only preview when Sites is available.
+  artifact, attachment, canvas, or local-only preview. If Sites or its required hosting
+  capability is unavailable, stop and explain that Sites must be enabled before the report can
+  be delivered.
 - **Claude:** create one self-contained HTML artifact using the host's artifact capability.
 
 The layout below reproduces the approved PinMeTo "Presence Report" design; follow it section by
@@ -28,6 +30,10 @@ one unescaped RCDATA tag like `<title>` can swallow the rest of a hand-generated
 prose needs inline code styling, escape first and re-allow only `<code>`/`</code>`.
 Serialize the history block as JSON and escape every literal `<` as `\u003c` before placing it
 inside the script element; do not HTML-escape JSON quotes, which would make the block invalid.
+Validate every data-derived URL before placing it in `href`, `src`, CSS, or another navigable
+attribute. Allow same-page `#` anchors, `https:`, and `http:` only when the observed or cited
+resource genuinely requires HTTP. Reject `javascript:`, `data:`, `blob:`, `file:`, malformed,
+and other schemes; render a rejected value as inert text instead of a link or embedded resource.
 
 **Pre-publish sanity checks** (cheap, catch the whole failure class):
 
@@ -71,6 +77,23 @@ in-app browser may be signed out of claude.ai and show a 404.
   `<script type="application/json" id="pmt-scan-history">…</script>` from the saved full HTML
   rather than asking a markdown converter to transcribe it. On Claude, never `curl` an
   artifact URL (it may return the SPA shell or a 403); use the artifact-aware fetch path.
+
+### Single-writer update guard
+
+The scan history is append-only, so two runs must never publish from the same stale base.
+Serialize updates per exact report identity with a per-project lock when the host supports one.
+When it offers conditional saves or an expected parent version, use them. If neither mechanism
+exists, allow only one active run for that report; if overlap cannot be ruled out, do not publish
+and ask the user to retry after the other run finishes. The following optimistic check is an
+additional guard, not a substitute for serialization: capture a fingerprint of the history read
+at the start, then re-read the authoritative history immediately before publishing.
+
+- If the fingerprint is unchanged, append and publish normally.
+- If another run appended scans, preserve those entries verbatim, append this run to the latest
+  history, and regenerate deltas and trend prose against its new immediate predecessor before
+  publishing.
+- If the latest history cannot be read or merged exactly, do not publish. Leave the current
+  report untouched and surface the conflict. Never let last-writer-wins erase a scan.
 
 ## Scoped reports (country / region)
 
@@ -187,7 +210,7 @@ renders identically in light and dark viewers.
     keep it factual, not salesy.
 11. **What to do next** (navy card): "Ship the fixes, then scan again" — 3 numbered steps
     (hand briefs to a developer / any person-tasks like claiming an Apple listing / re-run),
-    and a literal re-run prompt the customer can say to ChatGPT or Claude:
+    and a literal re-run prompt the customer can say to ChatGPT, Codex, or Claude:
     `"Re-run the presence scan for <domain> and show me what changed since <date>."`
 12. **Methodology**: the four pillar weights with one-line descriptions, rubric version, scan
     date, and sources ("Google, Apple, and Bing Maps as observed in a browser, your website
@@ -261,8 +284,12 @@ The report carries its own memory. Embed exactly one block in the rendered page:
   a later run can see "this check was mis-scored" without re-deriving it. Append notes to
   the older entry when you find the error; never edit its scores.
 - On re-run: read this block from Site source/state or the live report, append, and redeploy or
-  republish in place. If the block is missing or unparseable, say so, start a fresh history
-  with the current scan, and keep the old visual sections out of the history math.
+  republish in place, following the single-writer guard above. If a matching report's block is
+  missing or unparseable, do **not** reset or overwrite that report. Preserve its source and
+  published payload. On an interactive run, explain the problem and require explicit approval
+  before restoring a prior valid history or deliberately resetting it; on a scheduled run,
+  abort and leave the report unchanged. Create a new report identity only when the user
+  explicitly requests one.
 
 ## Writing style inside the report
 

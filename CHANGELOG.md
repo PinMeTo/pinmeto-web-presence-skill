@@ -20,6 +20,9 @@ Host-native report delivery; scoring is unchanged.
 - Claude retains the self-contained HTML artifact path
 - Re-runs preserve report identity and history while updating the same Sites project or
   artifact URL; scoped reports remain separate living reports
+- Report links validate data-derived URL schemes before rendering
+- Re-runs use a single-writer/version check, never silently reset malformed history, and leave
+  the live report unchanged when a scheduled run lacks its required PinMeTo baseline
 
 ## v0.10.2 · 2026-08-09 · rubric 2.14.0-skill.1
 
