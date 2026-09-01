@@ -1,6 +1,6 @@
 # PinMeTo Web Presence Skill
 
-This repo packages the `pinmeto-web-presence` agent skill: it audits a multi-location brand's
+This repo packages the `pinmeto-web-presence` agent skill: it scans a multi-location brand's
 findability across four pillars against the PinMeTo MLPR rubric and maintains living,
 updatable reports. The glossary below is the canonical vocabulary; the mechanics live in
 `SKILL.md` and `references/`.

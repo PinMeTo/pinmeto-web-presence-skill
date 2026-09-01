@@ -101,7 +101,7 @@ usually foreshadows a parity gap on the map surface.
 
 ## Deterministic sampling (must match across scans)
 
-- **Sample size:** `min(5, N)` locations when the brand has <20 — a 3- or 4-location fleet
+- **Sample size:** `min(5, N)` locations when the fleet has <20 — a 3- or 4-location fleet
   samples every location, since the even-spacing index would otherwise repeat; 10 when ≥20.
 - **Minimum:** 3 locations with usable records. Below that, stop and tell the user the fleet
   is too small/incomplete to score meaningfully; offer a qualitative check instead.
