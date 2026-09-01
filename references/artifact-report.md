@@ -51,8 +51,9 @@ and other schemes; render a rejected value as inert text instead of a link or em
 - escape non-ASCII inside artifact CSS `content:` rules as `\00B7`-style escapes.
 
 After publishing, verify the deployed Site using the Sites hosting workflow. For a Claude
-artifact, verify via a narrow web fetch of the artifact URL (title, score, history block); the
-in-app browser may be signed out of claude.ai and show a 404.
+artifact, use the host's artifact-aware fetch/read method to inspect the published artifact's
+title, score, and history block. Do not use a generic URL fetch or the in-app browser: either can
+return a SPA shell, 403, or false 404 even when the artifact is valid.
 
 ## Identity (what makes re-runs update instead of fork)
 
@@ -68,8 +69,9 @@ in-app browser may be signed out of claude.ai and show a 404.
   Site when no project matches that report identity. Keep each scope in its own project
   directory so one `.openai/hosting.json` never points two report identities at one Site.
 - **Claude re-run:** list existing artifacts, match the exact title for the requested scope,
-  fetch the published page, parse the history block, append the scan, and republish to the
-  same artifact URL. Only create fresh when no artifact matches.
+  read the published artifact through the host's artifact-aware fetch/read method, parse the
+  history block, append the scan, and republish to the same artifact URL. Only create fresh when
+  no artifact matches.
 - If the user says "update the report" ambiguously and several presence reports exist for the
   brand, ask which one (or update all only when a scheduled run explicitly says so).
 - **Reading the previous history block, cheaply.** Prefer local Site source/state when it is
