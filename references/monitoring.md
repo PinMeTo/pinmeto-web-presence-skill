@@ -14,11 +14,11 @@ A re-run is the same workflow as a first scan, with three differences:
    the pinned location sample
    (reuse it — see `pinmeto-data-check.md`), the **prior scores to diff against**, and the
    rubric version **those prior scores were computed under** — metadata for the comparison
-   narrative, never the version to score with. This run always scores with the rubric in the
+   narrative, never the version to score with. This scan always scores with the rubric in the
    current `rubric.md`, and old scans are never recomputed. It is not a data baseline: a re-run re-pulls the
    PinMeTo record every time (that is why it is "the same workflow as a first scan"), so
    NAP, hours, coordinates and `network` always come from the MCP, never from history. When several reports exist for the brand and the request is
-   ambiguous, ask which one; a scheduled run updates only the report it was created for.
+   ambiguous, ask which one; a scheduled scan updates only the report it was created for.
 2. **Compute deltas, then narrate them.** The trend section needs: overall delta since last
    scan and since first scan, per-pillar deltas, and the concrete check-level changes
    (`fail→pass`, `pass→fail`, new warns). "What moved" lines come from the check diff, not
@@ -33,7 +33,7 @@ A re-run is the same workflow as a first scan, with three differences:
    matches.
 
 Apply the per-report single-writer and pre-publish history check in `artifact-report.md` to
-manual and scheduled runs alike. A run that cannot prove it is appending to the latest history
+manual and scheduled scans alike. A scan that cannot prove it is appending to the latest history
 must leave the live report unchanged rather than risk losing another scan.
 
 If the user asks for a one-off comparison ("what changed since April?"), answer from the
@@ -62,11 +62,11 @@ order of preference:
 Scheduled runs are non-interactive: they must not stall on questions. Reuse the pinned sample
 and scope filter from the history block. Re-fetch NAP, hours, coordinates, and `network` from
 the PinMeTo MCP for every scan. If the PinMeTo MCP is disconnected or its baseline call fails,
-stop the run, leave the report unchanged, and surface a setup-required failure; do not append
+stop the scan, leave the report unchanged, and surface a setup-required failure; do not append
 an unscorable scan. If the browser is unavailable or a site/map surface cannot be observed,
 keep the documented `warn` degradation and add a visible banner naming the evidence gap.
 
-## Guardrails for scheduled runs
+## Guardrails for scheduled scans
 
 - Respect the same evidence budget: sampled pages, 2–4 min per location per platform on maps.
 - If the PinMeTo fleet changed materially (>20% locations added/removed), flag it in the
@@ -75,5 +75,5 @@ keep the documented `warn` degradation and add a visible banner naming the evide
   only departed locations are replaced. Re-drawing would make the trend measure sampling
   noise while claiming to measure change. If the user wants coverage of the new locations,
   that is a *new* scoped report, not a mutation of this one.
-- If two consecutive scheduled runs end mostly-warn (site unreachable, consent walls), stop
+- If two consecutive scheduled scans end mostly-warn (site unreachable, consent walls), stop
   the schedule and tell the user instead of accumulating junk scans in the history.

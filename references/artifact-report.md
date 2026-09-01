@@ -75,7 +75,7 @@ artifact: either can return a SPA shell, 403, or false 404 even when the artifac
 - **Title:** `PinMeTo Web Presence — <brand domain>` for a whole-brand report, or
   `PinMeTo Web Presence — <brand domain> — <Scope>` for a scoped one (e.g.
   `… — hm.com — Sweden`, `… — hm.com — DACH`). The title is the identity: exact,
-  stable across runs, scope label capitalized consistently.
+  stable across scans, scope label capitalized consistently.
 - **Favicon:** `📍`, never changed.
 - **ChatGPT / Codex re-run:** find the existing Sites project for the exact title and scope.
   Prefer the project source and its `.openai/hosting.json`; reuse its `project_id`. Read the
@@ -88,7 +88,7 @@ artifact: either can return a SPA shell, 403, or false 404 even when the artifac
   history block, append the scan, and republish to the same artifact URL. Only create fresh when
   no artifact matches.
 - If the user says "update the report" ambiguously and several presence reports exist for the
-  brand, ask which one (or update all only when a scheduled run explicitly says so).
+  brand, ask which one (or update all only when a scheduled scan explicitly says so).
 - **Reading the previous history block, cheaply.** Prefer local Site source/state when it is
   available. Otherwise, for a Site, fetch the deployed URL once and extract
   `<script type="application/json" id="pmt-scan-history">…</script>` from the saved full HTML
@@ -109,7 +109,7 @@ fingerprint of the history read at the start, then re-read the authoritative his
 immediately before publishing.
 
 - If the fingerprint is unchanged, append and publish normally.
-- If another run appended scans, preserve those entries verbatim, append this run to the latest
+- If another scan appended entries, preserve those entries verbatim, append this scan to the latest
   history, and regenerate deltas and trend prose against its new immediate predecessor before
   publishing.
 - If the latest history cannot be read or merged exactly, do not publish. Leave the current
@@ -165,7 +165,7 @@ renders identically in light and dark viewers.
 3. **Pillar scorecards**: 4 linked cards (SEO, GEO, AIO, Agent readiness) — name + weight %,
    the pillar score big (46px, colored by band), a slim progress bar, and the band word.
    Each links to its pillar section.
-4. **Trend** *(from the second scan onward; omit entirely on the first run)*:
+4. **Trend** *(from the second scan onward; omit entirely on the first scan)*:
    - headline stating the total movement ("Up 25 points in six months"),
    - an inline SVG line chart of overall score across scans (grid lines at 0/50/100, score
      labels above points, dates below, last point emphasized in orange),
@@ -344,18 +344,18 @@ The report carries its own memory. Embed exactly one block in the rendered page:
 
 - `scope` is `null` for a whole-brand report; otherwise `label` (what appears in the title)
   plus `filters` (machine-usable: `country`, or a list of countries/cities for a region) so
-  re-runs and scheduled runs reconstruct the fleet filter without asking.
+  re-runs and scheduled scans reconstruct the fleet filter without asking.
 - `scans` is append-only, oldest first. Keep every prior scan verbatim — never recompute old
   numbers, even if the rubric version moved.
 - `pillars.geo` is **nullable**. When **every** sampled lookup came back `unobserved` (not
   merely when none was `observed` — an all-`not_found` run is measured and scores normally),
   `scoring.md` renders GEO as "Not measured" and drops it from the overall; record
   `"geo": null` for that scan, keep `overall` as the value actually computed from the
-  reweighted three pillars, and name the degraded run in `notes`. A renderer must treat null
+  reweighted three pillars, and name the degraded scan in `notes`. A renderer must treat null
   as "not plotted" — never as 0, and never recompute the overall with the standard weights,
   or a scan nobody could measure prints as a collapse. The other three pillars are never null.
 - `checks` records status+ratio for **every** check (compact but complete): it is what lets
-  the next run say "internal linking hasn't moved across four scans" without guessing, and
+  the next scan say "internal linking hasn't moved across four scans" without guessing, and
   it is the input to the trend section's mechanical diff.
 - `notes` (optional) records **measurement corrections** discovered about *that* scan — so
   a later run can see "this check was mis-scored" without re-deriving it. Append notes to
@@ -363,10 +363,10 @@ The report carries its own memory. Embed exactly one block in the rendered page:
 - On re-run: read this block from Site source/state or the live report, append, and redeploy or
   republish in place, following the single-writer guard above. If a matching report's block is
   missing or unparseable, do **not** reset or overwrite that report. Preserve its source and
-  published payload. On an interactive run, explain the problem and require explicit approval
-  before restoring a prior valid history or deliberately resetting it; on a scheduled run,
+  published payload. On an interactive scan, explain the problem and require explicit approval
+  before restoring a prior valid history or deliberately resetting it; on a scheduled scan,
   abort, leave the report unchanged, and surface a setup-required failure in the scheduled
-  run's own output (the same way a failed PinMeTo baseline is surfaced in `monitoring.md`) so
+  scan's own output (the same way a failed PinMeTo baseline is surfaced in `monitoring.md`) so
   the schedule's owner sees why monitoring stopped instead of a silently frozen report.
   Create a new report identity only when the user explicitly requests one.
 

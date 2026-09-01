@@ -5,9 +5,9 @@ version: 0.12.1
 license: Proprietary - (c) PinMeTo AB. See LICENSE.
 ---
 
-# PinMeTo Web Presence Audit (SEO / AIO / GEO / Agent Readiness)
+# PinMeTo Web Presence Scan (SEO / AIO / GEO / Agent Readiness)
 
-Audit a multi-location brand's online findability across **four pillars**, score it against the
+Scan a multi-location brand's online findability across **four pillars**, score it against the
 PinMeTo MLPR rubric, and produce a prioritized, **updatable** report:
 
 - **SEO** (30%) — the store locator and per-location landing pages: crawlability, structured
@@ -26,7 +26,7 @@ and structured-data inconsistencies between PinMeTo and the live web.
 The scoring rubric is defined in [references/rubric.md](references/rubric.md) — a skill-line
 fork (v2.14.0-skill.1) of the PinMeTo MLPR product rubric v2.8.0 that re-adds Bing as a scored
 GEO platform and adds a PinMeTo-connection check; SEO/AIO/Agent Readiness are identical to
-the product. Do not invent checks or reweight; deviations from the rubric make runs
+the product. Do not invent checks or reweight; deviations from the rubric make scans
 incomparable.
 
 ## Requirements
@@ -36,7 +36,7 @@ incomparable.
   `pinmeto_get_locations({limit: 1, fields: ["storeId"]})` before anything else — never with
   no arguments, which returns fifty complete location records (~125k tokens) just to prove
   the server answers. If it fails or is missing, stop and run the
-  `pinmeto-setup` flow first — the audit is meaningless without the PinMeTo baseline.
+  `pinmeto-setup` flow first — the scan is meaningless without the PinMeTo baseline.
 - **A browser tool** — for GEO always, and for SEO/AIO whenever the site client-renders:
   the in-app Browser, Claude in Chrome, or another browser automation surface. GEO evidence
   comes from the *real* Google, Apple, and Bing Maps pages — never from the Places API or
@@ -56,11 +56,11 @@ incomparable.
 
 Ask only for what is not obvious, one thing at a time:
 
-1. **Brand / PinMeTo account** — confirm which account's data to use (the audit uses whatever
+1. **Brand / PinMeTo account** — confirm which account's data to use (the scan uses whatever
    the connected server is scoped to).
 2. **Website root and store locator URL** — e.g. `https://brand.com` and `/stores`. Often
    derivable from the PinMeTo location records' `url` fields; confirm rather than ask cold.
-3. **Scope** — the whole brand, or one country/region. Scoped runs produce **separate,
+3. **Scope** — the whole brand, or one country/region. Scoped scans produce **separate,
    independently updatable reports** (own Site or artifact, own sample, own schedule); for brands
    with more than ~1,000 locations, recommend per-country reports outright — a 10-location
    sample of a 10,000-location fleet only catches template-level issues.
@@ -83,7 +83,7 @@ fleet can be 10 or 10,000 locations, and the budget must survive to the report e
 
 - Size the fleet from `totalCount` (limit 1, with the scope's country/city filters); never
   paginate the whole fleet into context, and never echo raw location JSON.
-- Sample: `min(5, N)` open locations if the (scoped) fleet has <20, 10 if ≥20, minimum 3 to
+- Sample: `min(5, N)` open locations if the fleet has <20, 10 if ≥20, minimum 3 to
   score at all. Count only `permanentlyClosed: false` records — the exact rule and the
   selection order live in `references/pinmeto-data-check.md`; do not restate it differently.
   On re-runs the sample is **pinned** — reuse the storeIds recorded in the report's history
@@ -179,7 +179,7 @@ Route each kind of work to the cheapest thing that does it correctly:
    calls (does "Karhumäkivägen 3, Vanda" match "Karhumäentie 3, Vantaa"?), severity
    decisions, fix briefs, and all report prose. Richness fields are read off a localized UI
    with relative dates and have no baseline to check against — a small model returns
-   plausible-looking numbers there rather than nulls (a dogfood run produced a *fabricated*
+   plausible-looking numbers there rather than nulls (a dogfood scan produced a *fabricated*
    ISO review date synthesized from "a year ago", and nulled five passing hours tables).
    Anything a wrong answer can silently corrupt stays here; this is not where to save
    tokens.
@@ -191,7 +191,7 @@ Route each kind of work to the cheapest thing that does it correctly:
    more time than they save.
 5. **Parallelize everything that is not the browser.** The wall-clock order that works:
    - Kick off the **PSI API calls first, in the background** — they are the slowest
-     single fetches in the run and nothing depends on them until scoring.
+     single fetches in the scan and nothing depends on them until scoring.
    - Inside the fetch script, pull all pages **concurrently** (e.g. `curl` via
      `xargs -P4`, or an async fetch script) — robots, sitemaps, sampled pages,
      `.well-known` probes in one burst against the brand's own site.
