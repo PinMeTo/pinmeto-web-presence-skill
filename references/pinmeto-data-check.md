@@ -60,7 +60,7 @@ locations ever need complete records; everything else is counting and selecting.
 | 3–19 | `min(5, N)` | Fetch all (minimal fields), sample by sort rule |
 | 20–200 | 10 | Fetch 1–4 pages minimal fields, sample by sort rule |
 | 201–1,000 | 10 | Even-offset selection; recommend per-country scoped reports for coverage |
-| 1,000+ | 10 per report | **Scope required in practice**: one report per country/region, each with its applicable per-report sample and its own Site or artifact. At least 3 usable locations are required to score. A single global report is allowed but must state how thin 10-of-N coverage is |
+| 1,000+ | 10 per report | **Scope required in practice**: one report per country/region, each with its own sample per this playbook and its own Site or artifact. A single global report is allowed but must state how thin 10-of-N coverage is |
 
 A 10-of-10,000 sample is statistically honest for template-level findings (most checks are
 template checks — one fix repairs every location) but blind to per-location listing drift.

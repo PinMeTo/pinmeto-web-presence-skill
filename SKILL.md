@@ -128,7 +128,9 @@ Compute pillar scores (0–100) and the weighted overall score + grade exactly p
 
 Produce the report per [references/artifact-report.md](references/artifact-report.md), matching
 the PinMeTo Presence Report design and including a fix-brief drawer (with a copy-paste
-coding-agent prompt) for every failing check. Choose the delivery path from the host:
+coding-agent prompt) for every failing check. Choose the delivery path from the host,
+identified from the runtime context (the product named in the system prompt and the
+first-party tool surface) — never inferred from which workflow happens to load:
 
 - **ChatGPT / Codex:** use the `sites-building` workflow and then `sites-hosting`. Build and
   publish an actual Site; do not return a standalone HTML artifact or file as the primary
@@ -156,9 +158,11 @@ Route each kind of work to the cheapest thing that does it correctly:
 
 1. **Scripts beat any model.** Everything deterministic runs as shell scripts, not model
    reasoning: HTTP fetching and header/JSON-LD parsing (Stages 2–3), the scoring
-   arithmetic (`scoring.md`), and generating the report HTML from the data structure
-   (`artifact-report.md`). This is required where a shell exists — it is faster, free, and
-   reproducible.
+   arithmetic (`scoring.md`), and producing the report from the data structure
+   (`artifact-report.md`) — on the Claude artifact path, emit the HTML from a template
+   script; on the Sites path, write the results and history into a data module that the
+   Site's components render (the Site build is the deterministic generator there). This is
+   required where a shell exists — it is faster, free, and reproducible.
 2. **Delegate only the identity-and-position reads to a small, fast model** when the host
    supports subagents with model selection (e.g. a Haiku-class model in Claude Code):
    listing **existence, name, address, phone, website href, coordinates** — every one of

@@ -16,6 +16,15 @@ section rather than improvising. On Claude, load an artifact-design skill first 
 provides one. On ChatGPT/Codex, the Sites workflows govern project setup, implementation,
 validation, preview, and hosting; this file governs the report-specific UI and data contract.
 
+**Access.** A published report is link-accessible: anyone holding the URL can read it. That is
+what lets a stakeholder open it from a link, and it is also the boundary on content: the report
+may contain only what is already public (site observations, map listings, NAP data the brand
+publishes) plus aggregate reputation and context lines — never raw PinMeTo API payloads,
+per-location insight dumps, tokens, or credentials. On a report's first publish, tell the user
+the URL is readable by anyone who has it; re-runs to the same report inherit that consent.
+Tighter access (org-restricted Sites, unpublishing) is host configuration the user applies,
+not something the skill can enforce.
+
 **Generate, don't hand-write.** A full report is ~60 accordion rows and ~30 drawers;
 hand-authoring that much repeated markup drifts. Hold the `CheckResult`s and scan history as
 data and render repeated UI from them. In a Site, keep the data in a module and map it into
@@ -24,7 +33,10 @@ naturally with the scoring script in `scoring.md`.
 
 **Render every data-derived string safely** — check names, why/cost prose, fix steps, evidence
 notes, agent prompts. In a Site, render these as framework text nodes; do not pass them to
-`dangerouslySetInnerHTML`. In an HTML artifact, HTML-escape them. Evidence routinely *quotes
+`dangerouslySetInnerHTML` — with exactly one exception: the `pmt-scan-history` script element
+(below) has no text-node alternative in a framework, so its JSON, escaped per this paragraph,
+is set through the framework's raw-content mechanism; nothing else may use it. In an HTML
+artifact, HTML-escape them. Evidence routinely *quotes
 literal markup* (a duplicated `<title>`, a missing `<link rel=canonical>`, a JSON-LD snippet);
 one unescaped RCDATA tag like `<title>` can swallow the rest of a hand-generated document. If
 prose needs inline code styling, escape first and re-allow only `<code>`/`</code>`.
@@ -50,10 +62,13 @@ and other schemes; render a rejected value as inert text instead of a link or em
   tell that malformed markup swallowed the script);
 - escape non-ASCII inside artifact CSS `content:` rules as `\00B7`-style escapes.
 
-After publishing, verify the deployed Site using the Sites hosting workflow. For a Claude
-artifact, use the host's artifact-aware fetch/read method to inspect the published artifact's
-title, score, and history block. Do not use a generic URL fetch or the in-app browser: either can
-return a SPA shell, 403, or false 404 even when the artifact is valid.
+After publishing, verify the same three things on either path: the exact report title, the
+hero score, and a parseable `pmt-scan-history` block. For a Site, run the `sites-hosting`
+workflow's own verification, then fetch the deployed URL once and confirm those three. For a
+Claude artifact, confirm them through an **artifact-aware read** — whatever mechanism the host
+documents for reading published artifacts (an artifact read/fetch tool, or reopening the
+artifact in the conversation). Do not use a generic URL fetch or the in-app browser on an
+artifact: either can return a SPA shell, 403, or false 404 even when the artifact is valid.
 
 ## Identity (what makes re-runs update instead of fork)
 
@@ -69,26 +84,29 @@ return a SPA shell, 403, or false 404 even when the artifact is valid.
   Site when no project matches that report identity. Keep each scope in its own project
   directory so one `.openai/hosting.json` never points two report identities at one Site.
 - **Claude re-run:** list existing artifacts, match the exact title for the requested scope,
-  read the published artifact through the host's artifact-aware fetch/read method, parse the
+  read the published artifact through the artifact-aware read described above, parse the
   history block, append the scan, and republish to the same artifact URL. Only create fresh when
   no artifact matches.
 - If the user says "update the report" ambiguously and several presence reports exist for the
   brand, ask which one (or update all only when a scheduled run explicitly says so).
 - **Reading the previous history block, cheaply.** Prefer local Site source/state when it is
-  available. Otherwise fetch the published URL once and extract
+  available. Otherwise, for a Site, fetch the deployed URL once and extract
   `<script type="application/json" id="pmt-scan-history">…</script>` from the saved full HTML
   rather than asking a markdown converter to transcribe it. On Claude, never `curl` an
-  artifact URL (it may return the SPA shell or a 403); use the artifact-aware fetch path.
+  artifact URL (it may return the SPA shell or a 403); use the artifact-aware read
+  described above.
 
 ### Single-writer update guard
 
-The scan history is append-only, so two runs must never publish from the same stale base.
-Serialize updates per exact report identity with a per-project lock when the host supports one.
-When it offers conditional saves or an expected parent version, use them. If neither mechanism
-exists, allow only one active run for that report; if overlap cannot be ruled out, do not publish
-and ask the user to retry after the other run finishes. The following optimistic check is an
-additional guard, not a substitute for serialization: capture a fingerprint of the history read
-at the start, then re-read the authoritative history immediately before publishing.
+The scan history is append-only, so two scans must never publish from the same stale base.
+Serialize updates per exact report identity: use a per-project lock when the host supports
+one, and conditional saves or an expected parent version when offered. On hosts with neither —
+most of them — the fingerprint check below **is** the guard: run it and publish; the absence
+of a lock is not a reason to block. What is forbidden is *knowing* overlap: never start a
+second update of the same report while one is in flight (one schedule per report already makes
+this rare), and if you know another is running, wait for it instead of publishing. Capture a
+fingerprint of the history read at the start, then re-read the authoritative history
+immediately before publishing.
 
 - If the fingerprint is unchanged, append and publish normally.
 - If another run appended scans, preserve those entries verbatim, append this run to the latest
@@ -347,8 +365,10 @@ The report carries its own memory. Embed exactly one block in the rendered page:
   missing or unparseable, do **not** reset or overwrite that report. Preserve its source and
   published payload. On an interactive run, explain the problem and require explicit approval
   before restoring a prior valid history or deliberately resetting it; on a scheduled run,
-  abort and leave the report unchanged. Create a new report identity only when the user
-  explicitly requests one.
+  abort, leave the report unchanged, and surface a setup-required failure in the scheduled
+  run's own output (the same way a failed PinMeTo baseline is surfaced in `monitoring.md`) so
+  the schedule's owner sees why monitoring stopped instead of a silently frozen report.
+  Create a new report identity only when the user explicitly requests one.
 
 ## Writing style inside the report
 
