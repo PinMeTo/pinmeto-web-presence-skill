@@ -263,3 +263,8 @@ code change).
 
 This block goes into the report's per-location data and is what makes the NAP matrix and the
 fix briefs concrete.
+
+Fix briefs for failing GEO checks use the exact `Goal` / `Issue` / `Fix` / `Skill` / `Docs`
+prompt format and source rules in `artifact-report.md`. Person-tasks (connect in PinMeTo,
+claim in Apple Business Connect / Bing Places) use the same format, with a `Fix` that says it
+is not a code change and gives the operational steps.

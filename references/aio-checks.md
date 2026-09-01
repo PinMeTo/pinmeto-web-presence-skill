@@ -75,3 +75,6 @@ identically): request three pages with `Accept: text/markdown` — the homepage,
 page (blog/product), and one sampled location page. A page passes if the server returns
 markdown (content-type `text/markdown` or an obviously-markdown body); a 200 that ignores
 the Accept header and returns HTML fails. Ratio = passing/3 for both checks; pass at 3/3.
+
+For every failing AIO check, write `fixSteps` and an `agentPrompt` using the exact
+`Goal` / `Issue` / `Fix` / `Skill` / `Docs` format and source rules in `artifact-report.md`.

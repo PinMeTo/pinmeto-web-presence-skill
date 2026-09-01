@@ -11,6 +11,27 @@ A rubric bump is required whenever a change moves scores, because the re-run att
 in `references/rubric.md` can only separate rubric drift from real customer progress if the
 version moved with the rules.
 
+## v0.12.1 · 2026-08-18 · rubric 2.14.0-skill.1
+
+Coding-agent handoffs are now context-free; scoring is unchanged.
+
+- `Goal` names the production host and affected route/template scope
+- `Issue` includes representative URLs or an exact route pattern plus the concrete observed and
+  expected values, instead of relying on sample counts or report terminology
+- `Fix` explains how to locate the implementation surface and provides standalone acceptance
+  tests that can be run from the target repository
+- A context-free handoff test rejects prompts that require access to the report to understand
+
+## v0.12.0 · 2026-08-18 · rubric 2.14.0-skill.1
+
+Coding-agent fix briefs now use a strict five-field handoff format; scoring is unchanged.
+
+- Every copied prompt is ordered as `Goal`, `Issue`, `Fix`, `Skill`, and `Docs`
+- Prompts retain the existing acceptance-criteria and verification requirements inside `Fix`
+- Skill links are limited to approved skills, including exact links surfaced by the audited
+  host's Is It Agent Ready report; unverified or guessed skill URLs are forbidden
+- Documentation links must be verified primary standards or official best-practice sources
+
 ## v0.11.0 · 2026-08-18 · rubric 2.14.0-skill.1
 
 Host-native report delivery; scoring is unchanged.
