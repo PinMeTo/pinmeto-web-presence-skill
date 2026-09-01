@@ -44,7 +44,7 @@ and agentic browsers render JS while the AI crawlers that feed training and retr
 (GPTBot, ClaudeBot, PerplexityBot) do not. Replaces
 2.10.0-skill.1's served-only policy, which over-punished client-rendered sites.
 
-Changes in 2.10.0-skill.1 (from the 2026-08-09 dogfood run): parity's arithmetic slot
+Changes in 2.10.0-skill.1 (from the 2026-08-09 dogfood scan): parity's arithmetic slot
 defined (Google column only), `geo.listing_connected_pinmeto` downgrade rule when the map
 surface contradicts the record, `geo.special_hours_set` scored from PinMeTo outside the
 holiday window, and an explicit `gradient_checks` whitelist. Prior scans keep their scores.
@@ -63,11 +63,11 @@ product cannot run through its APIs:
    `network` object.
 
 Consequence: **GEO scores are not 1:1 comparable with MLPR product scores**; SEO, AIO, and
-Agent Readiness remain identical to 2.8.0. Do not add, drop, or reweight checks in a run; if
+Agent Readiness remain identical to 2.8.0. Do not add, drop, or reweight checks in a scan; if
 the rubric needs changing, change it here with a version bump (and reconcile upstream when
 the product catches up).
 
-## Re-run rule (unambiguous — two readings here make runs incomparable)
+## Re-run rule (unambiguous — two readings here make scans incomparable)
 
 A re-run **always scores with the rubric version in *this* file**. Prior scans keep the
 scores they were computed with and are never recomputed. When the version has moved since
