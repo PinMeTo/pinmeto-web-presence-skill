@@ -1,0 +1,375 @@
+<!doctype html>
+<!--
+  PROTOTYPE — THROWAWAY. Wayfinder ticket #8 (map #7).
+  Question 1: does the ranked theme list REPLACE "Fix these first" (variant A),
+              or does a separate top-3 fixes card sit above the themes (variant B)?
+  Question 2: what is the reader-facing grouping label? Flip the label picker in the
+              floating bar: Theme / Focus area / What to work on / Opportunity.
+  Two structural variants on one file, switchable via ?variant= and ←/→ keys.
+  All data is dummy (fictional brand brightbikes.se); the theme grouping is a DRAFT —
+  the check-id → theme mapping is locked later (ticket #9).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE · Layer 1 theme list — PinMeTo Web Presence</title>
+<style>
+  :root{
+    --pagebg:#F2F3F4; --card:#fff; --line:#E2E6EA; --navy:#000050;
+    --blue:#3399FF; --link:#1E7FE0; --orange:#FF8854; --body:#333; --muted:#6A6F76;
+    --wash:#EAF4FF; --failtx:#B5481E; --passtx:#137A50;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--pagebg);color:var(--body);
+    font-family:'Montserrat',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    font-size:15px;line-height:1.55}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px 120px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;
+    box-shadow:0 1px 2px rgba(0,0,80,.06);padding:24px;margin:18px 0}
+  .kicker{font-size:13px;text-transform:uppercase;letter-spacing:.14em;
+    color:var(--orange);font-weight:700;margin:0 0 6px}
+  h2{color:var(--navy);font-weight:800;margin:0 0 8px;font-size:24px}
+  .sub{color:var(--muted);margin:0 0 4px}
+  /* hero */
+  .hero{background:radial-gradient(120% 160% at 20% 0%, #1a1a7a 0%, var(--navy) 60%);
+    color:#fff;border-radius:0 0 22px 22px;padding:38px 34px;display:flex;
+    justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:center}
+  .hero h1{margin:2px 0 10px;font-size:38px;font-weight:900;letter-spacing:-0.02em}
+  .hero .meta{color:#c9d4ff;font-size:14px}
+  .score-blk{text-align:right}
+  .score{font-size:84px;font-weight:900;letter-spacing:-0.02em;line-height:1}
+  .delta{display:inline-block;background:#1FA971;color:#fff;border-radius:999px;
+    padding:3px 12px;font-weight:700;font-size:14px;margin-top:6px}
+  .band{display:inline-block;border:1px solid rgba(255,255,255,.4);border-radius:999px;
+    padding:3px 12px;font-size:13px;margin-left:8px}
+  .outof{color:#c9d4ff;font-size:13px;margin-top:6px}
+  /* counts */
+  .tags{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .tag{border-radius:999px;padding:4px 14px;font-size:13px;font-weight:700}
+  .tag.fail{background:#FFE0D1;color:var(--failtx)}
+  .tag.warn{background:var(--pagebg);color:var(--muted)}
+  .tag.pass{background:#D8F3E7;color:var(--passtx)}
+  /* scorecards */
+  .pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:760px){.pillars{grid-template-columns:repeat(2,1fr)}}
+  .pillar{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:16px 18px}
+  .pillar .nm{font-weight:700;color:var(--navy);font-size:14px}
+  .pillar .sc{font-size:46px;font-weight:900;letter-spacing:-0.02em;line-height:1.1}
+  .bar{height:6px;border-radius:3px;background:var(--pagebg);margin:8px 0 6px}
+  .bar i{display:block;height:6px;border-radius:3px}
+  .bandword{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.08em}
+  /* trend */
+  .trendrow{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+  .pdelta{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px}
+  .pdelta div{font-size:13px;color:var(--muted)}
+  .pdelta b{color:var(--navy);font-size:16px;display:block}
+  .up{color:var(--passtx);font-weight:700}
+  /* theme cards */
+  .promoted{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:14px 0}
+  @media(max-width:860px){.promoted{grid-template-columns:1fr}}
+  .tcard{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:20px;position:relative;display:flex;flex-direction:column;gap:8px}
+  .tcard.big{border-top:4px solid var(--orange)}
+  .rank{position:absolute;top:-13px;left:16px;background:var(--navy);color:#fff;
+    border-radius:999px;width:26px;height:26px;display:flex;align-items:center;
+    justify-content:center;font-weight:800;font-size:14px}
+  .worth{display:inline-block;background:var(--wash);color:var(--navy);font-weight:800;
+    border-radius:999px;padding:3px 12px;font-size:13px;align-self:flex-start}
+  .tcard h3{margin:2px 0;color:var(--navy);font-size:17px;font-weight:800;line-height:1.3}
+  .tcard p{margin:0;font-size:14px}
+  .ptags{display:flex;gap:6px;flex-wrap:wrap}
+  .ptag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+    border:1px solid var(--line);border-radius:6px;padding:2px 8px;color:var(--muted)}
+  .meta-line{font-size:12px;color:var(--muted)}
+  .fixbtn{align-self:flex-start;margin-top:auto;background:var(--navy);color:#fff;border:0;
+    border-radius:10px;padding:8px 14px;font-weight:700;font-size:13px;cursor:pointer;
+    font-family:inherit}
+  .rest{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:860px){.rest{grid-template-columns:1fr}}
+  .rest .tcard{padding:16px}
+  .rest .tcard h3{font-size:15px}
+  /* fix-first rows (variant B) */
+  .fixrow{display:flex;gap:14px;align-items:flex-start;padding:14px 0;
+    border-top:1px solid var(--line)}
+  .fixrow:first-of-type{border-top:0}
+  .fixrow .rk{background:var(--orange);color:#fff;border-radius:8px;min-width:28px;
+    height:28px;display:flex;align-items:center;justify-content:center;font-weight:800}
+  .fixrow h3{margin:0;color:var(--navy);font-size:15px;font-weight:800}
+  .fixrow .w{white-space:nowrap;font-weight:800;color:var(--navy);font-size:13px;
+    background:var(--wash);border-radius:999px;padding:3px 10px}
+  /* NAP chip + layer 2 */
+  .napline{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:14px}
+  .chip{border-radius:6px;padding:2px 7px;font-size:12px;font-weight:800}
+  .chip.ok{background:#D8F3E7;color:var(--passtx)}
+  .chip.bad{background:#FFE0D1;color:var(--failtx)}
+  details.layer2{background:var(--card);border:1px solid var(--line);border-radius:18px;
+    padding:8px 24px;margin:18px 0}
+  details.layer2 summary{cursor:pointer;font-weight:800;color:var(--navy);padding:14px 0;
+    font-size:16px}
+  details.layer2 .stub{color:var(--muted);border:1px dashed var(--line);border-radius:12px;
+    padding:18px;margin:0 0 18px}
+  a{color:var(--link)}
+  /* floating switcher — not part of the design being judged */
+  .switcher{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+    background:#111;color:#fff;border-radius:999px;padding:10px 14px;display:flex;
+    gap:14px;align-items:center;box-shadow:0 8px 30px rgba(0,0,0,.35);z-index:50;
+    font-size:13px;flex-wrap:wrap;justify-content:center;max-width:94vw}
+  .switcher button{background:#333;border:0;color:#fff;border-radius:999px;
+    padding:6px 12px;cursor:pointer;font-family:inherit;font-size:13px}
+  .switcher button.on{background:var(--orange);color:#1a1a1a;font-weight:800}
+  .switcher .arrow{font-size:16px;padding:6px 10px}
+  .switcher .vname{font-weight:800;min-width:270px;text-align:center}
+  .switcher .grp{display:flex;gap:6px;align-items:center}
+  .switcher .lbl{opacity:.6;text-transform:uppercase;font-size:10px;letter-spacing:.1em}
+  .proto-banner{background:#111;color:#ffce9e;text-align:center;font-size:12px;
+    padding:6px;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<div class="proto-banner">PROTOTYPE — throwaway · wayfinder ticket #8 · dummy data (brightbikes.se is fictional) · draft grouping, mapping locked in ticket #9</div>
+<div class="wrap">
+
+  <div class="hero">
+    <div>
+      <div class="kicker">Multi-location presence report</div>
+      <h1>brightbikes.se</h1>
+      <div class="meta">14 locations · Scanned 1 Sep 2026 · Rubric 2.14.0-skill.1</div>
+    </div>
+    <div class="score-blk">
+      <div class="score">63</div>
+      <div><span class="delta">↑ 7 points</span><span class="band">Needs work</span></div>
+      <div class="outof">out of 100, since 1 Jun 2026</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="kicker">Summary</div>
+    <p>Your shops are easy to find on the map: Google, Apple and Bing all know where you are,
+    and your listings mostly agree with your website. What holds the score back is the website
+    itself — each shop's details live only in the visible page, not in the machine-readable
+    code that search engines and AI assistants read. Most of that is one template fix, not
+    fourteen page edits.</p>
+    <p>Since June the score moved from 56 to 63, driven by the new store locator pages.
+    The biggest remaining wins are template-level: a developer afternoon, not a campaign.</p>
+    <div class="tags">
+      <span class="tag fail">19 failing checks</span>
+      <span class="tag warn">3 could not be measured</span>
+      <span class="tag pass">38 passing</span>
+    </div>
+  </div>
+
+  <div class="pillars" id="pillars"></div>
+
+  <div class="card">
+    <div class="kicker">Trend</div>
+    <h2>Up 12 points since March</h2>
+    <div class="trendrow">
+      <svg width="330" height="120" viewBox="0 0 330 120" role="img" aria-label="Overall score across scans">
+        <line x1="30" y1="10" x2="320" y2="10" stroke="#E2E6EA"/><text x="2" y="14" font-size="10" fill="#6A6F76">100</text>
+        <line x1="30" y1="55" x2="320" y2="55" stroke="#E2E6EA"/><text x="8" y="59" font-size="10" fill="#6A6F76">50</text>
+        <line x1="30" y1="100" x2="320" y2="100" stroke="#E2E6EA"/><text x="12" y="104" font-size="10" fill="#6A6F76">0</text>
+        <polyline points="60,54 175,50 290,43" fill="none" stroke="#3399FF" stroke-width="2.5"/>
+        <circle cx="60" cy="54" r="4" fill="#3399FF"/><text x="52" y="44" font-size="11" font-weight="700" fill="#000050">51</text>
+        <circle cx="175" cy="50" r="4" fill="#3399FF"/><text x="167" y="40" font-size="11" font-weight="700" fill="#000050">56</text>
+        <circle cx="290" cy="43" r="5" fill="#FF8854"/><text x="282" y="33" font-size="11" font-weight="800" fill="#000050">63</text>
+        <text x="42" y="116" font-size="10" fill="#6A6F76">2 Mar</text>
+        <text x="157" y="116" font-size="10" fill="#6A6F76">1 Jun</text>
+        <text x="272" y="116" font-size="10" fill="#6A6F76">1 Sep</text>
+      </svg>
+      <div class="pdelta">
+        <div>SEO<b>58 <span class="up">+9</span></b></div>
+        <div>GEO<b>79 <span class="up">+3</span></b></div>
+        <div>AIO<b>51 <span class="up">+10</span></b></div>
+        <div>Agent readiness<b>64 <span class="up">+6</span></b></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= THE CONTESTED SLOT: variants render here ======= -->
+  <div id="slot"></div>
+  <!-- ======================================================== -->
+
+  <div class="card">
+    <div class="napline">
+      <strong style="color:var(--navy)">Name, address &amp; phone:</strong>
+      <span class="chip ok">4 of 5 shops match everywhere</span>
+      <span class="chip bad">1 mismatch — Malmö, Apple shows the old street address</span>
+      <a href="#layer2">See the full matrix in the audit detail ↓</a>
+    </div>
+  </div>
+
+  <details class="layer2" id="layer2">
+    <summary>Full audit detail — every check, every location, the NAP matrix</summary>
+    <div class="stub">Layer 2 stub (not part of this prototype's question): per-pillar
+    accordions with all 60 check rows, location breakdown, NAP consistency matrix, listing
+    content table. Double-scored rows get a muted cross-reference — "also scored in Agent
+    Readiness — same fix, pays twice."</div>
+  </details>
+
+</div>
+
+<div class="switcher" role="toolbar" aria-label="Prototype controls">
+  <div class="grp">
+    <button class="arrow" data-cycle="-1" title="Previous variant (←)">←</button>
+    <span class="vname" id="vname"></span>
+    <button class="arrow" data-cycle="1" title="Next variant (→)">→</button>
+  </div>
+  <div class="grp"><span class="lbl">Label</span><span id="labelbtns"></span></div>
+</div>
+
+<script>
+// ---------- dummy data (draft grouping; mapping locked in ticket #9) ----------
+// worth = sum over failing checks of weight × (1 − ratio) × pillar_weight / 100
+const THEMES = [
+  { headline: "Put each shop's details into the page code",
+    worth: 7.6, pillars: ["SEO","AIO","GEO","Agent readiness"],
+    summary: "Your location pages only describe each shop after JavaScript runs, so search engines see less and AI crawlers see nothing. Serving the name, address, hours and coordinates in the page's own code is one template change that earns points in all four pillars.",
+    checks: 5, effort: "One template change" },
+  { headline: "Give AI assistants a text version of your site",
+    worth: 6.0, pillars: ["AIO","Agent readiness"],
+    summary: "ChatGPT, Claude and other assistants ask your site for plain-text pages and a guide at /llms.txt. Today they get nothing back, so they answer questions about Brightbikes from third-party sources instead of your own words.",
+    checks: 4, effort: "One developer task" },
+  { headline: "Refresh what Google shows for each shop",
+    worth: 4.1, pillars: ["GEO"],
+    summary: "Three of five checked shops show fewer than five photos, and the newest review reply is over a year old. Fresh photos and review activity are the parts of the listing customers actually look at.",
+    checks: 4, effort: "Ongoing, no code needed" },
+  { headline: "Make every location page introduce its own shop",
+    worth: 3.9, pillars: ["SEO"],
+    summary: "Eleven location pages share the same page title and heading. Each page should name its own city and shop, so Google shows the right page for 'bike shop Malmö' instead of choosing one at random.",
+    checks: 4, effort: "One template change" },
+  { headline: "Tell AI agents what they may do on your site",
+    worth: 3.4, pillars: ["Agent readiness"],
+    summary: "Your site never says whether AI agents may read, quote or act on it — no content signals in robots.txt, no server card. Sites that declare this are the ones agents can safely use and recommend.",
+    checks: 3, effort: "Two small files" },
+  { headline: "Answer common questions on the page itself",
+    worth: 2.9, pillars: ["AIO"],
+    summary: "Your pages don't carry question-and-answer content that AI search can quote directly. A short FAQ per shop (opening hours, service booking, brands carried) gives assistants your answer instead of a guess.",
+    checks: 3, effort: "Content task" },
+];
+
+const TOP_FIXES = [ // variant B: classic per-fix rows, ranked by points returned
+  { pillar: "AIO", worth: 2.5, headline: "Publish an llms.txt guide for AI crawlers",
+    summary: "One text file at brightbikes.se/llms.txt that lists your key pages. It's what AI assistants read first — right now they get a 404." },
+  { pillar: "SEO", worth: 2.3, headline: "Serve each shop's details in the initial page code",
+    summary: "The LocalBusiness data for each shop should be in the HTML the server sends, not added by JavaScript afterwards." },
+  { pillar: "Agent readiness", worth: 2.3, headline: "Declare content signals in robots.txt",
+    summary: "Three lines in robots.txt that tell AI agents what they may do with your content." },
+];
+
+const LABELS = [
+  { key:"theme",  term:"theme",        plural:"Themes" },
+  { key:"focus",  term:"focus area",   plural:"Focus areas" },
+  { key:"work",   term:"thing to work on", plural:"What to work on" },
+  { key:"opp",    term:"opportunity",  plural:"Opportunities" },
+];
+
+const VARIANTS = [
+  { key:"A", name:"A — Themes replace “Fix these first”" },
+  { key:"B", name:"B — Separate top-3 card above themes" },
+];
+
+// ---------- rendering ----------
+const fmtWorth = w => `Worth ~${w.toFixed(0)} points`;
+
+function themeCard(t, i, label, big){
+  return `<div class="tcard ${big ? "big" : ""}">
+    ${big ? `<span class="rank">${i+1}</span>` : ""}
+    <span class="worth">${fmtWorth(t.worth)}</span>
+    <h3>${t.headline}</h3>
+    <p>${t.summary}</p>
+    <div class="ptags">${t.pillars.map(p=>`<span class="ptag">${p}</span>`).join("")}</div>
+    <div class="meta-line">${t.checks} checks · ${t.effort} · one fix, pays in ${t.pillars.length} pillar${t.pillars.length>1?"s":""}</div>
+    <button class="fixbtn" title="Opens the fix drawer in the real report (stub here)">How to fix</button>
+  </div>`;
+}
+
+function themesSection(label, {promoteTop3}){
+  const sub = `Ranked by the score points a fix would return. One ${label.term} is one
+    plain-language issue; a single fix can earn points in several pillars.`;
+  let cards;
+  if (promoteTop3){
+    cards = `<div class="promoted">${THEMES.slice(0,3).map((t,i)=>themeCard(t,i,label,true)).join("")}</div>
+             <div class="rest">${THEMES.slice(3).map((t,i)=>themeCard(t,i+3,label,false)).join("")}</div>`;
+  } else {
+    cards = `<div class="rest" style="grid-template-columns:repeat(3,1fr)">
+      ${THEMES.map((t,i)=>themeCard(t,i,label,false)).join("")}</div>`;
+  }
+  return `<div style="margin:26px 0 8px">
+    <div class="kicker">${label.plural}</div>
+    <h2>${label.plural}</h2>
+    <p class="sub">${sub}</p></div>${cards}`;
+}
+
+function fixFirstCard(){
+  return `<div class="card">
+    <div class="kicker">Fix these first</div>
+    <h2>The three fixes worth the most</h2>
+    ${TOP_FIXES.map((f,i)=>`<div class="fixrow">
+      <span class="rk">${i+1}</span>
+      <div style="flex:1">
+        <h3>${f.headline}</h3>
+        <p style="margin:4px 0 0;font-size:14px">${f.summary}</p>
+        <div class="meta-line" style="margin-top:4px">${f.pillar}</div>
+      </div>
+      <span class="w">${fmtWorth(f.worth)}</span>
+      <button class="fixbtn" style="margin:0" title="Stub">How to fix</button>
+    </div>`).join("")}
+  </div>`;
+}
+
+function render(){
+  const label = LABELS[state.label];
+  const slot = document.getElementById("slot");
+  slot.innerHTML = state.variant === 0
+    ? themesSection(label, {promoteTop3:true})                    // A: themes ARE the fix list
+    : fixFirstCard() + themesSection(label, {promoteTop3:false}); // B: fixes card, then themes
+  document.getElementById("vname").textContent = VARIANTS[state.variant].name;
+  document.querySelectorAll("[data-label]").forEach(b=>
+    b.classList.toggle("on", +b.dataset.label === state.label));
+  try{
+    const q = new URLSearchParams(location.search);
+    q.set("variant", VARIANTS[state.variant].key); q.set("label", label.key);
+    history.replaceState(null,"", location.pathname + "?" + q);
+  }catch(e){ /* file:// in some browsers */ }
+}
+
+// ---------- state + controls ----------
+const q = new URLSearchParams(location.search);
+const state = {
+  variant: Math.max(0, VARIANTS.findIndex(v=>v.key===(q.get("variant")||"A"))),
+  label:   Math.max(0, LABELS.findIndex(l=>l.key===(q.get("label")||"theme"))),
+};
+
+document.getElementById("labelbtns").innerHTML =
+  LABELS.map((l,i)=>`<button data-label="${i}">${l.plural}</button>`).join(" ");
+
+document.querySelector(".switcher").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  if (b.dataset.cycle) state.variant = (state.variant + +b.dataset.cycle + VARIANTS.length) % VARIANTS.length;
+  if (b.dataset.label !== undefined) state.label = +b.dataset.label;
+  render();
+});
+document.addEventListener("keydown", e=>{
+  if (/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName) || document.activeElement.isContentEditable) return;
+  if (e.key==="ArrowLeft"||e.key==="ArrowRight"){
+    state.variant = (state.variant + (e.key==="ArrowRight"?1:-1) + VARIANTS.length) % VARIANTS.length;
+    render();
+  }
+});
+
+// pillar scorecards (weights deliberately absent — they move to methodology)
+document.getElementById("pillars").innerHTML = [
+  ["SEO",58,"#B5481E","Critical"],["GEO",79,"#137A50","Healthy"],
+  ["AIO",51,"#B5481E","Critical"],["Agent readiness",64,"#6A6F76","Needs work"],
+].map(([n,s,c,band])=>`<div class="pillar"><div class="nm">${n}</div>
+  <div class="sc" style="color:${c}">${s}</div>
+  <div class="bar"><i style="width:${s}%;background:${c}"></i></div>
+  <div class="bandword">${band}</div></div>`).join("");
+
+render();
+</script>
+</body>
+</html>
