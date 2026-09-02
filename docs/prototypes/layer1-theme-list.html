@@ -297,9 +297,14 @@ function themesSection(label, {promoteTop3}){
     cards = `<div class="rest" style="grid-template-columns:repeat(3,1fr)">
       ${THEMES.map((t,i)=>themeCard(t,i,label,false)).join("")}</div>`;
   }
+  const words=["zero","one","two","three","four","five","six","seven","eight","nine","ten"];
+  const total=THEMES.reduce((a,t)=>a+t.worth,0);
+  const n=THEMES.length;
+  const noun = n===1 ? label.term : (label.key==="work" ? "things to work on" : label.plural.toLowerCase());
+  const headline=`${words[n]||n} ${noun}, worth ~${total.toFixed(0)} points together`;
   return `<div style="margin:26px 0 8px">
     <div class="kicker">${label.plural}</div>
-    <h2>${label.plural}</h2>
+    <h2 style="text-transform:none">${headline[0].toUpperCase()+headline.slice(1)}</h2>
     <p class="sub">${sub}</p></div>${cards}`;
 }
 
