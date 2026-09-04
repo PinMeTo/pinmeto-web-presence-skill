@@ -31,14 +31,23 @@
 //      writing-style section encloses it, so the closed set has one home and
 //      cannot drift between two copies. Headings inside fenced code blocks are
 //      illustration, not structure, and are ignored here and in (d).
-//   6. Retired vocabulary (RETIRED_VOCABULARY: the wording the Themes work
-//      list replaced) is absent from SKILL.md, CONTEXT.md and every file under
-//      references/. Matching ignores case, treats any whitespace run,
+//   6. The two-layer contract in references/artifact-report.md: the "Section
+//      order" section lists exactly the ten Layer 1 sections (LAYER_1_SECTIONS)
+//      in order; the "Full audit detail" section enumerates Layer 2's six items
+//      (LAYER_2_ITEMS) in order and says the expander is collapsed; the "Pillar
+//      scorecards" section gives no pillar weight as a percentage, because the
+//      four weights live in "Methodology", which must name them.
+//   7. Retired vocabulary (RETIRED_VOCABULARY: the wording the Themes work
+//      list replaced) is absent from SKILL.md, CONTEXT.md, README.md and every
+//      file under references/. Matching ignores case, treats any whitespace run,
 //      including a line wrap, as one space, and stops at word boundaries
 //      ("desktop fixture" is not "top fix"; "top fixes" is).
 //
 // Every assertion is about an externally observable property of the shipped
-// files, never about how the markdown is laid out.
+// files, never about how the markdown is laid out. Which sections the report
+// has, and in which order, is such a property: it is the contract a scanning
+// agent renders from, so (6) reads the section names and their order and
+// nothing else, not the hand-typed numerals and not the indentation.
 //
 // To add an assertion: write a pure function `(fileContents...) => string[]`
 // that returns one "<file>: <what failed>" line per violation, add it to
@@ -53,6 +62,8 @@ const REQUIRED_GLOSSARY_TERMS = [
   "Fix brief",
   "Points returned",
   "Report",
+  "Layer 1",
+  "Layer 2",
   "Theme",
   "Theme mapping",
   "Theme brief",
@@ -388,6 +399,121 @@ export function checkThemeMapping(reportMd, rubricMd) {
   return violations;
 }
 
+const SECTION_ORDER_HEADING = /^section order$/i;
+
+/** Layer 1's ten sections, in the order #13 approved and #17 landed. */
+export const LAYER_1_SECTIONS = [
+  "Hero",
+  "Summary card",
+  "Pillar scorecards",
+  "Trend",
+  "Themes",
+  "NAP summary chip",
+  "Full audit detail",
+  "What to do next",
+  "Methodology",
+  "Footer",
+];
+
+/** Layer 2's contents, in the order they sit inside the "Full audit detail" expander. */
+export const LAYER_2_ITEMS = [
+  "Scan-history table",
+  "Sticky section nav",
+  "Per-pillar sections",
+  "Location breakdown",
+  "NAP consistency matrix",
+  "Listing content table",
+];
+
+/**
+ * `1. **Title**` at the start of a line, optionally indented (an indented item
+ * is nested inside the section above it, which is how Layer 2 sits inside the
+ * "Full audit detail" section).
+ */
+const numberedItemPattern = (nested) => new RegExp(`^${nested ? "[ \\t]+" : ""}\\d+\\.[ \\t]+\\*\\*([^*]+)\\*\\*`, "gm");
+
+/** Numbered items with a bold title, as `{ title, body }`, `body` running to the next match. */
+function numberedItems(section, { nested }) {
+  const matches = [...section.matchAll(numberedItemPattern(nested))];
+  return matches.map((match, index) => ({
+    title: match[1].trim(),
+    body: section.slice(match.index, matches[index + 1]?.index ?? section.length),
+  }));
+}
+
+/** A weight given as a percentage: "weight %", "40% weight", "weight, 40 per cent". */
+const WEIGHT_PERCENTAGE = /weight[^.\n]{0,40}(?:%|per ?cent)|(?:%|per ?cent)[^.\n]{0,40}weight/i;
+
+/** One violation line per position where `items` and `expected` disagree, plus a count line. */
+function compareOrder(file, items, expected, { label, listedIn }) {
+  const violations = [];
+  if (items.length !== expected.length) {
+    violations.push(
+      `${file}: "${listedIn}" lists ${items.length} ${label}s, the contract has ${expected.length}`,
+    );
+  }
+  for (const [index, title] of expected.entries()) {
+    const found = items[index];
+    if (!found) {
+      violations.push(`${file}: ${label} ${index + 1} is missing, the contract has "${title}"`);
+    } else if (found.title.toLowerCase() !== title.toLowerCase()) {
+      violations.push(`${file}: ${label} ${index + 1} is "${found.title}", the contract has "${title}"`);
+    }
+  }
+  return violations;
+}
+
+/**
+ * The two-layer contract (#17): "Section order" lists exactly the ten Layer 1
+ * sections in order, the "Full audit detail" section enumerates Layer 2's six
+ * items in order, the "Pillar scorecards" section gives no pillar weight as a
+ * percentage (those live in Methodology) and the "Methodology" section names
+ * the weights.
+ */
+export function checkSectionOrder(reportMd) {
+  const file = "references/artifact-report.md";
+  const home = headings(reportMd).find((heading) => SECTION_ORDER_HEADING.test(heading.text));
+  if (home === undefined) return [`${file}: no "Section order" heading`];
+
+  const layer1 = numberedItems(home.body, { nested: false });
+  const violations = compareOrder(file, layer1, LAYER_1_SECTIONS, {
+    label: "Layer 1 section",
+    listedIn: "Section order",
+  });
+
+  const named = (title) => layer1.find((item) => item.title.toLowerCase() === title.toLowerCase());
+  const expander = named("Full audit detail");
+  if (expander) {
+    violations.push(
+      ...compareOrder(file, numberedItems(expander.body, { nested: true }), LAYER_2_ITEMS, {
+        label: "Layer 2 item",
+        listedIn: "Full audit detail",
+      }),
+    );
+    // Demoted, not just enumerated: a Layer 2 that renders open is the audit-first report again.
+    if (!/collaps/i.test(expander.body)) {
+      violations.push(`${file}: the Full audit detail section does not say the expander is collapsed`);
+    }
+  }
+
+  // Methodology is the only section that gives the pillar weights (#13: they moved off the scorecards).
+  for (const item of layer1) {
+    if (item.title.toLowerCase() === "methodology") continue;
+    if (WEIGHT_PERCENTAGE.test(item.body)) {
+      violations.push(
+        `${file}: the ${item.title} section gives a pillar weight as a percentage; Methodology is the only place the weights appear`,
+      );
+    }
+  }
+  // The values themselves are not asserted: Methodology names the weights, the scan renders
+  // them from the rubric, so a number here would be a second source of truth.
+  const methodology = named("Methodology");
+  if (methodology && !/pillar weights?/i.test(methodology.body)) {
+    violations.push(`${file}: the Methodology section does not carry the four pillar weights`);
+  }
+  return violations;
+}
+
 /**
  * Retired vocabulary must be absent from every swept file. `filesByPath` maps a
  * repo-relative path to its contents. Case-insensitive; a whitespace run in the
@@ -413,8 +539,12 @@ export function checkRetiredVocabulary(filesByPath, phrases = RETIRED_VOCABULARY
   return violations;
 }
 
-/** `referenceMds` maps `references/<file>.md` to its contents for every file under references/. */
-export function checkReferences({ skillMd, changelogMd, contextMd, referenceMds }) {
+/**
+ * `referenceMds` maps `references/<file>.md` to its contents for every file under
+ * references/. Every field is required: an omitted one reads as an empty file, so
+ * its assertions would silently pass.
+ */
+export function checkReferences({ skillMd, changelogMd, contextMd, readmeMd, referenceMds }) {
   const rubricMd = referenceMds["references/rubric.md"] ?? "";
   const reportMd = referenceMds["references/artifact-report.md"] ?? "";
   return [
@@ -423,7 +553,13 @@ export function checkReferences({ skillMd, changelogMd, contextMd, referenceMds 
     ...checkGlossaryTerms(contextMd),
     ...checkThemeMapping(reportMd, rubricMd),
     ...checkEffortLabelsHome(reportMd),
-    ...checkRetiredVocabulary({ "SKILL.md": skillMd, "CONTEXT.md": contextMd, ...referenceMds }),
+    ...checkSectionOrder(reportMd),
+    ...checkRetiredVocabulary({
+      "SKILL.md": skillMd,
+      "CONTEXT.md": contextMd,
+      "README.md": readmeMd,
+      ...referenceMds,
+    }),
   ];
 }
 
@@ -456,6 +592,7 @@ function main() {
     skillMd: read("SKILL.md"),
     changelogMd: read("CHANGELOG.md"),
     contextMd: read("CONTEXT.md"),
+    readmeMd: read("README.md"),
     referenceMds,
   };
   const violations = missing.length > 0 ? missing : checkReferences(contents);

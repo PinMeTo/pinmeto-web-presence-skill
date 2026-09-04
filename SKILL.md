@@ -128,7 +128,9 @@ returned, per the Theme mapping in [references/artifact-report.md](references/ar
 ### Stage 6 — Report (host-native, updatable)
 
 Produce the report per [references/artifact-report.md](references/artifact-report.md), matching
-the PinMeTo Presence Report design and including a fix-brief drawer (with a copy-paste
+the PinMeTo Presence Report contract: two layers, the marketer's sections first (hero,
+summary, scorecards, trend, Themes, NAP summary chip) and the full audit behind one collapsed
+"Full audit detail" expander, and including a fix-brief drawer (with a copy-paste
 coding-agent prompt) for every failing check, plus a Theme brief per Theme card that stacks
 those drawers unchanged behind one copy-all control (members without a drawer, the GEO
 sub-group B/C fields, appear as evidence pointers). Choose the delivery path from the host,
