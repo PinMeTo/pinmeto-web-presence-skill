@@ -46,7 +46,8 @@
 //      older scan unknown rather than failing); the Themes item defines the
 //      "Open since" meta cell; the Trend item and the writing-style section, the
 //      two places #12 puts the templates, both carry TREND_TEMPLATES verbatim;
-//      and the writing-style section carries FIRST_SCAN_BASELINE_SENTENCE.
+//      and the writing-style section's Summary card bullet, not merely the
+//      section, carries FIRST_SCAN_BASELINE_SENTENCE.
 //   8. Retired vocabulary (RETIRED_VOCABULARY: the wording the Themes work
 //      list replaced) is absent from SKILL.md, CONTEXT.md, README.md and every
 //      file under references/. Matching ignores case, treats any whitespace run,
@@ -573,6 +574,20 @@ function sectionWithSubsections(headingList, index) {
  */
 const normalizeProse = (text) => text.replace(/[`*_]/g, " ").replace(/\s+/g, " ").trim();
 
+/**
+ * The template bullets of a writing-style section, as `{ lead, prose }`: a
+ * `- **Lead.** …` item and its normalized text, running to the next such item.
+ * A rule about one template reads its own bullet, so a sentence that moved to a
+ * neighbouring template cannot satisfy it.
+ */
+function templateBullets(sectionText) {
+  const matches = [...sectionText.matchAll(/^[ \t]*-[ \t]+\*\*([^*]+)\*\*/gm)];
+  return matches.map((match, index) => ({
+    lead: match[1].trim(),
+    prose: normalizeProse(sectionText.slice(match.index, matches[index + 1]?.index ?? sectionText.length)),
+  }));
+}
+
 /** #12's Layer 1 trend templates, verbatim. Up and down share one template; no adjectives. */
 export const TREND_TEMPLATES = [
   "Up <n> points since your first scan on <date>",
@@ -665,11 +680,17 @@ export function checkTrendContract(reportMd) {
   if (stylePosition === -1) {
     violations.push(`${file}: no writing-style section to carry the trend templates`);
   } else {
-    const prose = normalizeProse(sectionWithSubsections(headingList, stylePosition));
-    templateHomes.push({ label: "writing-style section", prose });
-    if (!prose.includes(normalizeProse(FIRST_SCAN_BASELINE_SENTENCE))) {
+    const section = sectionWithSubsections(headingList, stylePosition);
+    templateHomes.push({ label: "writing-style section", prose: normalizeProse(section) });
+    // The sentence has to sit in the Summary card template, not merely somewhere in the
+    // section: #12 amends the summary card's second paragraph, and a sentence that drifted
+    // into a neighbouring template would leave the summary card without it.
+    const summaryCard = templateBullets(section).find((bullet) => /summary card/i.test(bullet.lead));
+    if (summaryCard === undefined) {
+      violations.push(`${file}: the writing-style section has no **Summary card** template bullet`);
+    } else if (!summaryCard.prose.includes(normalizeProse(FIRST_SCAN_BASELINE_SENTENCE))) {
       violations.push(
-        `${file}: the writing-style section does not end a first scan's summary card with the baseline sentence "${FIRST_SCAN_BASELINE_SENTENCE}"`,
+        `${file}: the Summary card template does not end a first scan's second paragraph with the baseline sentence "${FIRST_SCAN_BASELINE_SENTENCE}"`,
       );
     }
   }

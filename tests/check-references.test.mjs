@@ -697,10 +697,28 @@ test("a template missing from both homes is one violation naming both", () => {
   assert.match(violations[0], /Trend section and the writing-style section/);
 });
 
-test("a writing-style section without the first-scan baseline sentence is a violation", () => {
+test("a Summary card template without the first-scan baseline sentence is a violation", () => {
   const violations = checkTrendContract(trendMd({ style: writingStyle({ baseline: "Come back next month." }) }));
   assert.equal(violations.length, 1);
+  assert.match(violations[0], /Summary card/);
   assert.match(violations[0], /baseline/i);
+});
+
+test("the baseline sentence under another template does not satisfy the Summary card rule", () => {
+  const style = writingStyle({ baseline: "Come back next month." }).replace(
+    "### Effort labels",
+    `- **Theme summary.** Two moves. "${FIRST_SCAN_BASELINE_SENTENCE}"\n\n### Effort labels`,
+  );
+  const violations = checkTrendContract(trendMd({ style }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /Summary card/);
+});
+
+test("a writing-style section with no Summary card template bullet is a violation", () => {
+  const style = writingStyle().replace("- **Summary card.**", "First scan:");
+  const violations = checkTrendContract(trendMd({ style }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /Summary card/);
 });
 
 test("a headline framed on the previous scan rather than the first scan is a violation", () => {
