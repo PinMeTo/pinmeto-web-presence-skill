@@ -158,7 +158,7 @@ different-scope one.
 After delivering the report, offer to set up a recurring scan (weekly or monthly) using the
 host's scheduling capability. Mechanics in [references/monitoring.md](references/monitoring.md).
 
-## Scripts, delegation, and model choice
+## Scripts, delegation, and falsifiability
 
 Route each kind of work to the cheapest thing that does it correctly:
 
@@ -169,26 +169,29 @@ Route each kind of work to the cheapest thing that does it correctly:
    script; on the Sites path, write the results and history into a data module that the
    Site's components render (the Site build is the deterministic generator there). This is
    required where a shell exists — it is faster, free, and reproducible.
-2. **Delegate only the identity-and-position reads to a small, fast model** when the host
-   supports subagents with model selection (e.g. a Haiku-class model in Claude Code):
-   listing **existence, name, address, phone, website href, coordinates** — every one of
-   which is verifiable against the PinMeTo baseline, so a wrong value is caught. Give the
-   subagent the recipe and the evidence schema, require `null` plus a note when a field
-   cannot be read, and **reject any value prefixed `~` or "approx"** on arrival.
-   **Do not delegate the `.well-known`/`llms.txt`/markdown-negotiation probes**: nothing
-   verifies them, so "200 JSON" reported for a path that actually 301s into an HTML 404 is
-   an unfalsifiable pass — and it becomes a public claim that the customer implements a
-   standard they don't. They are cheap `curl` calls; run them in the fetch script and read
-   the status, content-type and first bytes yourself.
-3. **Keep judgment *and* the unverifiable reads on the primary model:** the Google richness
-   fields (weekly hours table, photo count, attribute chips, review recency), normalization
-   calls (does "Karhumäkivägen 3, Vanda" match "Karhumäentie 3, Vantaa"?), severity
-   decisions, fix briefs, and all report prose. Richness fields are read off a localized UI
-   with relative dates and have no baseline to check against — a small model returns
-   plausible-looking numbers there rather than nulls (a dogfood scan produced a *fabricated*
-   ISO review date synthesized from "a year ago", and nulled five passing hours tables).
-   Anything a wrong answer can silently corrupt stays here; this is not where to save
-   tokens.
+2. **Delegate only falsifiable reads.** A read is **falsifiable** when the baseline can prove
+   the value wrong, which is exactly the identity-and-position set: listing **existence,
+   name, address, phone, website href, coordinates**. Delegate those to a subagent with the
+   recipe and the evidence schema, require `null` plus a note when a field cannot be read,
+   and **reject any value prefixed `~` or "approx"** on arrival. **Assume the subagent runs a
+   small, fast model whatever you asked for.** The host decides that and can pin it:
+   `CLAUDE_CODE_SUBAGENT_MODEL` outranks both a subagent's `model:` frontmatter and the Agent
+   tool's `model` parameter, some hosts set it on every dispatch, and a subagent's own claim
+   about which model it is running is not evidence. What is safe to delegate follows from the
+   read, never from the model you believe you got.
+3. **Keep judgment and every unfalsifiable read on the primary model:** the Google richness
+   fields (weekly hours table, photo count, attribute chips, review recency), the
+   `.well-known`/`llms.txt`/markdown-negotiation probes, normalization calls (does
+   "Karhumäkivägen 3, Vanda" match "Karhumäentie 3, Vantaa"?), severity decisions, fix
+   briefs, and all report prose. Richness fields are read off a localized UI with relative
+   dates and have no baseline to check against, so a small model returns plausible-looking
+   numbers there rather than nulls (a dogfood scan produced a *fabricated* ISO review date
+   synthesized from "a year ago", and nulled five passing hours tables). The probes are cheap
+   `curl` calls, and a delegated "200 JSON" for a path that actually 301s into an HTML 404 is
+   an unfalsifiable pass that becomes a public claim that the brand implements a standard it
+   doesn't: run them in the fetch script and read the status, content-type and first bytes
+   yourself. Anything a wrong answer can silently corrupt stays here; this is not where to
+   save tokens.
 4. **One browser, one driver.** Subagents on most hosts share a single browser surface —
    do not run two browser-driving agents concurrently; delegate map lookups sequentially
    within that surface. Two independent surfaces (e.g. the in-app Browser *and* Claude in
