@@ -137,6 +137,14 @@ _Avoid_: theme drawer, combined brief, mega-prompt
 One of the closed set of eight fixed strings in the Theme mapping naming the size of a Theme's fix and who does it; never rewritten per scan.
 _Avoid_: difficulty, cost, complexity
 
+**Cleared**:
+The state of a Theme with no failing member check in the current scan that had one in an earlier scan of the same report. Measured on the web, not declared by a person, and computed against the current Theme mapping only.
+_Avoid_: resolved, fixed, closed
+
+**Reopened**:
+A cleared Theme with a failing member check again in the current scan. Named in the trend card's "What moved" callout, in the same words as progress.
+_Avoid_: regressed, broken again
+
 **Schedule**:
 A recurring host automation that triggers scans of exactly one report, named by its exact title.
 _Avoid_: monitor, cron (as a domain term)
