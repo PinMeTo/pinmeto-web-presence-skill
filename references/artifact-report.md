@@ -60,7 +60,15 @@ and other schemes; render a rejected value as inert text instead of a link or em
 - when artifact browser QA is available, serve the file and click one accordion, one drawer
   button, and one filter before publishing (`document.scripts.length` being 0 is the instant
   tell that malformed markup swallowed the script);
-- escape non-ASCII inside artifact CSS `content:` rules as `\00B7`-style escapes.
+- escape non-ASCII inside artifact CSS `content:` rules as `\00B7`-style escapes;
+- in both modes, the Theme mapping (below) agrees with the rubric. `scripts/check-references.mjs`
+  checks this mechanically; run it before publishing (CI runs it on every push as well):
+  (a) `theme_mapping_for_rubric_version` equals `rubric_version` in `rubric.md`; (b) the union
+  of all `checks` arrays equals the rubric's set of point-bearing ids, every pillar check id
+  plus the GEO sub-group B and C field ids; (c) no id appears in two Themes; (d) every `effort`
+  value is one of the eight effort labels enumerated in the closed set below. **Any failure
+  blocks publishing.** There is no "Other" catch-all Theme: a catch-all would hide exactly the
+  drift this check exists to catch, in front of a customer.
 
 After publishing, verify the same three things on either path: the exact report title, the
 hero score, and a parseable `pmt-scan-history` block. For a Site, run the `sites-hosting`
@@ -369,6 +377,112 @@ The report carries its own memory. Embed exactly one block in the rendered page:
   scan's own output (the same way a failed PinMeTo baseline is surfaced in `monitoring.md`) so
   the schedule's owner sees why monitoring stopped instead of a silently frozen report.
   Create a new report identity only when the user explicitly requests one.
+
+## Theme mapping
+
+A **Theme** is a fixed cross-pillar group of checks that one fix and one owner resolve. The
+table below is the **Theme mapping**: the scanning agent computes Theme membership and worth
+mechanically from it, never by per-scan judgment. Membership rule: one fix, one owner. A
+check lives where the person who fixes it sits (developer template, developer infrastructure,
+content, PinMeTo listings); the reader-facing story is the tie-breaker. The mapping covers
+every id that can produce points returned: the 52 pillar checks plus GEO's three sub-group B
+fields and five sub-group C fields (`scoring.md` §4 gives them an effective weight, so they can
+surface as fixes). 60 ids, each in exactly one Theme, ten Themes, no "Other" catch-all.
+
+Per Theme the table fixes five columns: `slug` (stable, kebab-case, for cross-references),
+`name` (written as a change, short, no check id or file token; rendered verbatim every scan), `description` (what the Theme is about, marketer voice, no per-scan
+facts), `effort` (a property of the fix, not the scan; one of the closed set below) and
+`checks`. Pillar tags and "pays in N pillars" are derived from the member ids.
+
+```json
+{
+  "theme_mapping_for_rubric_version": "2.14.0-skill.1",
+  "themes": [
+    { "slug": "location-data-in-code",
+      "name": "Put each location's and your brand's details into the page code",
+      "description": "Structured data (JSON-LD) that names each location and the brand in the HTML the server sends, so search engines and AI crawlers read it without running JavaScript.",
+      "effort": "One template change",
+      "checks": ["seo.localbusiness_jsonld_present", "seo.localbusiness_jsonld_richness", "aio.graph_jsonld_pattern", "aio.inlanguage_matches_html_lang", "aio.organization_schema_complete", "aio.entity_consistent_brand_naming", "ar.jsonld_present_valid"] },
+    { "slug": "unique-location-pages",
+      "name": "Make every location page introduce its own location",
+      "description": "Every location page carries its own title, description, heading, image text and social preview, so search engines can tell the pages apart and show the right one.",
+      "effort": "One template change",
+      "checks": ["seo.meta_title_unique", "seo.meta_description_unique", "seo.h1_unique_has_location", "seo.og_twitter_per_location", "seo.image_alt_text"] },
+    { "slug": "crawlable-site",
+      "name": "Let search engines find and crawl every location page",
+      "description": "Canonicals, sitemaps, robots rules, breadcrumbs, language links and link depth that let crawlers discover and index every location page.",
+      "effort": "One developer task",
+      "checks": ["seo.canonical_present", "aio.canonical_homepage_resolvable", "seo.sitemap_lists_locations", "ar.xml_sitemap", "seo.robots_allows_locations", "seo.internal_linking_depth", "seo.breadcrumbs_structured", "aio.breadcrumblist_matches_visible_nav", "seo.hreflang_correct"] },
+    { "slug": "fast-on-phones",
+      "name": "Make location pages fast on phones",
+      "description": "Location pages show their main content within 2.5 seconds on mobile and pass Google's mobile-friendly test.",
+      "effort": "Performance work",
+      "checks": ["seo.lcp_sample", "seo.mobile_friendly"] },
+    { "slug": "text-for-ai",
+      "name": "Give AI assistants a text version of your site",
+      "description": "A plain-text guide at /llms.txt and Markdown versions of pages on request, so AI assistants read your own words instead of third-party summaries.",
+      "effort": "One developer task",
+      "checks": ["aio.llms_txt_present", "ar.llms_txt_full", "aio.markdown_content_negotiation", "ar.markdown_content_negotiation"] },
+    { "slug": "answers-on-page",
+      "name": "Answer customers' questions on the page itself",
+      "description": "Question-and-answer content, quick answers, speakable sections and author signals that AI search can quote directly.",
+      "effort": "Content task",
+      "checks": ["aio.faqpage_schema_2_types", "aio.quick_answer_first_200w", "aio.speakable_specification", "aio.eeat_article_signals", "aio.haspart_about_mentions_enrichment"] },
+    { "slug": "agent-front-door",
+      "name": "Tell AI agents what they may do and give them a front door",
+      "description": "Content signals in robots.txt plus the well-known files (MCP server card, agent skills, API catalog, link headers) that tell AI agents what they may do and where to start.",
+      "effort": "A few small files",
+      "checks": ["ar.content_signals_robots", "ar.mcp_server_card", "ar.webmcp_tools_registered", "ar.agent_skills_discovery", "ar.api_catalog", "ar.rfc8288_link_headers"] },
+    { "slug": "connect-listings",
+      "name": "Connect every listing through PinMeTo",
+      "description": "Every location's Google, Apple and Bing listing exists and is connected through PinMeTo, with no duplicates or stale closed pages.",
+      "effort": "PinMeTo task, no code",
+      "checks": ["geo.listing_connected_pinmeto", "geo.location_platform_parity"] },
+    { "slug": "same-details-everywhere",
+      "name": "Same name, address, phone and pin everywhere",
+      "description": "Name, address, phone, website, hours and map pin agree across the PinMeTo record, every map platform and the location page.",
+      "effort": "Fix the record in PinMeTo, then the page",
+      "checks": ["geo.name_matches_site", "geo.address_matches_site", "geo.phone_matches_site", "geo.website_url_on_listing", "geo.coords_within_50m", "consistency.name", "consistency.address", "consistency.coords_50m_cluster", "page.jsonld_name_matches_dominant", "page.jsonld_telephone_matches_dominant", "page.jsonld_geo_within_50m_dominant", "page.opening_hours_matches_dominant", "page.visible_nap_matches_dominant"] },
+    { "slug": "fresh-google-listings",
+      "name": "Keep each Google listing complete and fresh",
+      "description": "Each Google listing shows hours, holiday hours, five or more photos, services, recent reviews and no consumer alerts.",
+      "effort": "Ongoing, no code",
+      "checks": ["geo.hours_present", "geo.special_hours_set", "geo.photos_5_plus", "geo.services_attributes", "geo.menu_order_reservations", "geo.recent_reviews_180d", "geo.consumer_alerts_clear"] }
+  ]
+}
+```
+
+Known duplicates and where they collapse: llms.txt ×2 and markdown negotiation ×2 →
+`text-for-ai` · sitemap ×2, breadcrumbs ×2, canonicals ×2 → `crawlable-site` · JSON-LD ×3 →
+`location-data-in-code` · NAP across sub-groups A, B and C → `same-details-everywhere`.
+
+**Maintenance rule (keeps the mapping total).** The mapping is pinned to the rubric version
+through `theme_mapping_for_rubric_version` and is updated in the same change as any rubric
+bump:
+
+1. The mapping lives as this machine-readable JSON block in `artifact-report.md` (not a new
+   file, not prose only) and pins `theme_mapping_for_rubric_version`.
+2. The pre-publish sanity check above (conditions (a) to (d), run by
+   `scripts/check-references.mjs`) fails when the mapping and the rubric disagree, and any
+   failure blocks publishing. There is no "Other" catch-all Theme: a catch-all would hide
+   exactly the drift this rule exists to catch, in front of a customer.
+3. `rubric.md`'s version-bump paragraph states that bumping the rubric version requires
+   updating the Theme mapping and its pinned version.
+
+### Effort labels
+
+The closed set of eight **effort labels**. An effort label names the size of a Theme's fix and
+who does it; it is never rewritten per scan. `scripts/check-references.mjs` reads the quoted
+strings in this section as the set, so keep it to the list:
+
+- "One template change"
+- "One developer task"
+- "Performance work"
+- "Content task"
+- "A few small files"
+- "PinMeTo task, no code"
+- "Fix the record in PinMeTo, then the page"
+- "Ongoing, no code"
 
 ## Writing style inside the report
 
