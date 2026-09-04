@@ -11,7 +11,8 @@ contract remain the same:
   be delivered.
 - **Claude:** create one self-contained HTML artifact using the host's artifact capability.
 
-The layout below reproduces the approved PinMeTo "Presence Report" design; follow it section by
+The layout below is the PinMeTo Presence Report contract: two layers, Layer 1 for the
+marketer and the full audit behind one "Full audit detail" expander. Follow it section by
 section rather than improvising. On Claude, load an artifact-design skill first if the host
 provides one. On ChatGPT/Codex, the Sites workflows govern project setup, implementation,
 validation, preview, and hosting; this file governs the report-specific UI and data contract.
@@ -57,9 +58,11 @@ and other schemes; render a rejected value as inert text instead of a link or em
   `pmt-scan-history` block plus one interactivity script), with the interactivity script last;
 - artifact interactivity uses `addEventListener` on `data-*` hooks — never inline `onclick=`
   attributes — and the script sits at the end of the body;
-- when artifact browser QA is available, serve the file and click one accordion, one drawer
-  button, and one filter before publishing (`document.scripts.length` being 0 is the instant
-  tell that malformed markup swallowed the script);
+- when artifact browser QA is available, serve the file and, before publishing, expand "Full
+  audit detail", then click one accordion, one drawer button, one copy button and one filter
+  inside it, since all four live in Layer 2 now and the expander is the first click
+  (`document.scripts.length` being 0 is the instant tell that malformed markup swallowed the
+  script);
 - escape non-ASCII inside artifact CSS `content:` rules as `\00B7`-style escapes;
 - in both modes, the Theme mapping (below) agrees with the rubric. `scripts/check-references.mjs`
   checks this mechanically; run it before publishing (CI runs it on every push as well):
@@ -167,28 +170,55 @@ renders identically in light and dark viewers.
   `#F2F3F4` and white with a hairline so a rank badge, worth pill or pillar tag never sits
   beside a twin.
 - Max width 1080px, centered; wide tables scroll inside their own `overflow-x:auto` container.
-- Print: hide interactive chrome (`.np` class + `@media print`), `break-inside: avoid` on
-  cards.
+
+### Print
+
+**Layer 1 is the print view.** A printed report is the summary a manager reads, not sixty
+check rows. In `@media print`:
+
+- Layer 1 prints in full: hero, summary card, scorecards, trend, Themes, the NAP summary chip,
+  "What to do next", Methodology and the footer.
+- The "Full audit detail" expander prints **only when the reader has expanded it**. An open
+  expander prints its contents; a collapsed one prints nothing, its summary line included.
+- **Theme briefs and per-check drawers never print**, open or not. They are worked from the
+  live report, and printing them would bury the summary under thirty sets of fix steps.
+- Unchanged from before: interactive chrome carries `.np` and is hidden in print, and cards
+  keep `break-inside: avoid`.
 
 ## Section order
+
+The report is **two layers**. **Layer 1** is everything outside the expander: what a marketer
+reads (hero, summary, the four scorecards, the trend, the Themes work list, a one-line NAP
+summary chip) plus the page-level sections under it. **Layer 2** is the full audit, demoted
+behind one "Full audit detail" expander that is collapsed when the page loads. Nothing was
+removed from the audit, only moved one click away: every Layer 2 item keeps the data contract
+it already had. Printing gives you Layer 1, and Layer 2 only where the reader opened the
+expander first (see "Print" above).
+
+Layer 1 is these ten sections, in this order. Sections 8 to 10 sit below the expander at the
+bottom of the page: "What to do next" is the marketer's next step, Methodology and the footer
+are page-level. **Any link that points into Layer 2 expands the expander first**, then scrolls
+to its target: a scorecard, the NAP summary chip, a Theme brief's evidence pointer into the
+matrix, or a per-check drawer. A reader must never be sent into a closed expander.
 
 1. **Hero** (navy radial-gradient header, white text): kicker "Multi-location presence
    report" in orange · brand domain as the h1 · meta row (N locations · scan date · rubric
    version) · right side: the overall score huge (84px, 900), a delta pill vs the previous
    scan (↑/↓ and points, green/orange), "out of 100, since <previous scan date>", and a grade
    band tag (Strong / Healthy / Needs work / Critical). First run: no delta pill.
-2. **Summary card**: 2 short paragraphs, written for a marketer — what is strong, what holds
-   the score back, what kind of effort fixes it (template-level vs manual). Then three count
-   tags: `N failing checks` / `N could not be measured` / `N passing`.
-3. **Pillar scorecards**: 4 linked cards (SEO, GEO, AIO, Agent readiness) — name + weight %,
-   the pillar score big (46px, colored by band), a slim progress bar, and the band word.
-   Each links to its pillar section.
+2. **Summary card**: two short paragraphs written for a marketer, to the "Summary card"
+   template under "Writing style inside the report", then three count tags:
+   `N failing checks` / `N could not be measured` / `N passing`.
+3. **Pillar scorecards**: 4 linked cards (SEO, GEO, AIO, Agent readiness), each carrying the
+   pillar name, the pillar score big (46px, colored by band), a slim progress bar, and the
+   band word. No weight on the card: the four pillar weights live in Methodology (section 9),
+   because a marketer reads the score and the band, not the arithmetic behind them. Each card
+   links to its pillar section inside Layer 2.
 4. **Trend** *(from the second scan onward; omit entirely on the first scan)*:
    - headline stating the total movement ("Up 25 points in six months"),
    - an inline SVG line chart of overall score across scans (grid lines at 0/50/100, score
      labels above points, dates below, last point emphasized in orange),
    - a per-pillar now/±delta strip,
-   - a scan-history table (date, label, SEO, GEO, AIO, Agent, Overall),
    - a "What moved since <last scan>" callout (soft blue wash card): derive the bullets
      **mechanically from a diff of the previous and current `checks` maps** (that is why
      the map stores every check), and classify each one as **rubric change**,
@@ -197,10 +227,13 @@ renders identically in light and dark viewers.
      live" (real) vs "SEO gained 10 points because the rubric now gives half credit for
      client-rendered values; nothing changed on the site" (rubric).
 
-   Rendering rules for this section: the hero score, the pillar scorecards and the trend
-   table must all render **from the history entries**, never from separately computed
-   numbers — a report that disagrees with its own embedded state (hero 22, history 23) is
-   worse than no trend at all. When two scans share a date, label the chart points with
+   The chart stays in Layer 1; the scan-history table behind it is the first item inside
+   Layer 2, so the card tells the story and the raw numbers are one click away.
+
+   Rendering rules for this section: the hero score, the pillar scorecards, the chart and the
+   Layer 2 scan-history table must all render **from the history entries**, never from
+   separately computed numbers — a report that disagrees with its own embedded state (hero 22,
+   history 23) is worse than no trend at all. When two scans share a date, label the chart points with
    date **and** ordinal ("9 Aug (1st)", "9 Aug (2nd)"). With only two points the chart is
    thin but still correct — keep it.
 5. **Themes** (the work list): kicker THEMES in orange · a data-driven h2,
@@ -241,58 +274,88 @@ renders identically in light and dark viewers.
 
    No orange borders; adjacent pills never share a fill (the rules are in "Brand look"). The
    card carries the `id="theme-<slug>"` anchor specified under "The Theme brief".
-6. **Sticky section nav**: pill links (Trend · SEO n · GEO n · AIO n · Agent n · Locations)
-   plus a filter toggle (All / Needs attention / Passing) that shows/hides check rows.
-7. **Per-pillar sections** (SEO, GEO, AIO, Agent readiness): section header with kicker,
-   pillar name, 1-line blurb, score + band tag, separated by a 2px navy rule. Then one
-   accordion row per check: status dot (fail orange / warn grey / pass green) · human check
-   name · the rubric `check.id` in small muted type · right-aligned result label (e.g. "0%",
-   "3 / 5", "Pass") · chevron. Expanded: "Why this matters" prose, the cost of leaving it,
-   and a button — "How to fix it" (fail) or "See evidence" (pass/warn) — opening the drawer.
-8. **Location breakdown**: table of every *sampled* location — name, city, per-pillar
-   mini-scores where applicable, overall. Note which fleet locations were not sampled.
-9. **NAP consistency matrix**: per sampled location × {Name, Address, Phone, Hours,
-   Map pin, URL}. Each cell shows **one chip per platform** where the field applies and a
-   listing exists — a small **G / A / B** (Google, Apple, Bing) letter chip, green
-   `#D8F3E7` = matches the PinMeTo record, orange `#FFE0D1` = differs, grey `#F2F3F4` =
-   searched and **no listing found** (`lookup: "not_found"`). A platform that could **not be
-   checked** (`lookup: "unobserved"`) gets a distinct hollow chip — grey outline, no fill, `?`
-   instead of the glyph — with the reason in its tooltip; rendering it as a plain grey chip
-   would tell the customer they have no listing when nobody looked. So an Oslo/Address cell
-   reads `G✓ A! B✓` at a glance
-   instead of one flattened "!". Each orange chip carries a `title` tooltip with the
-   observed value vs the PinMeTo value ("Apple: Ruseløkkveien 34 · PinMeTo: Dronning
-   Eufemias gate 16"). Fields that are scored on fewer platforms show only those chips
-   (Hours: G · URL: G/B · the rest: G/A/B). Legend underneath must explain the chips
-   **and define Map pin** ("the platform's map-pin position — within 50 m of the PinMeTo
-   coordinates counts as matching") **and what the Hours chip compares** ("Google's weekly
-   hours table vs the PinMeTo record" — hours are a Google richness check and a
-   page-agreement field, not a three-platform NAP comparison, so the single chip is
-   correct and should not read as if Apple and Bing were checked and omitted). This is the money table for the PinMeTo pitch — it
-   must be exactly right per the GEO evidence.
-10. **Listing content table** (directly after the matrix): per sampled location, what the
-    Google listing actually shows — {Category (vs the category PinMeTo pushes, from
-    `network.google.categories.primaryCategory`), Photos ("5+" / "under 5" / "not counted" — never a fabricated exact number; see the reviewer-profile trap in `geo-browser-checks.md`), Latest owner
-    post (date or "none"), Newest review (Google's own relative label verbatim — "6 months
-    ago" — not an ISO date derived from it; the `newestReviewLabel` field), Newest review
-    (absolute date — the optional `newestReview` field, set only when Google actually
-    displays a date; leave the cell empty otherwise)}. Photos and review recency feed scored
-    checks (`geo.photos_5_plus`, `geo.recent_reviews_180d`); category and owner posts are
-    **observed, unscored** — label the columns so the distinction is visible. A stale or
-    empty "latest owner post" is a natural talking point for PinMeTo's posting features;
-    keep it factual, not salesy.
-11. **What to do next** (navy card): "Ship the fixes, then scan again" — 3 numbered steps
-    (hand briefs to a developer / any person-tasks like claiming an Apple listing / re-run),
-    and a literal re-run prompt the customer can say to ChatGPT, Codex, or Claude:
-    `"Re-run the presence scan for <domain> and show me what changed since <date>."`
-12. **Methodology**: the four pillar weights with one-line descriptions, rubric version, scan
-    date, and sources ("Google, Apple, and Bing Maps as observed in a browser, your website
-    and store locator, PageSpeed Insights, PinMeTo location data"). State the sample
-    explicitly: which locations, which pages, what was not covered. When any check used the
-    rendered pass, include the one-paragraph explanation of the dual-pass policy (served =
-    full credit, client-rendered = half, and why: Google renders, AI training crawlers
-    don't) so the half-credit rows read as method, not error.
-13. **Footer**: "Generated by the PinMeTo web presence skill · Rubric <version>".
+6. **NAP summary chip**: one card, one line, answering "do my listings agree?" without
+   opening the table. It carries the label "Name, address & phone", one green chip with the
+   count that agrees everywhere ("4 of 5 locations match everywhere"), and, when anything
+   disagrees, one orange chip with the number of mismatches and the sharpest example, naming
+   the location, the platform and the field ("1 mismatch: Malmö, Apple shows the old street
+   address"). When every sampled location agrees on every field, the green chip stands alone.
+   Then a link, "See the full matrix in the audit detail", pointing at the NAP consistency
+   matrix inside Layer 2: it **expands the expander if it is collapsed**, then scrolls to the
+   matrix. Both counts come from the same GEO evidence as the matrix, so the chip and the
+   table cannot disagree. The chip's contents are this contract; its wording follows
+   "Writing style inside the report", and the sentences above are illustrations, not templates.
+7. **Full audit detail**: one expander, collapsed when the page loads, holding Layer 2. Its
+   summary line reads "Full audit detail: every check, every location, the NAP matrix", and it
+   holds these six items in this order:
+   1. **Scan-history table** (date, label, SEO, GEO, AIO, Agent, Overall): the numbers behind
+      the Layer 1 chart, rendered from the same history entries. Omitted on the first scan,
+      like the rest of the trend.
+   2. **Sticky section nav**: pill links (Trend · SEO n · GEO n · AIO n · Agent n · Locations)
+      plus a filter toggle (All / Needs attention / Passing) that shows/hides check rows. Nav
+      and filter sit inside the expander because their targets do. The "Trend" pill is the one
+      exception: it points at the Layer 1 trend card.
+   3. **Per-pillar sections** (SEO, GEO, AIO, Agent readiness): section header with kicker,
+      pillar name, 1-line blurb, score + band tag, separated by a 2px navy rule. Then one
+      accordion row per check: status dot (fail orange / warn grey / pass green) · human check
+      name · the rubric `check.id` in small muted type · right-aligned result label (e.g. "0%",
+      "3 / 5", "Pass") · chevron. Expanded: "Why this matters" prose, the cost of leaving it,
+      and a button — "How to fix it" (fail) or "See evidence" (pass/warn) — opening the drawer.
+
+      **Double-scored rows carry a muted cross-reference.** Where one fix earns points under
+      two pillars (the pairs listed under "Theme mapping": llms.txt, markdown negotiation,
+      sitemap, breadcrumbs, canonicals, JSON-LD), each row of the pair shows one muted line in
+      its expanded body naming the other, "also scored in <pillar>, same fix, pays twice",
+      linking to the sibling row. Both rows keep their own status, result label and drawer;
+      neither is hidden and neither is merged, because the two checks differ in threshold.
+   4. **Location breakdown**: table of every *sampled* location — name, city, per-pillar
+      mini-scores where applicable, overall. Note which fleet locations were not sampled.
+   5. **NAP consistency matrix**: per sampled location × {Name, Address, Phone, Hours,
+      Map pin, URL}. Each cell shows **one chip per platform** where the field applies and a
+      listing exists — a small **G / A / B** (Google, Apple, Bing) letter chip, green
+      `#D8F3E7` = matches the PinMeTo record, orange `#FFE0D1` = differs, grey `#F2F3F4` =
+      searched and **no listing found** (`lookup: "not_found"`). A platform that could **not be
+      checked** (`lookup: "unobserved"`) gets a distinct hollow chip — grey outline, no fill, `?`
+      instead of the glyph — with the reason in its tooltip; rendering it as a plain grey chip
+      would tell the customer they have no listing when nobody looked. So an Oslo/Address cell
+      reads `G✓ A! B✓` at a glance
+      instead of one flattened "!". Each orange chip carries a `title` tooltip with the
+      observed value vs the PinMeTo value ("Apple: Ruseløkkveien 34 · PinMeTo: Dronning
+      Eufemias gate 16"). Fields that are scored on fewer platforms show only those chips
+      (Hours: G · URL: G/B · the rest: G/A/B). Legend underneath must explain the chips
+      **and define Map pin** ("the platform's map-pin position — within 50 m of the PinMeTo
+      coordinates counts as matching") **and what the Hours chip compares** ("Google's weekly
+      hours table vs the PinMeTo record" — hours are a Google richness check and a
+      page-agreement field, not a three-platform NAP comparison, so the single chip is
+      correct and should not read as if Apple and Bing were checked and omitted). This is the money table for the PinMeTo pitch — it
+      must be exactly right per the GEO evidence. It is what the Layer 1 NAP summary chip and
+      the Theme brief's evidence pointers link to.
+   6. **Listing content table** (directly after the matrix): per sampled location, what the
+      Google listing actually shows — {Category (vs the category PinMeTo pushes, from
+      `network.google.categories.primaryCategory`), Photos ("5+" / "under 5" / "not counted" — never a fabricated exact number; see the reviewer-profile trap in `geo-browser-checks.md`), Latest owner
+      post (date or "none"), Newest review (Google's own relative label verbatim — "6 months
+      ago" — not an ISO date derived from it; the `newestReviewLabel` field), Newest review
+      (absolute date — the optional `newestReview` field, set only when Google actually
+      displays a date; leave the cell empty otherwise)}. Photos and review recency feed scored
+      checks (`geo.photos_5_plus`, `geo.recent_reviews_180d`); category and owner posts are
+      **observed, unscored** — label the columns so the distinction is visible. A stale or
+      empty "latest owner post" is a natural talking point for PinMeTo's posting features;
+      keep it factual, not salesy.
+8. **What to do next** (navy card): "Ship the fixes, then scan again" — 3 numbered steps
+   (hand a Theme's briefs to a developer / any person-tasks like claiming an Apple listing /
+   re-run), and a literal re-run prompt the customer can say to ChatGPT, Codex, or Claude:
+   `"Re-run the presence scan for <domain> and show me what changed since <date>."` The steps
+   refer to Themes, in the order the Themes section ranks them, not to individual checks.
+9. **Methodology**: the four pillar weights with a one-line description each, saying what the
+   pillar covers and why it carries that share of the overall score (the weights moved here
+   from the scorecards, and this is the only place they appear), plus rubric version, scan
+   date, and sources ("Google, Apple, and Bing Maps as observed in a browser, your website
+   and store locator, PageSpeed Insights, PinMeTo location data"). State the sample
+   explicitly: which locations, which pages, what was not covered. When any check used the
+   rendered pass, include the one-paragraph explanation of the dual-pass policy (served =
+   full credit, client-rendered = half, and why: Google renders, AI training crawlers
+   don't) so the half-credit rows read as method, not error.
+10. **Footer**: "Generated by the PinMeTo web presence skill · Rubric <version>".
 
 ## The fix-brief drawer
 

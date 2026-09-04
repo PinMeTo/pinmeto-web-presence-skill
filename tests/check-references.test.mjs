@@ -7,7 +7,10 @@ import {
   checkThemeMapping,
   checkRetiredVocabulary,
   checkEffortLabelsHome,
+  checkSectionOrder,
   RETIRED_VOCABULARY,
+  LAYER_1_SECTIONS,
+  LAYER_2_ITEMS,
 } from "../scripts/check-references.mjs";
 
 const skill = (version) => `---\nname: pinmeto-web-presence\nversion: ${version}\n---\n# Title\n`;
@@ -109,9 +112,9 @@ test("a term mentioned only in prose, not as an entry, does not count", () => {
   assert.equal(checkGlossaryTerms(prose, ["Theme brief"]).length, 1);
 });
 
-test("the default required glossary terms include Theme, Theme mapping, Theme brief and Effort label", () => {
+test("the default required glossary terms include the Themes and two-layer vocabulary", () => {
   const violations = checkGlossaryTerms(glossary);
-  for (const term of ["Theme", "Theme mapping", "Theme brief", "Effort label"]) {
+  for (const term of ["Theme", "Theme mapping", "Theme brief", "Effort label", "Layer 1", "Layer 2"]) {
     assert.ok(violations.some((v) => v.includes(`\`${term}\``)), `expected a violation for ${term}`);
   }
 });
@@ -431,4 +434,152 @@ test("a tilde-fenced example is ignored the same way", () => {
   const md = reportMd({ json: mapping() }).replace("## Theme mapping", `${tilde}\n\n## Theme mapping`);
   assert.deepEqual(checkEffortLabelsHome(md), []);
   assert.deepEqual(checkThemeMapping(md, themeRubric()), []);
+});
+
+// --- Layer 1 section order ----------------------------------------------------
+
+const layer2Items = (items = LAYER_2_ITEMS) =>
+  items.map((title, index) => `   ${index + 1}. **${title}**: what it holds.`).join("\n");
+const sectionOrderMd = ({
+  titles = LAYER_1_SECTIONS,
+  scorecards = "the pillar score big, a bar, the band word.",
+  methodology = "the four pillar weights with one-line descriptions.",
+  nested = layer2Items(),
+  trend = "the movement since the first scan, a chart, a per-pillar strip.",
+  expander = "one expander, collapsed when the page loads.",
+} = {}) => {
+  const body = titles
+    .map((title, index) => {
+      const number = index + 1;
+      if (title === "Trend") return `${number}. **${title}**: ${trend}`;
+      if (title === "Pillar scorecards") return `${number}. **${title}**: ${scorecards}`;
+      if (title === "Methodology") return `${number}. **${title}**: ${methodology}`;
+      if (title === "Full audit detail") return `${number}. **${title}**: ${expander}\n${nested}`;
+      return `${number}. **${title}**: prose.`;
+    })
+    .join("\n");
+  return `# Report delivery\n\n## Brand look\n\nColors.\n\n## Section order\n\nThe report is two layers.\n\n${body}\n\n## The fix-brief drawer\n\nProse.\n`;
+};
+
+test("the ten Layer 1 sections in order, with Layer 2 enumerated inside the expander, pass", () => {
+  assert.deepEqual(checkSectionOrder(sectionOrderMd()), []);
+});
+
+test("the contract is the ten Layer 1 sections and the six Layer 2 items from the spec", () => {
+  assert.deepEqual(LAYER_1_SECTIONS, [
+    "Hero",
+    "Summary card",
+    "Pillar scorecards",
+    "Trend",
+    "Themes",
+    "NAP summary chip",
+    "Full audit detail",
+    "What to do next",
+    "Methodology",
+    "Footer",
+  ]);
+  assert.deepEqual(LAYER_2_ITEMS, [
+    "Scan-history table",
+    "Sticky section nav",
+    "Per-pillar sections",
+    "Location breakdown",
+    "NAP consistency matrix",
+    "Listing content table",
+  ]);
+});
+
+test("a missing Section order heading is one violation", () => {
+  const violations = checkSectionOrder("# Report delivery\n\nNo section order here.\n");
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /references\/artifact-report\.md/);
+  assert.match(violations[0], /Section order/);
+});
+
+test("a Layer 1 section out of order names the position, what is there and what the contract has", () => {
+  const swapped = [...LAYER_1_SECTIONS];
+  [swapped[4], swapped[5]] = [swapped[5], swapped[4]];
+  const violations = checkSectionOrder(sectionOrderMd({ titles: swapped }));
+  assert.equal(violations.length, 2);
+  assert.match(violations[0], /section 5/);
+  assert.match(violations[0], /NAP summary chip/);
+  assert.match(violations[0], /Themes/);
+});
+
+test("a dropped Layer 1 section names the count and the contract's count", () => {
+  const titles = LAYER_1_SECTIONS.filter((title) => title !== "NAP summary chip");
+  const violations = checkSectionOrder(sectionOrderMd({ titles }));
+  assert.ok(violations.some((v) => /9 Layer 1 sections/.test(v) && /10/.test(v)), violations.join("\n"));
+});
+
+test("a pillar weight percentage on the Pillar scorecards item is a violation naming Methodology", () => {
+  const violations = checkSectionOrder(sectionOrderMd({ scorecards: "name + weight %, the score big." }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /Pillar scorecards/);
+  assert.match(violations[0], /Methodology/);
+});
+
+test("a pillar weight spelled out as per cent, in any section but Methodology, is a violation", () => {
+  const violations = checkSectionOrder(sectionOrderMd({ trend: "the pillar weight of 40 per cent moved the score." }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /Trend/);
+});
+
+test("a percentage that is not a pillar weight passes", () => {
+  const scorecards = 'the score big, the band word, result labels like "0%".';
+  assert.deepEqual(checkSectionOrder(sectionOrderMd({ scorecards })), []);
+});
+
+test("a Methodology item that does not carry the pillar weights is a violation", () => {
+  const violations = checkSectionOrder(sectionOrderMd({ methodology: "rubric version, scan date, sources." }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /Methodology/);
+  assert.match(violations[0], /weight/);
+});
+
+test("a Methodology item that says weight without naming the pillar weights is a violation", () => {
+  const methodology = "rubric version, scan date, sources; weight details live elsewhere.";
+  const violations = checkSectionOrder(sectionOrderMd({ methodology }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /Methodology/);
+});
+
+test("a Layer 2 item missing from the expander names the item", () => {
+  const nested = layer2Items(LAYER_2_ITEMS.filter((title) => title !== "Scan-history table"));
+  const violations = checkSectionOrder(sectionOrderMd({ nested }));
+  assert.ok(violations.some((v) => /Scan-history table/.test(v)), violations.join("\n"));
+});
+
+test("a Layer 2 item out of order names the position", () => {
+  const reordered = [...LAYER_2_ITEMS];
+  [reordered[0], reordered[1]] = [reordered[1], reordered[0]];
+  const violations = checkSectionOrder(sectionOrderMd({ nested: layer2Items(reordered) }));
+  assert.equal(violations.length, 2);
+  assert.match(violations[0], /Layer 2 item 1/);
+  assert.match(violations[0], /Sticky section nav/);
+  assert.match(violations[0], /Scan-history table/);
+});
+
+test("an expander that does not say it is collapsed is a violation", () => {
+  const violations = checkSectionOrder(sectionOrderMd({ expander: "one expander holding the full audit." }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /Full audit detail/);
+  assert.match(violations[0], /collapsed/);
+});
+
+test("an expander described as not collapsed is a violation, not a match", () => {
+  const violations = checkSectionOrder(sectionOrderMd({ expander: "one expander, not collapsed on load." }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /collapsed/);
+});
+
+test("the word collapsed inside a Layer 2 item does not satisfy the expander's own state", () => {
+  const nested = layer2Items().replace("what it holds.", "rows that start collapsed.");
+  const violations = checkSectionOrder(sectionOrderMd({ expander: "one expander over the full audit.", nested }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /collapsed/);
+});
+
+test("an empty Full audit detail expander is one violation per missing Layer 2 item", () => {
+  const violations = checkSectionOrder(sectionOrderMd({ nested: "" }));
+  assert.ok(violations.some((v) => /Layer 2 item/.test(v)), violations.join("\n"));
 });

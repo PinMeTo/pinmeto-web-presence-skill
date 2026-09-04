@@ -113,6 +113,14 @@ The drawer attached to a failing check in the report: plain-English why, fix ste
 _Avoid_: recommendation, action item
 _See also_: Theme brief
 
+**Layer 1**:
+Everything in a report except what sits inside the "Full audit detail" expander: the ten sections the report delivery reference fixes, from the hero through the Themes work list and the NAP summary chip to "What to do next", Methodology and the footer. Written for a marketer, and the print view.
+_Avoid_: overview, top of the page, executive summary
+
+**Layer 2**:
+The full audit, behind the report's one "Full audit detail" expander, collapsed until the reader opens it: scan-history table, section nav and filter, per-pillar check rows, location breakdown, NAP consistency matrix, listing content table. Demoted, never removed, and every item keeps its data contract.
+_Avoid_: appendix, details section, the rest
+
 **Theme**:
 A fixed cross-pillar group of checks that one fix and one owner resolve, defined by the Theme mapping in the report delivery reference. The unit of the Layer 1 work list; a Theme card's headline is the Theme's name from the mapping, verbatim. Themes are presentation only; the rubric stays the closed set.
 _Avoid_: focus area, opportunity, category, bucket, issue group

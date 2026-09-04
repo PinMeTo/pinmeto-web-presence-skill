@@ -5,9 +5,13 @@ brand's online findability across four pillars — **SEO**, **GEO** (real Google
 Bing Maps listings, checked in a browser), **AI visibility (AIO)**, and **Agent Readiness** —
 scored against the PinMeTo MLPR rubric (v2.14.0-skill.1, a skill-line fork of the v2.8.0
 rubric in `pinmeto-www-reports` that re-adds Bing and adds a PinMeTo-connection check). It
-produces an updatable report in the approved Presence Report design — a published Site in
-ChatGPT/Codex, or an HTML artifact in Claude — that keeps its own scan history for trends and
-can be set up as a recurring scan.
+produces an updatable, two-layer Presence Report (a published Site in ChatGPT/Codex, or an
+HTML artifact in Claude). Layer 1 is written for a marketer: score, trend, and a ranked list of
+**Themes**, each one plain-language issue that one fix and one owner resolve. The full audit
+(every check row, the location breakdown, the NAP matrix) sits one click away behind a "Full
+audit detail" expander. Printing gives you Layer 1, and the audit detail only when the reader
+opened the expander first. The report keeps its own scan history
+for trends and can be set up as a recurring scan.
 
 It is distributed as part of the **PinMeTo Locations** plugin
 ([`PinMeTo/claude-plugins`](https://github.com/PinMeTo/claude-plugins)), alongside the
