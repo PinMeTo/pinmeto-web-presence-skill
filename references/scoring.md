@@ -114,7 +114,7 @@ history block so the report renders from them rather than recomputing.
 Status bands (used for the hero tag and the pillar scorecards) map onto the grade
 thresholds: **Strong** ≥90 · **Healthy** ≥75 · **Needs work** ≥60 · **Critical** <60.
 
-## 4. Points returned — the ranking key for Themes
+## 4. Points returned: the ranking key for Themes
 
 For each failing (not warn) check:
 
@@ -124,7 +124,7 @@ For each failing (not warn) check:
 `(1 ÷ count of that platform's applicable_checks) × platform_weight × 0.55 × 0.30`, and a
 sub-group B/C field's is `field_share × subgroup_weight × 0.30`. Themes rank by summed
 points returned over their failing members; membership comes from the Theme mapping in
-`artifact-report.md`, never from per-scan grouping, and presentation (the Theme cards and the
+`artifact-report.md`, never from per-scan judgement, and presentation (the Theme cards and the
 Theme brief) is specified in `artifact-report.md`.
 
 Tie-breakers: fleet-wide template fixes beat per-location manual edits; person-tasks (claim a

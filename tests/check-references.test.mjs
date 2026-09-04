@@ -6,6 +6,7 @@ import {
   checkGlossaryTerms,
   checkThemeMapping,
   checkRetiredVocabulary,
+  RETIRED_VOCABULARY,
 } from "../scripts/check-references.mjs";
 
 const skill = (version) => `---\nname: pinmeto-web-presence\nversion: ${version}\n---\n# Title\n`;
@@ -319,9 +320,12 @@ test("files free of retired vocabulary pass", () => {
   assert.deepEqual(checkRetiredVocabulary(clean), []);
 });
 
+test("the retired vocabulary is the four phrases #16 swept", () => {
+  assert.deepEqual(RETIRED_VOCABULARY, ["Fix these first", "top fix", "top 3 fixes", "three highest-point fixes"]);
+});
+
 test("each retired phrase is a violation naming the file, the phrase and the line", () => {
-  const phrases = ["Fix these first", "top fix", "top 3 fixes", "three highest-point fixes"];
-  for (const phrase of phrases) {
+  for (const phrase of RETIRED_VOCABULARY) {
     const files = { ...clean, "references/monitoring.md": `# Monitoring\n\nStagnation on a ${phrase} matters.\n` };
     const violations = checkRetiredVocabulary(files);
     assert.equal(violations.length, 1, phrase);
@@ -339,9 +343,14 @@ test("retired vocabulary is caught regardless of case and of plural or line-wrap
   };
   const violations = checkRetiredVocabulary(files);
   assert.equal(violations.length, 3, violations.join("\n"));
-  assert.match(violations[0], /^a\.md: /);
+  assert.match(violations[0], /^a\.md: .*line 1\)$/);
   assert.match(violations[1], /^b\.md: /);
   assert.match(violations[2], /^c\.md: /);
+});
+
+test("a retired phrase inside another word is not a match", () => {
+  const files = { "a.md": "A desktop fixture; stop fixing it; the laptop fix.\n" };
+  assert.deepEqual(checkRetiredVocabulary(files), []);
 });
 
 test("a phrase used several times in one file is one violation per occurrence", () => {
