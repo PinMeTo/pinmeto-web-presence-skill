@@ -10,10 +10,10 @@
 //   1. The `version:` in SKILL.md equals the newest `## vX.Y.Z` heading in
 //      CHANGELOG.md.
 //   2. The machine-readable JSON block in references/rubric.md parses, carries
-//      a `rubric_version`, and its pillar check ids are unique. Check ids are
-//      the `id` of every object inside an array whose key ends in `checks`
-//      under `pillars` (seo/aio/agent_readiness `checks`, GEO
-//      `accuracy_checks` and `richness_checks`).
+//      a `rubric_version`, and its point-bearing ids are unique. Those are the
+//      `id` of every object inside an array whose key ends in `checks` under
+//      `pillars` (seo/aio/agent_readiness `checks`, GEO `accuracy_checks` and
+//      `richness_checks`) plus the GEO sub-group B and C `fields` ids.
 //   3. Every term in REQUIRED_GLOSSARY_TERMS has a `**Term**:` entry in
 //      CONTEXT.md.
 //   4. The Theme mapping JSON block in references/artifact-report.md (the
@@ -22,9 +22,10 @@
 //      of its `checks` arrays equals the rubric's point-bearing ids (pillar
 //      check ids plus GEO sub-group B and C `fields` ids); (c) no id sits in
 //      two Themes; (d) every `effort` is one of the labels enumerated under
-//      the reference's "Effort labels" heading, and every enumerated label is
-//      used. Slugs are unique and kebab-case; every `name` is at most
-//      NAME_WORD_LIMIT words and carries no check id or file token. Any failure blocks
+//      the reference's "Effort labels" heading (enumerated once each), and
+//      every enumerated label is used. Slugs are unique and kebab-case, no
+//      Theme is an "Other" catch-all; every `name` is at most NAME_WORD_LIMIT
+//      words and carries no check id or file token. Any failure blocks
 //      publishing: the report reference lists these as pre-publish checks.
 //
 // Every assertion is about an externally observable property of the shipped
@@ -108,20 +109,14 @@ function collectIds(node, keyMatches) {
   return ids;
 }
 
-/**
- * Check ids: the `id` of every object in an array whose key ends in `checks`,
- * anywhere under `pillars`. Other `id` fields (browser-downgrade reasons and
- * the like) are not check ids and may legitimately repeat.
- */
-function collectCheckIds(pillars) {
-  return collectIds(pillars, (key) => key.endsWith("checks"));
-}
 
 /**
  * Point-bearing ids: everything that can produce points returned, so everything
- * a Theme may need to own. That is every pillar check id plus the `id` of every
- * object in a `fields` array (GEO sub-group B and C), which scoring.md §4 gives
- * an effective weight.
+ * a Theme may need to own. That is the `id` of every object in an array whose
+ * key ends in `checks` (pillar checks) plus the `id` of every object in a
+ * `fields` array (GEO sub-group B and C, which scoring.md §4 gives an effective
+ * weight). Other `id` fields (browser-downgrade reasons and the like) are not
+ * point-bearing and may legitimately repeat.
  */
 function collectPointBearingIds(pillars) {
   return collectIds(pillars, (key) => key.endsWith("checks") || key === "fields");
@@ -136,8 +131,9 @@ export function checkRubricJson(rubricMd) {
   if (typeof rubric.rubric_version !== "string" || rubric.rubric_version === "") {
     violations.push(`${file}: JSON block has no \`rubric_version\` string`);
   }
+  // Point-bearing ids (pillar checks plus sub-group B and C fields) share one namespace.
   const occurrences = new Map();
-  for (const id of collectCheckIds(rubric.pillars ?? {})) {
+  for (const id of collectPointBearingIds(rubric.pillars ?? {})) {
     occurrences.set(id, (occurrences.get(id) ?? 0) + 1);
   }
   for (const [id, count] of occurrences) {
@@ -218,15 +214,29 @@ export function checkThemeMapping(reportMd, rubricMd) {
   const labels = enumeratedEffortLabels(reportMd);
   if (labels === null) violations.push(`${file}: no "Effort labels" heading enumerating the closed set`);
   const labelSet = new Set(labels ?? []);
+  if (labelSet.size !== (labels ?? []).length) {
+    violations.push(`${file}: the enumerated effort labels contain a duplicate`);
+  }
   const usedEfforts = new Set();
   const slugs = new Map();
   const themesById = new Map();
-  for (const theme of mapping.themes) {
+  mapping.themes.forEach((theme, index) => {
+    if (theme === null || typeof theme !== "object" || Array.isArray(theme)) {
+      violations.push(`${file}: Theme at index ${index} is not an object`);
+      return;
+    }
     const slug = String(theme.slug);
     slugs.set(slug, (slugs.get(slug) ?? 0) + 1);
     if (!KEBAB_CASE.test(slug)) violations.push(`${file}: Theme slug \`${slug}\` is not kebab-case`);
+    if (!Array.isArray(theme.checks)) {
+      violations.push(`${file}: Theme \`${slug}\` has no \`checks\` array`);
+    }
 
     const name = String(theme.name ?? "");
+    // No "Other" catch-all: it would hide exactly the drift conditions (b) and (c) exist to catch.
+    if (/^(other|misc|miscellaneous|catch-all|uncategori[sz]ed)$/i.test(slug) || /^(other|miscellaneous)$/i.test(name.trim())) {
+      violations.push(`${file}: Theme \`${slug}\` reads as a catch-all; every id belongs to a real Theme`);
+    }
     const words = name.trim().split(/\s+/).filter(Boolean);
     if (words.length > NAME_WORD_LIMIT) {
       violations.push(`${file}: Theme \`${slug}\` name is ${words.length} words, the limit is ${NAME_WORD_LIMIT} words`);
@@ -238,11 +248,11 @@ export function checkThemeMapping(reportMd, rubricMd) {
     if (labels !== null && !labelSet.has(theme.effort)) {
       violations.push(`${file}: Theme \`${slug}\` effort "${theme.effort}" is not one of the enumerated effort labels`);
     }
-    for (const id of theme.checks ?? []) {
+    for (const id of Array.isArray(theme.checks) ? theme.checks : []) {
       if (!themesById.has(id)) themesById.set(id, []);
       themesById.get(id).push(slug);
     }
-  }
+  });
   for (const [slug, count] of slugs) {
     if (count > 1) violations.push(`${file}: Theme slug \`${slug}\` appears ${count} times`);
   }

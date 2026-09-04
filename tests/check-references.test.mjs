@@ -78,6 +78,16 @@ test("a duplicated check id across pillars is a violation naming the id", () => 
   assert.match(violations[0], /geo\.x/);
 });
 
+test("a sub-group field id that repeats a check id, or another field id, is a violation naming the id", () => {
+  const dup = JSON.parse(rubric());
+  dup.pillars.geo.sub_groups.b = { fields: [{ id: "seo.a", weight: 50 }, { id: "consistency.name", weight: 50 }] };
+  dup.pillars.geo.sub_groups.c = { fields: [{ id: "consistency.name", weight: 100 }] };
+  const violations = checkRubricJson(rubricMd(JSON.stringify(dup)));
+  assert.equal(violations.length, 2);
+  assert.ok(violations.some((v) => /seo\.a/.test(v)));
+  assert.ok(violations.some((v) => /consistency\.name/.test(v)));
+});
+
 const glossary = `# Skill\n\n## Language\n\n### Deliverable\n\n**Report**:\nThe living scorecard.\n_Avoid_: audit\n\n**Fix brief**:\nThe drawer.\n`;
 
 test("every required term with a glossary entry passes", () => {
@@ -183,6 +193,31 @@ test("(d) an enumerated effort label no Theme uses is a violation naming the lab
   const violations = checkThemeMapping(reportMd({ json: mapping(), labels }), themeRubric());
   assert.equal(violations.length, 1);
   assert.match(violations[0], /Performance work/);
+});
+
+test("a label enumerated twice is a violation", () => {
+  const labels = DEFAULT_LABELS + '\n- "Content task"';
+  const violations = checkThemeMapping(reportMd({ json: mapping(), labels }), themeRubric());
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /duplicate/);
+});
+
+test("a Theme that reads as an Other catch-all is a violation naming the slug", () => {
+  const md = withMapping((m) => ((m.themes[1].slug = "other"), (m.themes[1].name = "Other")));
+  const violations = checkThemeMapping(md, themeRubric());
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /`other`/);
+  assert.match(violations[0], /catch-all/);
+});
+
+test("a null Theme entry or a non-array checks field is a violation, not a crash", () => {
+  let violations = checkThemeMapping(withMapping((m) => m.themes.push(null)), themeRubric());
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /index 2/);
+  violations = checkThemeMapping(withMapping((m) => (m.themes[1].checks = { id: "seo.b" })), themeRubric());
+  assert.ok(violations.some((v) => /`listings` has no `checks` array/.test(v)), violations.join("\n"));
+  // Its ids are then unowned, reported as such rather than thrown.
+  assert.ok(violations.some((v) => /`seo\.b` is not in any Theme/.test(v)), violations.join("\n"));
 });
 
 test("a report reference with no effort-label enumeration is a violation", () => {
