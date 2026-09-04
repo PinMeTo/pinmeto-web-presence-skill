@@ -129,8 +129,9 @@ returned, per the Theme mapping in [references/artifact-report.md](references/ar
 
 Produce the report per [references/artifact-report.md](references/artifact-report.md), matching
 the PinMeTo Presence Report contract: two layers, the marketer's sections first (hero,
-summary, scorecards, trend, Themes, NAP summary chip) and the full audit behind one collapsed
-"Full audit detail" expander, and including a fix-brief drawer (with a copy-paste
+summary, scorecards, trend, Themes, NAP summary chip), then the full audit behind one
+collapsed "Full audit detail" expander, then "What to do next", Methodology and the footer.
+Include a fix-brief drawer (with a copy-paste
 coding-agent prompt) for every failing check, plus a Theme brief per Theme card that stacks
 those drawers unchanged behind one copy-all control (members without a drawer, the GEO
 sub-group B/C fields, appear as evidence pointers). Choose the delivery path from the host,

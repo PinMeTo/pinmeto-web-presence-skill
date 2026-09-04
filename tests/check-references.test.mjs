@@ -566,6 +566,19 @@ test("an expander that does not say it is collapsed is a violation", () => {
   assert.match(violations[0], /collapsed/);
 });
 
+test("an expander described as not collapsed is a violation, not a match", () => {
+  const violations = checkSectionOrder(sectionOrderMd({ expander: "one expander, not collapsed on load." }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /collapsed/);
+});
+
+test("the word collapsed inside a Layer 2 item does not satisfy the expander's own state", () => {
+  const nested = layer2Items().replace("what it holds.", "rows that start collapsed.");
+  const violations = checkSectionOrder(sectionOrderMd({ expander: "one expander over the full audit.", nested }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /collapsed/);
+});
+
 test("an empty Full audit detail expander is one violation per missing Layer 2 item", () => {
   const violations = checkSectionOrder(sectionOrderMd({ nested: "" }));
   assert.ok(violations.some((v) => /Layer 2 item/.test(v)), violations.join("\n"));

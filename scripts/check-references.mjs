@@ -441,6 +441,20 @@ function numberedItems(section, { nested }) {
   }));
 }
 
+/**
+ * A numbered item's own sentences: its text up to its first nested item, so a
+ * rule about the item is not satisfied by wording inside one of its children.
+ */
+function expanderLead(body) {
+  return body.split(numberedItemPattern(true))[0];
+}
+
+/**
+ * An affirmative collapsed state. "not collapsed" and "never collapsed" do not
+ * match, and "uncollapsed" fails the word boundary.
+ */
+const COLLAPSED_STATE = /(?<!\b(?:not|never|isn't|n't)\s)\bcollapsed\b/i;
+
 /** A weight given as a percentage: "weight %", "40% weight", "weight, 40 per cent". */
 const WEIGHT_PERCENTAGE = /weight[^.\n]{0,40}(?:%|per ?cent)|(?:%|per ?cent)[^.\n]{0,40}weight/i;
 
@@ -491,8 +505,12 @@ export function checkSectionOrder(reportMd) {
       }),
     );
     // Demoted, not just enumerated: a Layer 2 that renders open is the audit-first report again.
-    if (!/collaps/i.test(expander.body)) {
-      violations.push(`${file}: the Full audit detail section does not say the expander is collapsed`);
+    // Read the expander's own sentences, not its items' prose, and only an affirmative
+    // "collapsed" counts, so "not collapsed" is a violation rather than a match.
+    if (!COLLAPSED_STATE.test(expanderLead(expander.body))) {
+      violations.push(
+        `${file}: the Full audit detail section does not say the expander is collapsed when the page loads`,
+      );
     }
   }
 
