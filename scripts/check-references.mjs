@@ -37,7 +37,16 @@
 //      (LAYER_2_ITEMS) in order and says the expander is collapsed; the "Pillar
 //      scorecards" section gives no pillar weight as a percentage, because the
 //      four weights live in "Methodology", which must name them.
-//   7. Retired vocabulary (RETIRED_VOCABULARY: the wording the Themes work
+//   7. The trend card's progress story in references/artifact-report.md: the
+//      "Section order" section's Trend item frames the headline since the first
+//      scan and the subline since the previous one, drops the subline at exactly
+//      two scans, carries the Themes-cleared line with its zero rule, names a
+//      Theme that fails again as reopened, credits no one for the movement, and
+//      states the cross-scan rules (current mapping only, ids absent from an
+//      older scan unknown rather than failing); the Themes item defines the
+//      "Open since" meta cell; the writing-style section carries TREND_TEMPLATES
+//      verbatim plus FIRST_SCAN_BASELINE_SENTENCE.
+//   8. Retired vocabulary (RETIRED_VOCABULARY: the wording the Themes work
 //      list replaced) is absent from SKILL.md, CONTEXT.md, README.md and every
 //      file under references/. Matching ignores case, treats any whitespace run,
 //      including a line wrap, as one space, and stops at word boundaries
@@ -68,6 +77,8 @@ const REQUIRED_GLOSSARY_TERMS = [
   "Theme mapping",
   "Theme brief",
   "Effort label",
+  "Cleared",
+  "Reopened",
 ];
 
 // Wording the Themes work list replaced (#16); "top fix" also catches "top fixes".
@@ -533,6 +544,125 @@ export function checkSectionOrder(reportMd) {
 }
 
 /**
+ * A heading's body plus the bodies of every heading nested under it, so a rule
+ * about a section is not defeated by the section having subsections (the
+ * writing-style section keeps its templates one level down).
+ */
+function sectionWithSubsections(all, index) {
+  const parts = [all[index].body];
+  for (let i = index + 1; i < all.length && all[i].level > all[index].level; i += 1) {
+    parts.push(all[i].body);
+  }
+  return parts.join("\n");
+}
+
+/**
+ * Prose with markdown emphasis and code ticks dropped and every whitespace run
+ * collapsed to one space, so a rule matches a template the file wraps across
+ * lines or sets in backticks. The rules below read this form, never the layout.
+ */
+const normalizeProse = (text) => text.replace(/[`*_]/g, " ").replace(/\s+/g, " ").trim();
+
+/** #12's Layer 1 trend templates, verbatim. Up and down share one template; no adjectives. */
+export const TREND_TEMPLATES = [
+  "Up <n> points since your first scan on <date>",
+  "Down <n> points since your first scan on <date>",
+  "Unchanged since your first scan on <date>",
+  "+<n> since <previous scan date>",
+  "−<n> since <previous scan date>",
+  "No change since <previous scan date>",
+  "<count> themes cleared since your first scan on <date>: <name>, <name>",
+];
+
+/** The sentence the summary card's second paragraph ends with on a first scan (#12 decision 9). */
+export const FIRST_SCAN_BASELINE_SENTENCE = "This scan is your baseline; the next one shows what moved.";
+
+/** What the trend card's own contract has to say (#12's §4 and its cross-scan rules). */
+const TREND_ITEM_RULES = [
+  ["frame the headline since the first scan", /headline[ ,]{1,3}since the first scan/i],
+  ["frame the subline since the previous scan", /subline[ ,]{1,3}since the previous scan/i],
+  ["drop the subline when the report has exactly two scans", /(?:omit|drop)[^.]{0,80}exactly two scans/i],
+  ["frame the Themes-cleared line since the first scan", /themes cleared[ ,]{1,3}since the first scan/i],
+  ["omit the Themes-cleared line when nothing has cleared", /zero cleared[^.]{0,80}omit/i],
+  ["name a Theme that fails again as reopened", /\breopened\b/i],
+  ["credit no one, PinMeTo included, for the movement", /\bnothing\b[^.]{0,80}\bcredits\b/i],
+  ["compute Theme progress against the current mapping only", /\bcurrent mapping[^.]{0,40}\bonly\b/i],
+  ["treat ids absent from an older scan as unknown, never failing", /\bunknown\b[^.]{0,40}never failing/i],
+];
+
+/** The "Open since" meta cell the Theme card gains from the second scan on (#12 decision 7). */
+const THEME_CARD_RULES = [
+  ['carry an "Open since" cell on the Theme card meta line', /open since/i],
+  ["define its date as the earliest scan with a failing member", /earliest scan[^.]{0,80}fail/i],
+  ["count the scans from that one to now inclusive", /\binclusive\b/i],
+];
+
+/**
+ * The trend card tells the since-first-scan story (#12, #19): the "Section
+ * order" section's Trend item states the two framings, the subline's two-scan
+ * drop, the Themes-cleared line with its zero rule, the reopened wording, the
+ * no-credit rule and the cross-scan rules; the Themes item defines the "Open
+ * since" cell; and the writing-style section carries the exact templates plus
+ * the first-scan baseline sentence.
+ *
+ * The templates are pasted twice in the reference, in #12's §4 and in the
+ * writing-style templates list. This check pins the writing-style copy, which
+ * is the one a scanning agent renders prose from.
+ */
+export function checkTrendContract(reportMd) {
+  const file = "references/artifact-report.md";
+  const all = headings(reportMd);
+  const violations = [];
+
+  const sectionOrder = all.find((heading) => SECTION_ORDER_HEADING.test(heading.text));
+  if (sectionOrder === undefined) {
+    violations.push(`${file}: no "Section order" heading, so the trend card contract cannot be read`);
+  }
+  const layer1 = sectionOrder ? numberedItems(sectionOrder.body, { nested: false }) : [];
+  const item = (title) => layer1.find((entry) => entry.title.toLowerCase() === title.toLowerCase());
+
+  const checkRules = (body, rules, where) => {
+    for (const [requirement, pattern] of rules) {
+      if (!pattern.test(normalizeProse(body))) {
+        violations.push(`${file}: the ${where} does not ${requirement}`);
+      }
+    }
+  };
+
+  const trend = item("Trend");
+  if (trend === undefined) {
+    violations.push(`${file}: the "Section order" section has no **Trend** item`);
+  } else {
+    checkRules(trend.body, TREND_ITEM_RULES, "Trend section");
+  }
+
+  const themes = item("Themes");
+  if (themes === undefined) {
+    violations.push(`${file}: the "Section order" section has no **Themes** item`);
+  } else {
+    checkRules(themes.body, THEME_CARD_RULES, "Theme card contract");
+  }
+
+  const stylePosition = all.findIndex((heading) => WRITING_STYLE_HEADING.test(heading.text));
+  if (stylePosition === -1) {
+    violations.push(`${file}: no writing-style section to carry the trend templates`);
+  } else {
+    const style = normalizeProse(sectionWithSubsections(all, stylePosition));
+    for (const template of TREND_TEMPLATES) {
+      if (!style.includes(normalizeProse(template))) {
+        violations.push(`${file}: the writing-style section is missing the trend template \`${template}\``);
+      }
+    }
+    if (!style.includes(normalizeProse(FIRST_SCAN_BASELINE_SENTENCE))) {
+      violations.push(
+        `${file}: the writing-style section does not end a first scan's summary card with the baseline sentence "${FIRST_SCAN_BASELINE_SENTENCE}"`,
+      );
+    }
+  }
+  return violations;
+}
+
+/**
  * Retired vocabulary must be absent from every swept file. `filesByPath` maps a
  * repo-relative path to its contents. Case-insensitive; a whitespace run in the
  * phrase matches any whitespace run in the file, so a phrase wrapped across
@@ -572,6 +702,7 @@ export function checkReferences({ skillMd, changelogMd, contextMd, readmeMd, ref
     ...checkThemeMapping(reportMd, rubricMd),
     ...checkEffortLabelsHome(reportMd),
     ...checkSectionOrder(reportMd),
+    ...checkTrendContract(reportMd),
     ...checkRetiredVocabulary({
       "SKILL.md": skillMd,
       "CONTEXT.md": contextMd,

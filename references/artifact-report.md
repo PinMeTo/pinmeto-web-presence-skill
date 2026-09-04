@@ -214,28 +214,50 @@ matrix, or a per-check drawer. A reader must never be sent into a closed expande
    band word. No weight on the card: the four pillar weights live in Methodology (section 9),
    because a marketer reads the score and the band, not the arithmetic behind them. Each card
    links to its pillar section inside Layer 2.
-4. **Trend** *(from the second scan onward; omit entirely on the first scan)*:
-   - headline stating the total movement ("Up 25 points in six months"),
+4. **Trend** *(from the second scan onward; omit entirely on the first scan)*. This card tells
+   the progress story: the long arc for whoever the reader reports to, the last step for the
+   reader. Every number in it is read from the history entries, never recomputed.
+   - **Headline, since the first scan**: total movement with the first scan's date. Template:
+     `Up <n> points since your first scan on <date>` /
+     `Down <n> points since your first scan on <date>` /
+     `Unchanged since your first scan on <date>`. Same template up or down; no adjectives.
+   - **Subline, since the previous scan**: `+<n> since <previous scan date>` /
+     `−<n> since <previous scan date>` / `No change since <previous scan date>`. Omit it when
+     the report has exactly two scans (it would repeat the headline).
    - an inline SVG line chart of overall score across scans (grid lines at 0/50/100, score
-     labels above points, dates below, last point emphasized in orange),
-   - a per-pillar now/±delta strip,
-   - a "What moved since <last scan>" callout (soft blue wash card): derive the bullets
+     labels above points, dates below, last point emphasized in orange). When two scans share
+     a date, label the points with date **and** ordinal ("9 Aug (1st)", "9 Aug (2nd)"). With
+     only two points the chart is thin but still correct; keep it.
+   - a per-pillar now/±delta strip, deltas against the previous scan.
+   - **Themes cleared, since the first scan**: one line,
+     `<count> themes cleared since your first scan on <date>: <name>, <name>`, Themes named by
+     the Theme mapping's `name` verbatim and linked to their cards (`#theme-<slug>`), ordered
+     by the scan in which they cleared, most recent first. A Theme is **cleared** when no
+     member check is `fail` in the current scan and at least one member was `fail` in an
+     earlier scan. Zero cleared: omit the line; never print "0 themes cleared". A cleared
+     Theme does not reappear in the Themes list, which stays a pure work list.
+   - a "What moved since <previous scan>" callout (soft blue wash card): derive the bullets
      **mechanically from a diff of the previous and current `checks` maps** (that is why
      the map stores every check), and classify each one as **rubric change**,
-     **measurement correction**, or **real change** per the re-run rule in `rubric.md`.
-     Concrete and honest: "Agent readiness gained 12 points — the MCP server card went
-     live" (real) vs "SEO gained 10 points because the rubric now gives half credit for
-     client-rendered values; nothing changed on the site" (rubric).
+     **measurement correction**, or **real change** per the re-run rule in `rubric.md`. A
+     Theme that was cleared in an earlier scan and has a failing member again is named as
+     **reopened** ("Opening hours consistency reopened: 2 of 5 sampled listings changed
+     hours"), in the same words as progress. Concrete and honest: "Agent readiness gained 12
+     points, the MCP server card went live" (real) vs "SEO gained 10 points because the rubric
+     now gives half credit for client-rendered values; nothing changed on the site" (rubric).
 
    The chart stays in Layer 1; the scan-history table behind it is the first item inside
    Layer 2, so the card tells the story and the raw numbers are one click away.
 
-   Rendering rules for this section: the hero score, the pillar scorecards, the chart and the
-   Layer 2 scan-history table must all render **from the history entries**, never from
-   separately computed numbers — a report that disagrees with its own embedded state (hero 22,
-   history 23) is worse than no trend at all. When two scans share a date, label the chart points with
-   date **and** ordinal ("9 Aug (1st)", "9 Aug (2nd)"). With only two points the chart is
-   thin but still correct — keep it.
+   **Cross-scan rules.** Theme progress (cleared, reopened, and the "Open since" cell on Theme
+   cards) is computed against the **current mapping table only**: a past scan's Theme was
+   failing if any of the Theme's current member ids was `fail` in that scan's `checks`; ids the
+   older scan does not contain are **unknown, never failing**, so rubric drift cannot invent a
+   regression. Old scans are never re-scored. The hero score, the pillar scorecards, the chart
+   and the Layer 2 scan-history table must all render **from the history entries**, never from
+   separately computed numbers: a report that disagrees with its own embedded state (hero 22,
+   history 23) is worse than no trend at all. Nothing in this card credits PinMeTo or anyone
+   else for the movement; the numbers carry it.
 5. **Themes** (the work list): kicker THEMES in orange · a data-driven h2,
    `<Count> themes, worth ~<summed points> points together`, with the count in words ("Six
    themes, worth ~28 points together"; "One theme, worth ~4 points" when a single Theme
@@ -268,7 +290,11 @@ matrix, or a per-check drawer. A reader must never be sent into a closed expande
    - a muted meta line `<check count> checks · <effort label> · one fix, pays in <N> pillars`,
      where the check count is the number of failing members (the sections the Theme brief
      will hold), the effort label is the mapping `effort` verbatim, and N is the number of
-     distinct pillars among the failing members;
+     distinct pillars among the failing members. From the second scan onward the line gains
+     one more cell, `· Open since <date> · <n> scans`: the date is the earliest scan in which
+     any current member id was `fail`, and `<n>` counts the scans from that one to now
+     inclusive. On the first scan there is no "Open since" cell. This is where stagnation
+     shows, next to the work it describes, rather than in the trend card;
    - one outline "How to fix" button (white, link-blue text, hairline border) opening the
      Theme brief (below).
 
@@ -698,9 +724,17 @@ surfaces. Fix-brief drawer text follows its own contract above.
   attribution. The "What moved" bullets come mechanically from the checks diff, each
   classified as rubric change, measurement correction, or real change, and credit the change
   that moved the score.
-
-<!-- The trend headline and subline pair and the Themes-cleared line arrive in this list
-     with the trend card, as the exact templates the "Trend prose" bullet governs. -->
+- **Trend headline, since the first scan.** `Up <n> points since your first scan on <date>` /
+  `Down <n> points since your first scan on <date>` /
+  `Unchanged since your first scan on <date>`. One template up or down, and the date is the
+  first scan's, never "six months ago".
+- **Trend subline, since the previous scan.** `+<n> since <previous scan date>` /
+  `−<n> since <previous scan date>` / `No change since <previous scan date>`. Dropped when the
+  report has exactly two scans, where it would only repeat the headline.
+- **Themes cleared line.** `<count> themes cleared since your first scan on <date>: <name>,
+  <name>`, the names being the mapping `name` verbatim, most recently cleared first. Omitted
+  when nothing has cleared: the report never prints "0 themes cleared". A Theme that fails
+  again is **reopened** in the "What moved" callout, in the same words as progress.
 
 ### Effort labels
 
