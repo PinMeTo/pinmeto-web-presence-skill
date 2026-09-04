@@ -27,7 +27,10 @@
 //      Theme is an "Other" catch-all; every `name` is at most NAME_WORD_LIMIT
 //      words and carries no check id or file token. Any failure blocks
 //      publishing: the report reference lists these as pre-publish checks.
-//   5. Retired vocabulary (RETIRED_VOCABULARY: the wording the Themes work
+//   5. The effort labels are enumerated under exactly one heading, and the
+//      writing-style section encloses it, so the closed set has one home and
+//      cannot drift between two copies.
+//   6. Retired vocabulary (RETIRED_VOCABULARY: the wording the Themes work
 //      list replaced) is absent from SKILL.md, CONTEXT.md and every file under
 //      references/. Matching ignores case, treats any whitespace run,
 //      including a line wrap, as one space, and stops at word boundaries
@@ -178,6 +181,64 @@ function idOrFileToken(words, pointBearingIds) {
   });
 }
 
+/** Every markdown heading, in document order: its level, its text and where it starts. */
+function headings(markdown) {
+  return [...markdown.matchAll(/^(#{1,6})[ \t]+([^\n]*)/gm)].map((m) => ({
+    level: m[1].length,
+    text: m[2].trim(),
+    index: m.index,
+  }));
+}
+
+/** The headings that enclose the heading at `position` in `all`, outermost first. */
+function ancestorsOf(position, all) {
+  const ancestors = [];
+  let level = all[position].level;
+  for (let i = position - 1; i >= 0; i -= 1) {
+    if (all[i].level < level) {
+      ancestors.unshift(all[i]);
+      level = all[i].level;
+    }
+  }
+  return ancestors;
+}
+
+const WRITING_STYLE_SECTION = /writing style/i;
+const EFFORT_LABEL_HEADING = /effort label/i;
+
+/**
+ * The effort labels have exactly one home, the writing-style section: that is
+ * where the scanning agent reads its prose contract, and a second enumeration
+ * elsewhere is how the closed set drifts out of step with the mapping
+ * unnoticed. Checked structurally, on the headings rather than on the
+ * enumeration's wording: exactly one heading names the effort labels, and the
+ * writing-style section encloses it.
+ */
+export function checkEffortLabelsHome(reportMd) {
+  const file = "references/artifact-report.md";
+  const all = headings(reportMd);
+  const enumerations = all.filter((heading) => EFFORT_LABEL_HEADING.test(heading.text));
+  if (enumerations.length === 0) {
+    return [`${file}: no heading enumerating the closed set of effort labels`];
+  }
+  const violations = [];
+  if (enumerations.length > 1) {
+    const named = enumerations.map((heading) => `"${heading.text}"`).join(", ");
+    violations.push(
+      `${file}: the effort labels are enumerated under ${enumerations.length} headings (${named}); the writing-style section is their one home`,
+    );
+  }
+  // The first enumeration is the one `enumeratedEffortLabels` below reads as the closed set.
+  const ancestors = ancestorsOf(all.indexOf(enumerations[0]), all);
+  if (!ancestors.some((heading) => WRITING_STYLE_SECTION.test(heading.text))) {
+    const under = ancestors.length > 0 ? `"${ancestors[ancestors.length - 1].text}"` : "no section";
+    violations.push(
+      `${file}: the "${enumerations[0].text}" heading sits under ${under}, not the writing-style section`,
+    );
+  }
+  return violations;
+}
+
 /**
  * The closed set of effort labels: every double-quoted string between the
  * heading whose text contains "Effort label" and the next heading. Keep that
@@ -325,6 +386,7 @@ export function checkReferences({ skillMd, changelogMd, contextMd, referenceMds 
     ...checkRubricJson(rubricMd),
     ...checkGlossaryTerms(contextMd),
     ...checkThemeMapping(reportMd, rubricMd),
+    ...checkEffortLabelsHome(reportMd),
     ...checkRetiredVocabulary({ "SKILL.md": skillMd, "CONTEXT.md": contextMd, ...referenceMds }),
   ];
 }

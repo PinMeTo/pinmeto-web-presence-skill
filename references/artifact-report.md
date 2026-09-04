@@ -66,7 +66,8 @@ and other schemes; render a rejected value as inert text instead of a link or em
   (a) `theme_mapping_for_rubric_version` equals `rubric_version` in `rubric.md`; (b) the union
   of all `checks` arrays equals the rubric's set of point-bearing ids, every pillar check id
   plus the GEO sub-group B and C field ids; (c) no id appears in two Themes; (d) every `effort`
-  value is one of the eight effort labels enumerated in the closed set below. **Any failure
+  value is one of the eight effort labels enumerated under "Effort labels" in the
+  writing-style section below. **Any failure
   blocks publishing.** There is no "Other" catch-all Theme: a catch-all would hide exactly the
   drift this check exists to catch, in front of a customer.
 
@@ -565,11 +566,82 @@ bump:
 3. `rubric.md`'s version-bump paragraph states that bumping the rubric version requires
    updating the Theme mapping and its pinned version.
 
+## Writing style inside the report
+
+The report is a diagnostic the customer trusts, written for a brand-side marketer or
+webmaster with two jobs: a work list (what do I fix) and a progress story (what improved).
+Two tiers of rules: a baseline for every reader-facing word, then templates for the Layer 1
+surfaces. Fix-brief drawer text follows its own contract above.
+
+### Baseline (all reader-facing prose)
+
+- **Voice.** Sober, concrete, advisory. Address the brand as "you". State what was observed
+  and what it costs; never promise rankings, traffic, or revenue. No exclamation marks.
+- **PinMeTo brand tone rules apply.** No em dashes; use commas, periods, colons, or
+  parentheses. No hype vocabulary and nothing else from the brand's banned list. No
+  "not just X, it's Y". Sentence case in every heading; the orange kickers are the only
+  uppercase. Say "customer", never "client".
+- **warn is never a failure.** Checks that could not be measured are always labelled so;
+  prose never counts them among failures or passes.
+- **PinMeTo is named only where the fix happens in PinMeTo** (the two GEO listing Themes),
+  in the re-run prompt, and in the footer. Progress is credited to the observed change, never
+  to PinMeTo: "GEO gained 3 points after the Apple listings were connected", not "thanks to
+  PinMeTo".
+- **The location noun.** Every fixed string (Theme names, effort labels, count tags, section
+  headings, table headers) says "location". Per-scan prose (summary card, Theme summaries,
+  evidence, trend bullets) may use the kind-specific noun the brand uses for itself (shops,
+  restaurants, charging stations) when every sampled location shares one PinMeTo primary
+  category. Mixed or unknown kinds say "location".
+- **Numbers.** Every count comes from this scan's evidence and names its denominator when it
+  is a sample ("3 of the 5 checked locations"); never extrapolate to the fleet. Integers only.
+  Numbers one to twelve are words when they open a sentence, digits elsewhere. The summary
+  card carries at most one score pair (from and to); all other scores live in the hero,
+  scorecards and trend.
+- **Technical names.** None in Layer 1 headlines. A Theme summary or summary-card sentence may
+  name one file or standard, once, right after the plain-language phrase ("a text guide at
+  /llms.txt"), and only when the reader will need the word to brief a developer. Check ids
+  never appear in Layer 1.
+- **Language.** English by default. When the user asks for another language, every
+  reader-facing string renders in it; product names stay English. The page records the
+  language in `<html lang>`; a re-run renders in the same language and reuses the existing
+  report's Theme headlines (read back by `theme-<slug>` anchor) so names stay stable.
+
+### Layer 1 templates
+
+- **Hero band word.** One of Strong / Healthy / Needs work / Critical, never rephrased.
+- **Summary card.** Two paragraphs, two or three sentences each. Paragraph 1: what is strong,
+  then what holds the score back. Paragraph 2: the shape of the effort ("one template change,
+  not fourteen page edits"), and from the second scan on, what moved since the previous scan
+  with the one allowed score pair. First scan: paragraph 2 is effort shape only; never invent
+  a "since" clause.
+- **Theme headline.** The Theme's `name` from the mapping table, verbatim, every scan. Names
+  are written as a change the reader can picture (Put, Make, Let, Give, Keep, Tell, Connect),
+  name the outcome rather than the check, contain no technical token, and run twelve words or
+  fewer.
+- **Theme summary.** Exactly two moves in one or two sentences, forty words or fewer.
+  First the observation with its count from the evidence ("Eleven location pages share the
+  same title and heading"), then the consequence in the customer's terms ("so Google picks one
+  at random for 'bike shop Malmö'"). Never a third sentence, and never the fix: the effort
+  label and the Theme brief carry that.
+- **Effort label.** The Theme's `effort` from the mapping table, verbatim. Each names the size
+  of the job and who does it, in a handful of words. The closed set of eight is enumerated
+  under "Effort labels" below, its one home in this file; pre-publish sanity check condition
+  (d) is that every `effort` in the mapping is in that set.
+- **Themes h2.** `<Count> themes, worth ~<summed points> points together`, count in words.
+- **Trend prose.** One template for movement in either direction, no adjectives, no
+  attribution. The "What moved" bullets come mechanically from the checks diff, each
+  classified as rubric change, measurement correction, or real change, and credit the change
+  that moved the score.
+
+<!-- The trend headline and subline pair, the Themes-cleared line, and the first-scan
+     baseline sentence for paragraph 2 arrive in this list with the trend card. -->
+
 ### Effort labels
 
 The closed set of eight **effort labels**. An effort label names the size of a Theme's fix and
 who does it; it is never rewritten per scan. `scripts/check-references.mjs` reads the quoted
-strings in this section as the set, so keep it to the list:
+strings in this section as the set, and this section is their only home in the file, so keep
+it to the list:
 
 - "One template change"
 - "One developer task"
@@ -579,9 +651,3 @@ strings in this section as the set, so keep it to the list:
 - "PinMeTo task, no code"
 - "Fix the record in PinMeTo, then the page"
 - "Ongoing, no code"
-
-## Writing style inside the report
-
-Sober and concrete; a diagnostic, not a marketing page. Headlines name the change ("Every
-location page needs its own H1"), not the check. Evidence quotes what was observed. No hype,
-no promised rankings, and the warn/fail distinction is always visible.
