@@ -14,9 +14,10 @@ version moved with the rules.
 ## v0.13.0 · 2026-09-04 · rubric 2.14.0-skill.1
 
 The Presence Report is two layers now, the marketer's work list first and the full audit behind
-one expander. Scoring is unchanged: the rubric stays `2.14.0-skill.1`, no check weight, ratio or
-procedure moved, and the history-block schema is untouched. A score difference between a `0.12.x`
-run and a `0.13.0` run of the same brand is real movement on the web, not this release.
+one expander. This is a presentation-only release. Scoring is unchanged: the rubric stays
+`2.14.0-skill.1`, no check weight, ratio or procedure moved, and the history-block schema is
+untouched. A score difference between a `0.12.x` run and a `0.13.0` run of the same brand is real
+movement on the web, not this release.
 
 - **Themes replace "Fix these first"** as the Layer 1 work list. A Theme is a fixed cross-pillar
   group of checks that one fix and one owner resolve, ranked by summed points returned, carrying a
@@ -26,7 +27,8 @@ run and a `0.13.0` run of the same brand is real movement on the web, not this r
 - **The Theme brief** opens from a card and from a `theme-<slug>` hash, and stacks the unchanged
   per-check fix briefs of every failing member, ordered by points returned, behind one
   "Copy all N briefs" control that concatenates the five-field blocks separated by `---` lines.
-  Members with no drawer (`consistency.*`, `page.*`) render as pointers into the NAP matrix
+  Members with no drawer (the GEO sub-group B and C fields, `consistency.*` and `page.*`) render
+  as pointers into the NAP matrix
 - **The Theme mapping** is a machine-readable JSON block in `references/artifact-report.md`, pinned
   to rubric `2.14.0-skill.1`, putting every point-bearing id in exactly one of ten Themes. A
   pre-publish check blocks publishing when the pinned version, the union of member ids, a
@@ -34,12 +36,13 @@ run and a `0.13.0` run of the same brand is real movement on the web, not this r
   no "Other" catch-all, so mapping drift fails loudly instead of hiding. The rubric's version-bump
   guidance now requires updating the mapping with it
 - **Two-layer section order**: hero, summary card, scorecards, trend, Themes and the NAP summary
-  chip, then the full audit (scan-history table, sticky nav and filter, per-pillar accordions,
-  location breakdown, NAP matrix, listing content table) behind one collapsed "Full audit detail"
-  expander, then "What to do next", Methodology and the footer. The pillar weights moved from the
-  scorecards to Methodology, and any link into Layer 2 expands it first
-- **Layer 1 is the print view.** The audit detail prints only when the reader expanded it; Theme
-  briefs and per-check drawers never print
+  chip, then the full audit (scan-history table, sticky section nav and filter, per-pillar
+  sections, location breakdown, NAP consistency matrix, listing content table) behind one
+  collapsed "Full audit detail" expander, then "What to do next", Methodology and the footer. The
+  pillar weights moved from the scorecards to Methodology, and any link into Layer 2 expands it
+  first
+- **Layer 1 is the print view**, with the audit detail printing only when the reader expanded it
+  and Theme briefs and per-check drawers never printing
 - **Writing style** is a baseline for every reader-facing string plus exact Layer 1 templates for
   the summary card, the Theme summary, the Themes heading, the trend headline and subline, and the
   Themes-cleared line. The eight effort labels are enumerated in one place, and the mapping is
@@ -56,8 +59,9 @@ run and a `0.13.0` run of the same brand is real movement on the web, not this r
   mapping totality against the rubric, the closed effort-label set and its single home, the
   two-layer section order, the trend templates in both of their homes, the required glossary terms,
   and retired vocabulary absent from the entry point, the glossary, the README and every reference.
-  It runs on every push and pull request, and ships inside the `.skill` so the scan-time
-  pre-publish check can call it
+  It runs on every push and pull request. It is also packaged into the `.skill`, but a run inside
+  an installed skill still needs the repo files it reads (`CHANGELOG.md`, `CONTEXT.md`,
+  `README.md`), so today it is a repo gate rather than a scan-time one
 
 ## v0.12.1 · 2026-08-18 · rubric 2.14.0-skill.1
 
