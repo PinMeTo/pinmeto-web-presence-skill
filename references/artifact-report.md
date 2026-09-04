@@ -231,11 +231,12 @@ matrix, or a per-check drawer. A reader must never be sent into a closed expande
    - a per-pillar now/±delta strip, deltas against the previous scan.
    - **Themes cleared, since the first scan**: one line,
      `<count> themes cleared since your first scan on <date>: <name>, <name>`, Themes named by
-     the Theme mapping's `name` verbatim and linked to their cards (`#theme-<slug>`), ordered
-     by the scan in which they cleared, most recent first. A Theme is **cleared** when no
-     member check is `fail` in the current scan and at least one member was `fail` in an
-     earlier scan. Zero cleared: omit the line; never print "0 themes cleared". A cleared
-     Theme does not reappear in the Themes list, which stays a pure work list.
+     the Theme mapping's `name` verbatim, ordered by the scan in which they cleared, most
+     recent first. A Theme is **cleared** when no member check is `fail` in the current scan
+     and at least one member was `fail` in an earlier scan. Zero cleared: omit the line; never
+     print "0 themes cleared". A cleared Theme does not reappear in the Themes list, which
+     stays a pure work list, so the names on this line are plain text: there is no
+     `theme-<slug>` card left to link to.
    - a "What moved since <previous scan>" callout (soft blue wash card): derive the bullets
      **mechanically from a diff of the previous and current `checks` maps** (that is why
      the map stores every check), and classify each one as **rubric change**,
@@ -252,8 +253,8 @@ matrix, or a per-check drawer. A reader must never be sent into a closed expande
    **Cross-scan rules.** Theme progress (cleared, reopened, and the "Open since" cell on Theme
    cards) is computed against the **current mapping table only**: a past scan's Theme was
    failing if any of the Theme's current member ids was `fail` in that scan's `checks`; ids the
-   older scan does not contain are **unknown, never failing**, so rubric drift cannot invent a
-   regression. Old scans are never re-scored. The hero score, the pillar scorecards, the chart
+   older scan does not contain are **unknown, never failing**, so rubric drift never invents a
+   reopened Theme. Old scans are never re-scored. The hero score, the pillar scorecards, the chart
    and the Layer 2 scan-history table must all render **from the history entries**, never from
    separately computed numbers: a report that disagrees with its own embedded state (hero 22,
    history 23) is worse than no trend at all. Nothing in this card credits PinMeTo or anyone

@@ -44,8 +44,9 @@
 //      Theme that fails again as reopened, credits no one for the movement, and
 //      states the cross-scan rules (current mapping only, ids absent from an
 //      older scan unknown rather than failing); the Themes item defines the
-//      "Open since" meta cell; the writing-style section carries TREND_TEMPLATES
-//      verbatim plus FIRST_SCAN_BASELINE_SENTENCE.
+//      "Open since" meta cell; the Trend item and the writing-style section, the
+//      two places #12 puts the templates, both carry TREND_TEMPLATES verbatim;
+//      and the writing-style section carries FIRST_SCAN_BASELINE_SENTENCE.
 //   8. Retired vocabulary (RETIRED_VOCABULARY: the wording the Themes work
 //      list replaced) is absent from SKILL.md, CONTEXT.md, README.md and every
 //      file under references/. Matching ignores case, treats any whitespace run,
@@ -495,12 +496,21 @@ function compareOrder(file, items, expected, { label, listedIn }) {
  * percentage (those live in Methodology) and the "Methodology" section names
  * the weights.
  */
+/**
+ * The "Section order" section's numbered Layer 1 items, or null when the file
+ * has no such section. One reading of the section list, so the checks below
+ * cannot disagree about which item is which.
+ */
+function layer1Items(headingList) {
+  const home = headingList.find((heading) => SECTION_ORDER_HEADING.test(heading.text));
+  return home === undefined ? null : numberedItems(home.body, { nested: false });
+}
+
 export function checkSectionOrder(reportMd) {
   const file = "references/artifact-report.md";
-  const home = headings(reportMd).find((heading) => SECTION_ORDER_HEADING.test(heading.text));
-  if (home === undefined) return [`${file}: no "Section order" heading`];
+  const layer1 = layer1Items(headings(reportMd));
+  if (layer1 === null) return [`${file}: no "Section order" heading`];
 
-  const layer1 = numberedItems(home.body, { nested: false });
   const violations = compareOrder(file, layer1, LAYER_1_SECTIONS, {
     label: "Layer 1 section",
     listedIn: "Section order",
@@ -548,10 +558,10 @@ export function checkSectionOrder(reportMd) {
  * about a section is not defeated by the section having subsections (the
  * writing-style section keeps its templates one level down).
  */
-function sectionWithSubsections(all, index) {
-  const parts = [all[index].body];
-  for (let i = index + 1; i < all.length && all[i].level > all[index].level; i += 1) {
-    parts.push(all[i].body);
+function sectionWithSubsections(headingList, index) {
+  const parts = [headingList[index].body];
+  for (let i = index + 1; i < headingList.length && headingList[i].level > headingList[index].level; i += 1) {
+    parts.push(headingList[i].body);
   }
   return parts.join("\n");
 }
@@ -584,7 +594,10 @@ const TREND_ITEM_RULES = [
   ["drop the subline when the report has exactly two scans", /(?:omit|drop)[^.]{0,80}exactly two scans/i],
   ["frame the Themes-cleared line since the first scan", /themes cleared[ ,]{1,3}since the first scan/i],
   ["omit the Themes-cleared line when nothing has cleared", /zero cleared[^.]{0,80}omit/i],
-  ["name a Theme that fails again as reopened", /\breopened\b/i],
+  // #12 decision 3 fixes "reopened" as the word a Theme failing again gets, so progress and
+  // its opposite read alike. The naming has to be there, not just the word: the cross-scan
+  // paragraph mentions "reopened" too, and a bare /reopened/ would pass on that alone.
+  ["name a Theme that fails again as reopened", /nam(?:ed|ing)[^.]{0,30}\breopened\b/i],
   ["credit no one, PinMeTo included, for the movement", /\bnothing\b[^.]{0,80}\bcredits\b/i],
   ["compute Theme progress against the current mapping only", /\bcurrent mapping[^.]{0,40}\bonly\b/i],
   ["treat ids absent from an older scan as unknown, never failing", /\bunknown\b[^.]{0,40}never failing/i],
@@ -592,9 +605,11 @@ const TREND_ITEM_RULES = [
 
 /** The "Open since" meta cell the Theme card gains from the second scan on (#12 decision 7). */
 const THEME_CARD_RULES = [
-  ['carry an "Open since" cell on the Theme card meta line', /open since/i],
+  // The cell itself, not the phrase: the item also says a first scan has no "Open since" cell,
+  // and a bare /open since/ would pass on that sentence after the cell was deleted.
+  ['carry an "Open since" cell on the Theme card meta line', /open since <date>[^.]{0,20}<n> scans/i],
   ["define its date as the earliest scan with a failing member", /earliest scan[^.]{0,80}fail/i],
-  ["count the scans from that one to now inclusive", /\binclusive\b/i],
+  ["count the scans from that one to now inclusive", /counts? the scans[^.]{0,40}\binclusive\b/i],
 ];
 
 /**
@@ -602,61 +617,68 @@ const THEME_CARD_RULES = [
  * order" section's Trend item states the two framings, the subline's two-scan
  * drop, the Themes-cleared line with its zero rule, the reopened wording, the
  * no-credit rule and the cross-scan rules; the Themes item defines the "Open
- * since" cell; and the writing-style section carries the exact templates plus
- * the first-scan baseline sentence.
+ * since" cell; and the writing-style section carries the first-scan baseline
+ * sentence.
  *
- * The templates are pasted twice in the reference, in #12's §4 and in the
- * writing-style templates list. This check pins the writing-style copy, which
- * is the one a scanning agent renders prose from.
+ * #12 puts the templates in two places, its §4 and the writing-style templates
+ * list, so both copies are pinned to TREND_TEMPLATES: one violation per
+ * template, naming the section or sections that lack it. A template that lived
+ * in only one of them could drift in the other unnoticed.
  */
 export function checkTrendContract(reportMd) {
   const file = "references/artifact-report.md";
-  const all = headings(reportMd);
+  const headingList = headings(reportMd);
   const violations = [];
 
-  const sectionOrder = all.find((heading) => SECTION_ORDER_HEADING.test(heading.text));
-  if (sectionOrder === undefined) {
+  const layer1 = layer1Items(headingList);
+  if (layer1 === null) {
     violations.push(`${file}: no "Section order" heading, so the trend card contract cannot be read`);
   }
-  const layer1 = sectionOrder ? numberedItems(sectionOrder.body, { nested: false }) : [];
-  const item = (title) => layer1.find((entry) => entry.title.toLowerCase() === title.toLowerCase());
+  const item = (title) => (layer1 ?? []).find((entry) => entry.title.toLowerCase() === title.toLowerCase());
 
-  const checkRules = (body, rules, where) => {
+  const checkRules = (prose, label, rules) => {
     for (const [requirement, pattern] of rules) {
-      if (!pattern.test(normalizeProse(body))) {
-        violations.push(`${file}: the ${where} does not ${requirement}`);
-      }
+      if (!pattern.test(prose)) violations.push(`${file}: the ${label} does not ${requirement}`);
     }
   };
+  /** The sections that must each carry every template, by label and normalized prose. */
+  const templateHomes = [];
 
   const trend = item("Trend");
   if (trend === undefined) {
     violations.push(`${file}: the "Section order" section has no **Trend** item`);
   } else {
-    checkRules(trend.body, TREND_ITEM_RULES, "Trend section");
+    const prose = normalizeProse(trend.body);
+    checkRules(prose, "Trend section", TREND_ITEM_RULES);
+    templateHomes.push({ label: "Trend section", prose });
   }
 
   const themes = item("Themes");
   if (themes === undefined) {
     violations.push(`${file}: the "Section order" section has no **Themes** item`);
   } else {
-    checkRules(themes.body, THEME_CARD_RULES, "Theme card contract");
+    // The Theme card carries the "Open since" cell, not the trend templates.
+    checkRules(normalizeProse(themes.body), "Theme card contract", THEME_CARD_RULES);
   }
 
-  const stylePosition = all.findIndex((heading) => WRITING_STYLE_HEADING.test(heading.text));
+  const stylePosition = headingList.findIndex((heading) => WRITING_STYLE_HEADING.test(heading.text));
   if (stylePosition === -1) {
     violations.push(`${file}: no writing-style section to carry the trend templates`);
   } else {
-    const style = normalizeProse(sectionWithSubsections(all, stylePosition));
-    for (const template of TREND_TEMPLATES) {
-      if (!style.includes(normalizeProse(template))) {
-        violations.push(`${file}: the writing-style section is missing the trend template \`${template}\``);
-      }
-    }
-    if (!style.includes(normalizeProse(FIRST_SCAN_BASELINE_SENTENCE))) {
+    const prose = normalizeProse(sectionWithSubsections(headingList, stylePosition));
+    templateHomes.push({ label: "writing-style section", prose });
+    if (!prose.includes(normalizeProse(FIRST_SCAN_BASELINE_SENTENCE))) {
       violations.push(
         `${file}: the writing-style section does not end a first scan's summary card with the baseline sentence "${FIRST_SCAN_BASELINE_SENTENCE}"`,
       );
+    }
+  }
+
+  for (const template of TREND_TEMPLATES) {
+    const missing = templateHomes.filter((home) => !home.prose.includes(normalizeProse(template)));
+    if (missing.length > 0) {
+      const where = missing.map((home) => `the ${home.label}`).join(" and ");
+      violations.push(`${file}: the trend template \`${template}\` is missing from ${where}`);
     }
   }
   return violations;

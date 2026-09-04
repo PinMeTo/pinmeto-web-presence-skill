@@ -589,23 +589,35 @@ test("an empty Full audit detail expander is one violation per missing Layer 2 i
 
 // --- Trend card and its templates ---------------------------------------------
 
-const trendItem = `4. **Trend** *(from the second scan onward; omit entirely on the first scan)*. Every number
-   in it is read from the history entries.
-   - **Headline, since the first scan**: total movement with the first scan's date.
-   - **Subline, since the previous scan**: omit it when the report has exactly two scans.
-   - **Themes cleared, since the first scan**: one line naming the cleared Themes by their
-     mapping name. Zero cleared: omit the line; never print "0 themes cleared".
-   - a "What moved since <previous scan>" callout naming a Theme as **reopened**.
+// #12 puts the templates in two places, its §4 and the writing-style list, so the fixture
+// carries them in both and each test drops them from one home at a time.
+const templateLines = (templates, indent) =>
+  templates.map((template) => `${indent}- Template: \`${template}\`.`);
 
-   **Cross-scan rules.** Theme progress is computed against the current mapping table only:
-   ids the older scan does not contain are unknown, never failing. Nothing in this card
-   credits PinMeTo or anyone else for movement.`;
+const trendItem = ({ templates = TREND_TEMPLATES } = {}) =>
+  [
+    "4. **Trend** *(from the second scan onward; omit entirely on the first scan)*. Every number",
+    "   in it is read from the history entries.",
+    "   - **Headline, since the first scan**: total movement with the first scan's date.",
+    "   - **Subline, since the previous scan**: omit it when the report has exactly two scans.",
+    "   - **Themes cleared, since the first scan**: one line naming the cleared Themes by their",
+    '     mapping name. Zero cleared: omit the line; never print "0 themes cleared".',
+    '   - a "What moved since <previous scan>" callout naming a Theme as **reopened**.',
+    ...templateLines(templates, "   "),
+    "",
+    "   **Cross-scan rules.** Theme progress is computed against the current mapping table only:",
+    "   ids the older scan does not contain are unknown, never failing. Nothing in this card",
+    "   credits PinMeTo or anyone else for movement.",
+  ].join("\n");
 
-const themesItem = `5. **Themes** (the work list): one card per Theme.
-
-   **Theme card contract.** Every card carries a muted meta line, and from the second scan
-   onward \`· Open since <date> · <n> scans\`, where the date is the earliest scan in which any
-   current member id was \`fail\` and \`<n>\` counts the scans from that one to now inclusive.`;
+const themesItem = [
+  "5. **Themes** (the work list): one card per Theme.",
+  "",
+  "   **Theme card contract.** Every card carries a muted meta line, and from the second scan",
+  "   onward `· Open since <date> · <n> scans`: the date is the earliest scan in which any",
+  "   current member id was `fail`, and `<n>` counts the scans from that one to now inclusive.",
+  '   On the first scan there is no "Open since" cell.',
+].join("\n");
 
 const writingStyle = ({
   templates = TREND_TEMPLATES,
@@ -617,14 +629,14 @@ const writingStyle = ({
     "### Layer 1 templates",
     "",
     `- **Summary card.** First scan: paragraph 2 ends with the sentence "${baseline}"`,
-    ...templates.map((template) => `- **A template.** \`${template}\``),
+    ...templateLines(templates, ""),
     "",
     "### Effort labels",
     "",
     '- "One template change"',
   ].join("\n");
 
-const trendMd = ({ trend = trendItem, themes = themesItem, style = writingStyle() } = {}) => {
+const trendMd = ({ trend = trendItem(), themes = themesItem, style = writingStyle() } = {}) => {
   const body = LAYER_1_SECTIONS.map((title, index) => {
     if (title === "Trend") return trend;
     if (title === "Themes") return themes;
@@ -650,7 +662,7 @@ test("the trend templates are #12's seven exact strings and the first-scan basel
   assert.equal(FIRST_SCAN_BASELINE_SENTENCE, "This scan is your baseline; the next one shows what moved.");
 });
 
-test("a template wrapped across lines, or emphasised, still counts as present", () => {
+test("a template wrapped across lines, or set in backticks, still counts as present", () => {
   const style = writingStyle().replace(
     "`Up <n> points since your first scan on <date>`",
     "`Up <n> points since your\n  first scan on <date>`",
@@ -658,14 +670,31 @@ test("a template wrapped across lines, or emphasised, still counts as present", 
   assert.deepEqual(checkTrendContract(trendMd({ style })), []);
 });
 
-test("each missing trend template is one violation naming the template", () => {
+test("each missing trend template is one violation naming the template and the section", () => {
   for (const template of TREND_TEMPLATES) {
-    const style = writingStyle({ templates: TREND_TEMPLATES.filter((t) => t !== template) });
-    const violations = checkTrendContract(trendMd({ style }));
+    const kept = TREND_TEMPLATES.filter((t) => t !== template);
+    const violations = checkTrendContract(trendMd({ style: writingStyle({ templates: kept }) }));
     assert.equal(violations.length, 1, template);
     assert.match(violations[0], /references\/artifact-report\.md/);
     assert.ok(violations[0].includes(template), violations[0]);
+    assert.match(violations[0], /writing-style section/);
   }
+});
+
+test("a template that drifted out of the Trend section is a violation naming that section", () => {
+  const kept = TREND_TEMPLATES.filter((t) => t !== "+<n> since <previous scan date>");
+  const violations = checkTrendContract(trendMd({ trend: trendItem({ templates: kept }) }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /Trend section/);
+});
+
+test("a template missing from both homes is one violation naming both", () => {
+  const kept = TREND_TEMPLATES.filter((t) => t !== "No change since <previous scan date>");
+  const violations = checkTrendContract(
+    trendMd({ trend: trendItem({ templates: kept }), style: writingStyle({ templates: kept }) }),
+  );
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /Trend section and the writing-style section/);
 });
 
 test("a writing-style section without the first-scan baseline sentence is a violation", () => {
@@ -675,7 +704,7 @@ test("a writing-style section without the first-scan baseline sentence is a viol
 });
 
 test("a headline framed on the previous scan rather than the first scan is a violation", () => {
-  const trend = trendItem.replace("**Headline, since the first scan**", "**Headline, since the previous scan**");
+  const trend = trendItem().replace("**Headline, since the first scan**", "**Headline, since the previous scan**");
   const violations = checkTrendContract(trendMd({ trend }));
   assert.equal(violations.length, 1);
   assert.match(violations[0], /headline/i);
@@ -683,48 +712,57 @@ test("a headline framed on the previous scan rather than the first scan is a vio
 });
 
 test("a subline without the two-scan drop rule is a violation", () => {
-  const trend = trendItem.replace("omit it when the report has exactly two scans", "always show it");
+  const trend = trendItem().replace("omit it when the report has exactly two scans", "always show it");
   const violations = checkTrendContract(trendMd({ trend }));
   assert.equal(violations.length, 1);
   assert.match(violations[0], /two scans/);
 });
 
 test("a trend item without the Themes-cleared line, or without its zero rule, is a violation each", () => {
-  let trend = trendItem.replace("**Themes cleared, since the first scan**", "**Themes we finished**");
+  let trend = trendItem().replace("**Themes cleared, since the first scan**", "**Themes we finished**");
   assert.equal(checkTrendContract(trendMd({ trend })).length, 1);
-  trend = trendItem.replace('Zero cleared: omit the line; never print "0 themes cleared".', "");
+  trend = trendItem().replace('Zero cleared: omit the line; never print "0 themes cleared".', "");
   const violations = checkTrendContract(trendMd({ trend }));
   assert.equal(violations.length, 1);
   assert.match(violations[0], /nothing has cleared/i);
 });
 
-test("a trend item that never says reopened is a violation", () => {
-  const trend = trendItem.replace("as **reopened**", "as a regression");
+test("a trend item that names a regression anything but reopened is a violation", () => {
+  const trend = trendItem().replace("naming a Theme as **reopened**", "naming a Theme as **a regression**");
+  const violations = checkTrendContract(trendMd({ trend }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /reopened/i);
+});
+
+test("the cross-scan paragraph's own mention of reopened does not satisfy the naming rule", () => {
+  const trend = trendItem()
+    .replace('   - a "What moved since <previous scan>" callout naming a Theme as **reopened**.\n', "")
+    .replace("Theme progress is computed", "Theme progress (cleared, reopened) is computed");
   const violations = checkTrendContract(trendMd({ trend }));
   assert.equal(violations.length, 1);
   assert.match(violations[0], /reopened/i);
 });
 
 test("a trend item without the no-credit rule is a violation", () => {
-  const trend = trendItem.replace("Nothing in this card\n   credits PinMeTo or anyone else for movement.", "");
+  const trend = trendItem().replace("Nothing in this card\n   credits PinMeTo or anyone else for movement.", "");
   const violations = checkTrendContract(trendMd({ trend }));
   assert.equal(violations.length, 1);
   assert.match(violations[0], /credit/i);
 });
 
 test("cross-scan rules missing current-mapping-only, or absent-ids-are-unknown, is a violation each", () => {
-  let trend = trendItem.replace("against the current mapping table only", "against every mapping the report has used");
+  let trend = trendItem().replace("against the current mapping table only", "against every mapping the report used");
   let violations = checkTrendContract(trendMd({ trend }));
   assert.equal(violations.length, 1);
   assert.match(violations[0], /current mapping/i);
-  trend = trendItem.replace("are unknown, never failing", "count as failing");
+  trend = trendItem().replace("are unknown, never failing", "count as failing");
   violations = checkTrendContract(trendMd({ trend }));
   assert.equal(violations.length, 1);
   assert.match(violations[0], /unknown/i);
 });
 
 test("a Theme card contract without the Open since cell, or without its definitions, is a violation each", () => {
-  let themes = themesItem.replace("· Open since <date> · <n> scans", "· <n> scans");
+  let themes = themesItem.replace("`· Open since <date> · <n> scans`", "`· <n> scans`");
   let violations = checkTrendContract(trendMd({ themes }));
   assert.equal(violations.length, 1);
   assert.match(violations[0], /Open since/i);
@@ -732,7 +770,7 @@ test("a Theme card contract without the Open since cell, or without its definiti
   violations = checkTrendContract(trendMd({ themes }));
   assert.equal(violations.length, 1);
   assert.match(violations[0], /earliest scan/i);
-  themes = themesItem.replace("from that one to now inclusive", "from that one to now");
+  themes = themesItem.replace("counts the scans from that one to now inclusive", "counts the scans since then");
   violations = checkTrendContract(trendMd({ themes }));
   assert.equal(violations.length, 1);
   assert.match(violations[0], /inclusive/i);
