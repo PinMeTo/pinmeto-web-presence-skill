@@ -29,7 +29,8 @@
 //      publishing: the report reference lists these as pre-publish checks.
 //   5. The effort labels are enumerated under exactly one heading, and the
 //      writing-style section encloses it, so the closed set has one home and
-//      cannot drift between two copies.
+//      cannot drift between two copies. Headings inside fenced code blocks are
+//      illustration, not structure, and are ignored here and in (d).
 //   6. Retired vocabulary (RETIRED_VOCABULARY: the wording the Themes work
 //      list replaced) is absent from SKILL.md, CONTEXT.md and every file under
 //      references/. Matching ignores case, treats any whitespace run,
@@ -182,11 +183,38 @@ function idOrFileToken(words, pointBearingIds) {
 }
 
 /**
- * Every markdown heading, in document order: its level, its text, and the body
- * that follows it up to the next heading. One reading of the document's
- * structure, so the checks below cannot disagree about where a section is.
+ * The markdown with every fenced code block blanked out, offsets and line
+ * lengths preserved. A fenced block is illustration, not document structure: a
+ * `### Effort labels` line inside a markdown example is not a heading, and its
+ * quoted strings are not the closed set.
  */
-function headings(markdown) {
+function withoutFencedBlocks(markdown) {
+  let fenceChar = null;
+  return markdown
+    .split("\n")
+    .map((line) => {
+      const blanked = " ".repeat(line.length);
+      if (fenceChar === null) {
+        const opening = line.match(/^[ \t]*(`{3,}|~{3,})/);
+        if (opening === null) return line;
+        fenceChar = opening[1][0];
+        return blanked;
+      }
+      const closing = line.match(/^[ \t]*(`{3,}|~{3,})[ \t]*\r?$/);
+      if (closing !== null && closing[1][0] === fenceChar) fenceChar = null;
+      return blanked;
+    })
+    .join("\n");
+}
+
+/**
+ * Every markdown heading, in document order: its level, its text, and the body
+ * that follows it up to the next heading, fenced blocks excluded. One reading
+ * of the document's structure, so the checks below cannot disagree about where
+ * a section is.
+ */
+function headings(rawMarkdown) {
+  const markdown = withoutFencedBlocks(rawMarkdown);
   const found = [...markdown.matchAll(/^(#{1,6})[ \t]+([^\n]*)\r?\n?/gm)].map((match) => ({
     level: match[1].length,
     text: match[2].trim(),

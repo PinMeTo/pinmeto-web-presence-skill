@@ -405,3 +405,30 @@ test("a bullet naming the effort label in prose is not a second enumeration", ()
   );
   assert.deepEqual(checkEffortLabelsHome(md), []);
 });
+
+// A fenced example is illustration, not document structure: a `###` line inside a fence is
+// not a heading, and its quoted strings are not the closed set.
+const FENCED_EXAMPLE = [
+  "```markdown",
+  "### Effort labels",
+  "",
+  '- "Bogus label"',
+  "```",
+].join("\n");
+
+test("an effort-label heading inside a fenced example is not a second enumeration", () => {
+  const md = reportMd({ json: mapping() }).replace("## Theme mapping", `${FENCED_EXAMPLE}\n\n## Theme mapping`);
+  assert.deepEqual(checkEffortLabelsHome(md), []);
+});
+
+test("a fenced example's quoted strings are not read as the closed set", () => {
+  const md = reportMd({ json: mapping() }).replace("## Theme mapping", `${FENCED_EXAMPLE}\n\n## Theme mapping`);
+  assert.deepEqual(checkThemeMapping(md, themeRubric()), []);
+});
+
+test("a tilde-fenced example is ignored the same way", () => {
+  const tilde = FENCED_EXAMPLE.replaceAll("```", "~~~");
+  const md = reportMd({ json: mapping() }).replace("## Theme mapping", `${tilde}\n\n## Theme mapping`);
+  assert.deepEqual(checkEffortLabelsHome(md), []);
+  assert.deepEqual(checkThemeMapping(md, themeRubric()), []);
+});
