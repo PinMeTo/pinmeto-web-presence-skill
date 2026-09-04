@@ -192,7 +192,8 @@ reads (hero, summary, the four scorecards, the trend, the Themes work list, a on
 summary chip) plus the page-level sections under it. **Layer 2** is the full audit, demoted
 behind one "Full audit detail" expander that is collapsed when the page loads. Nothing was
 removed from the audit, only moved one click away: every Layer 2 item keeps the data contract
-it already had. A printed report is Layer 1 (see "Print" above).
+it already had. Printing gives you Layer 1, and Layer 2 only where the reader opened the
+expander first (see "Print" above).
 
 Layer 1 is these ten sections, in this order. Sections 8 to 10 sit below the expander at the
 bottom of the page: "What to do next" is the marketer's next step, Methodology and the footer
