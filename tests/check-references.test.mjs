@@ -1,6 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { checkVersionMatchesChangelog } from "../scripts/check-references.mjs";
+import {
+  checkVersionMatchesChangelog,
+  checkRubricJson,
+  checkGlossaryTerms,
+} from "../scripts/check-references.mjs";
 
 const skill = (version) => `---\nname: pinmeto-web-presence\nversion: ${version}\n---\n# Title\n`;
 const changelog = (newest) =>
@@ -17,8 +21,6 @@ test("skill version differing from the newest changelog heading names the mismat
   assert.match(violations[0], /0\.13\.0/);
   assert.match(violations[0], /0\.12\.1/);
 });
-
-import { checkRubricJson } from "../scripts/check-references.mjs";
 
 const rubricMd = (json) => `# Rubric\n\nProse first.\n\n\`\`\`json\n${json}\n\`\`\`\n\nMore prose.\n`;
 const rubric = (overrides = {}) =>
@@ -51,6 +53,12 @@ test("a rubric block that does not parse is one violation naming the file", () =
   assert.match(violations[0], /parse/i);
 });
 
+test("a rubric block whose JSON is not an object is one violation, not a crash", () => {
+  const violations = checkRubricJson(rubricMd("null"));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /references\/rubric\.md/);
+});
+
 test("a rubric block without a json fence is a violation", () => {
   assert.match(checkRubricJson("# Rubric\n\nno block here\n")[0], /references\/rubric\.md/);
 });
@@ -68,8 +76,6 @@ test("a duplicated check id across pillars is a violation naming the id", () => 
   assert.equal(violations.length, 1);
   assert.match(violations[0], /geo\.x/);
 });
-
-import { checkGlossaryTerms } from "../scripts/check-references.mjs";
 
 const glossary = `# Skill\n\n## Language\n\n### Deliverable\n\n**Report**:\nThe living scorecard.\n_Avoid_: audit\n\n**Fix brief**:\nThe drawer.\n`;
 

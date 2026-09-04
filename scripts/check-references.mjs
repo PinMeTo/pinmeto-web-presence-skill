@@ -25,11 +25,11 @@
 // `checkReferences`, cover it in tests/check-references.test.mjs with a
 // passing and a failing input, and extend the list above.
 
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-export const REQUIRED_GLOSSARY_TERMS = ["Fix brief", "Points returned", "Report"];
+const REQUIRED_GLOSSARY_TERMS = ["Fix brief", "Points returned", "Report"];
 
 export function checkVersionMatchesChangelog(skillMd, changelogMd) {
   const skillVersion = skillMd.match(/^version:[ \t]*(\S+)/m)?.[1];
@@ -83,14 +83,19 @@ export function checkRubricJson(rubricMd) {
   } catch (error) {
     return [`${file}: JSON block does not parse (${error.message})`];
   }
+  if (rubric === null || typeof rubric !== "object" || Array.isArray(rubric)) {
+    return [`${file}: JSON block is not an object`];
+  }
   const violations = [];
   if (typeof rubric.rubric_version !== "string" || rubric.rubric_version === "") {
     violations.push(`${file}: JSON block has no \`rubric_version\` string`);
   }
-  const seen = new Set();
+  const occurrences = new Map();
   for (const id of collectCheckIds(rubric.pillars ?? {})) {
-    if (seen.has(id)) violations.push(`${file}: check id \`${id}\` appears more than once`);
-    seen.add(id);
+    occurrences.set(id, (occurrences.get(id) ?? 0) + 1);
+  }
+  for (const [id, count] of occurrences) {
+    if (count > 1) violations.push(`${file}: check id \`${id}\` appears ${count} times`);
   }
   return violations;
 }
@@ -113,16 +118,33 @@ export function checkReferences({ skillMd, changelogMd, rubricMd, contextMd }) {
 
 function main() {
   const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-  const read = (rel) => readFileSync(join(root, rel), "utf8");
-  const violations = checkReferences({
+  const missing = [];
+  const read = (rel) => {
+    try {
+      return readFileSync(join(root, rel), "utf8");
+    } catch {
+      missing.push(`${rel}: file is missing`);
+      return "";
+    }
+  };
+  const contents = {
     skillMd: read("SKILL.md"),
     changelogMd: read("CHANGELOG.md"),
     rubricMd: read("references/rubric.md"),
     contextMd: read("CONTEXT.md"),
-  });
+  };
+  const violations = missing.length > 0 ? missing : checkReferences(contents);
   for (const line of violations) console.error(line);
   if (violations.length > 0) process.exit(1);
   console.log("references consistent");
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
+// Compare real paths: on macOS /tmp is a symlink, and import.meta.url is already resolved.
+const invokedAsScript = (() => {
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href;
+  } catch {
+    return false;
+  }
+})();
+if (invokedAsScript) main();
