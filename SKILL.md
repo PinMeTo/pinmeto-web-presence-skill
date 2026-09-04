@@ -130,7 +130,8 @@ returned, per the Theme mapping in [references/artifact-report.md](references/ar
 Produce the report per [references/artifact-report.md](references/artifact-report.md), matching
 the PinMeTo Presence Report design and including a fix-brief drawer (with a copy-paste
 coding-agent prompt) for every failing check, plus a Theme brief per Theme card that stacks
-those drawers unchanged behind one copy-all control. Choose the delivery path from the host,
+those drawers unchanged behind one copy-all control (members without a drawer, the GEO
+sub-group B/C fields, appear as evidence pointers). Choose the delivery path from the host,
 identified from the runtime context (the product named in the system prompt and the
 first-party tool surface) — never inferred from which workflow happens to load:
 

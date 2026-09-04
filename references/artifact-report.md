@@ -390,9 +390,11 @@ anchored-details fallback where scripting is constrained. Nine rules:
    ("2 checks could not be verified: <check names>"). Passing members appear only in the
    header count.
 3. **Ids without a drawer** (GEO sub-group B and C fields, `consistency.*` and `page.*`)
-   render as evidence pointers into the NAP consistency matrix ("Phone differs at 3 of 5
-   sampled locations, see the matrix", linking to the matrix): no steps, no prompt. The
-   header's effort label is their instruction.
+   render as evidence pointers into the NAP consistency matrix, linking to it: no steps, no
+   prompt. The pointer sentence carries the observation the matrix does not show as a chip:
+   the field, the count and denominator of sampled locations, and what disagreed ("Phone on
+   the location page differs from the dominant listing value at 3 of 5 sampled locations,
+   see the matrix"). The header's effort label is their instruction.
 4. **Order**: sections by points returned descending, ties by rubric order. The same rule
    ranks the Theme cards.
 5. **Dual-scored pairs** inside one Theme (the known duplicates listed under "Theme mapping")

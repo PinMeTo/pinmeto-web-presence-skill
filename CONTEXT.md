@@ -122,7 +122,7 @@ The fixed table assigning every point-bearing check id (pillar checks and GEO su
 _Avoid_: grouping, categorisation, bucket list
 
 **Theme brief**:
-The drawer opened from a Theme card. Contains, unchanged, the fix brief of every failing member check, ordered by points returned, plus a header with the Theme's worth, effort and a copy-all control. Never a merged brief: nothing in it is written per Theme per scan.
+The drawer opened from a Theme card. Contains, unchanged, the fix brief of every failing member check (an evidence pointer into the NAP matrix for the GEO sub-group B/C fields, which have no drawer), ordered by points returned, plus a header with the Theme's worth, effort and a copy-all control. Never a merged brief: nothing in it is written per Theme per scan.
 _Avoid_: theme drawer, combined brief, mega-prompt
 
 **Effort label**:

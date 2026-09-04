@@ -343,7 +343,10 @@ function main() {
   const referenceMds = {};
   let referenceNames = [];
   try {
-    referenceNames = readdirSync(join(root, "references")).filter((f) => f.endsWith(".md")).sort();
+    referenceNames = readdirSync(join(root, "references"), { recursive: true })
+      .map(String)
+      .filter((f) => f.endsWith(".md"))
+      .sort();
   } catch {
     missing.push("references/: directory is missing");
   }
