@@ -9,8 +9,9 @@ the same day scored 72 / C. Both scans share a date, which turned out to be usef
 chart's same-date ordinal labelling, and it puts the trend card at exactly two scans, where the
 subline must be dropped.
 
-The re-run was genuine, not a re-render: the PinMeTo baseline was re-pulled, all 19 URLs re-fetched,
-PageSpeed re-attempted, and **all 15 GEO lookups re-observed in the browser**. The reduced-coverage
+The re-run was genuine, not a re-render: the PinMeTo baseline was re-pulled with `forceRefresh`, the
+15-URL concurrent burst and both markdown-negotiation probes were re-fetched, PageSpeed was
+re-attempted, and **all 15 GEO lookups were re-observed in the browser**. The reduced-coverage
 budget was not needed.
 
 ---
@@ -131,7 +132,7 @@ committed and are not scans of the site**; they exist only to exercise rendering
 | Fixture | Construction | What it rendered |
 | --- | --- | --- |
 | 3 scans | scan 3 = scan 2 with `aio.haspart_about_mentions_enrichment` forced to pass, so `answers-on-page` empties | Headline "Up 2 points since your first scan on 4 September 2026". Subline **appears** at three scans: "+1 since 4 September 2026". Cleared line: "**One theme** cleared since your first scan on 4 September 2026: Answer customers' questions on the page itself", singular, name verbatim from the mapping, plain text with no anchor because the card is gone. The card **is** gone, and the h2 recounted to "Seven themes, worth ~21 points together" |
-| 4 scans | scan 4 = the same check failing again | Subline "−1 since 4 September 2026" with the correct minus sign. Cleared line **omitted**, rather than printing "0 themes cleared", because the only Theme that had cleared is now reopened. "What moved" names it: "Answer customers' questions on the page itself **reopened**: 1 of its member checks are failing again", in the same words as progress. The card is back in the work list with "Open since 4 September 2026 · 4 scans" |
+| 4 scans | scan 4 = the same check failing again | Subline "−1 since 4 September 2026" with the correct minus sign. Cleared line **omitted**, rather than printing "0 themes cleared", because the only Theme that had cleared is now reopened. "What moved" names it: "Answer customers' questions on the page itself **reopened**: 1 member check is failing again", in the same words as progress. The card is back in the work list with "Open since 4 September 2026 · 4 scans" |
 
 ---
 
@@ -213,7 +214,7 @@ Verified in a browser against `docs/test-runs/2026-09-04-report-scan2.html`.
 | 2 | **Subline omitted at exactly two scans** | **PASS** | No `.subline` element exists in the document. The 3-scan fixture renders "+1 since 4 September 2026" and the 4-scan fixture "−1 since 4 September 2026", so the omission is conditional, not a missing feature |
 | 3 | **"Open since <date> · N scans" cells** | **PASS** | All 8 Theme cards carry it, e.g. "5 checks · One developer task · one fix, pays in 2 pillars · Open since 4 September 2026 · 2 scans". Absent on the first scan's cards, as required |
 | 4 | **Themes-cleared line only where applicable** | **PASS** | Absent here: nothing cleared. Present and correct on the 3-scan fixture: "One theme cleared since your first scan on 4 September 2026: Answer customers' questions on the page itself", and absent again on the 4-scan fixture where that Theme reopened, rather than printing "0 themes cleared" |
-| 5 | **Reopened wording where applicable** | **PASS** | Absent here. On the 4-scan fixture: "Answer customers' questions on the page itself reopened: 1 of its member checks are failing again", named in "What moved" by the mapping name verbatim |
+| 5 | **Reopened wording where applicable** | **PASS** | Absent here. On the 4-scan fixture: "Answer customers' questions on the page itself reopened: 1 member check is failing again", named in "What moved" by the mapping name verbatim |
 | 6 | **Hero, scorecards, chart and Layer 2 table agree** | **PASS** | History holds 72 (50/74/80/97) then 73 (50/78/80/97). Hero reads **73**; scorecards read **50 / 78 / 80 / 97**; the chart's point labels read **72** and **73** over "4 September (1st)" and "4 September (2nd)"; the Layer 2 scan-history table's two rows read `4 September 2026 · First scan · 50 · 74 · 80 · 97 · 72` and `4 September 2026 · Re-run · 50 · 78 · 80 · 97 · 73`. Count tags "21 failing / 2 could not be measured / 36 passing" equal `counts`. Four surfaces, one source |
 | 7 | Theme card contract, re-checked | **PASS** | All 8 headlines and effort labels still verbatim against the mapping. Worth pills 7, 4, 4, 2, 2, 1, 1, 1 summing to the h2's ~22. Rank badges on the top three only, orange fill with navy numeral. No orange border on any card side; the one hit in a naive computed-style sweep is `outline-color` on the orange kicker text, where `outline-style` is `none` and `outline-width` renders nothing |
 | 8 | "Copy all N briefs", re-checked | **PASS** | All 8 themes: N blocks separated by lines containing only `---`, N equal to the label, separators N−1, every block five-field and starting with `Goal:`. `answers-on-page` now reads "Copy all 1 **brief**" |
