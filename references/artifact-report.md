@@ -221,7 +221,7 @@ renders identically in light and dark viewers.
    0.5). `warn` members contribute 0. Display the worth as an integer, rounded half up. Rank
    by worth descending; break ties with the §4 tie-breakers (fleet-wide template fixes beat
    per-location manual edits), then by the rubric order of each Theme's first member.
-   Membership comes from the Theme mapping, never from per-scan judgement.
+   Membership comes from the Theme mapping, never from per-scan judgment.
 
    **Theme card contract.** Every card carries, in this order:
    - a "Worth ~N points" pill (integer, round half up, summed across pillars);
@@ -398,7 +398,7 @@ anchored-details fallback where scripting is constrained. Nine rules:
 5. **Dual-scored pairs** inside one Theme (the known duplicates listed under "Theme mapping")
    show **both** sections; the later one carries
    the muted cross-reference "also scored in <pillar>, same fix, pays twice". Never collapse a
-   pair: the two checks differ in threshold, so choosing whose steps survive would be judgement.
+   pair: the two checks differ in threshold, so choosing whose steps survive would be judgment.
 6. **Copy all N briefs** concatenates the sections' five-field blocks in section order, each
    block exactly as its drawer shows it, separated by a line containing only `---`. Sections
    without a prompt (rule 3) are skipped and excluded from N; when N is 0 the button is
