@@ -67,9 +67,9 @@ and other schemes; render a rejected value as inert text instead of a link or em
   of all `checks` arrays equals the rubric's set of point-bearing ids, every pillar check id
   plus the GEO sub-group B and C field ids; (c) no id appears in two Themes; (d) every `effort`
   value is one of the eight effort labels enumerated under "Effort labels" in the
-  writing-style section below. **Any failure
-  blocks publishing.** There is no "Other" catch-all Theme: a catch-all would hide exactly the
-  drift this check exists to catch, in front of a customer.
+  writing-style section below. **Any failure blocks publishing.** There is no "Other" catch-all
+  Theme: a catch-all would hide exactly the drift this check exists to catch, in front of a
+  customer.
 
 After publishing, verify the same three things on either path: the exact report title, the
 hero score, and a parseable `pmt-scan-history` block. For a Site, run the `sites-hosting`
@@ -576,7 +576,8 @@ surfaces. Fix-brief drawer text follows its own contract above.
 ### Baseline (all reader-facing prose)
 
 - **Voice.** Sober, concrete, advisory. Address the brand as "you". State what was observed
-  and what it costs; never promise rankings, traffic, or revenue. No exclamation marks.
+  and what it costs; never promise rankings, traffic, or revenue. Evidence quotes the observed
+  value rather than describing it. No exclamation marks.
 - **PinMeTo brand tone rules apply.** No em dashes; use commas, periods, colons, or
   parentheses. No hype vocabulary: the brand's banned list governs, and the pinmeto-brand
   plugin's ai-slop-guards reference carries it in full for every language. No
