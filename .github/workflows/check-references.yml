@@ -2,8 +2,9 @@ name: Check references
 
 # The shipped references must agree with each other (skill version vs changelog,
 # rubric JSON well-formed with unique check ids, required glossary terms, Theme
-# mapping total against the rubric with a closed effort-label set, retired
-# vocabulary absent from the entry point and every reference). The
+# mapping total against the rubric with a closed effort-label set enumerated
+# only in the writing-style section, retired vocabulary absent from the entry
+# point and every reference). The
 # tag-time release workflow keeps its own version-vs-tag check; this one runs on
 # every push and pull request so a contradiction cannot merge unnoticed.
 on:

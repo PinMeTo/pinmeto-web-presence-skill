@@ -616,8 +616,8 @@ surfaces. Fix-brief drawer text follows its own contract above.
   a "since" clause.
 - **Theme headline.** The Theme's `name` from the mapping table, verbatim, every scan. Names
   are written as a change the reader can picture (Put, Make, Let, Give, Keep, Tell, Connect),
-  name the outcome rather than the check, contain no technical token, and run twelve words or
-  fewer.
+  name the outcome rather than the check, and contain no technical token. Twelve words is the
+  target; `scripts/check-references.mjs` rejects a name above thirteen.
 - **Theme summary.** Exactly two moves in one or two sentences, forty words or fewer.
   First the observation with its count from the evidence ("Eleven location pages share the
   same title and heading"), then the consequence in the customer's terms ("so Google picks one

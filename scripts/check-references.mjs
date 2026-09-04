@@ -181,12 +181,21 @@ function idOrFileToken(words, pointBearingIds) {
   });
 }
 
-/** Every markdown heading, in document order: its level, its text and where it starts. */
+/**
+ * Every markdown heading, in document order: its level, its text, and the body
+ * that follows it up to the next heading. One reading of the document's
+ * structure, so the checks below cannot disagree about where a section is.
+ */
 function headings(markdown) {
-  return [...markdown.matchAll(/^(#{1,6})[ \t]+([^\n]*)/gm)].map((m) => ({
-    level: m[1].length,
-    text: m[2].trim(),
-    index: m.index,
+  const found = [...markdown.matchAll(/^(#{1,6})[ \t]+([^\n]*)\r?\n?/gm)].map((match) => ({
+    level: match[1].length,
+    text: match[2].trim(),
+    start: match.index,
+    bodyStart: match.index + match[0].length,
+  }));
+  return found.map((heading, i) => ({
+    ...heading,
+    body: markdown.slice(heading.bodyStart, found[i + 1]?.start ?? markdown.length),
   }));
 }
 
@@ -203,7 +212,7 @@ function ancestorsOf(position, all) {
   return ancestors;
 }
 
-const WRITING_STYLE_SECTION = /writing style/i;
+const WRITING_STYLE_HEADING = /writing style/i;
 const EFFORT_LABEL_HEADING = /effort label/i;
 
 /**
@@ -217,37 +226,36 @@ const EFFORT_LABEL_HEADING = /effort label/i;
 export function checkEffortLabelsHome(reportMd) {
   const file = "references/artifact-report.md";
   const all = headings(reportMd);
-  const enumerations = all.filter((heading) => EFFORT_LABEL_HEADING.test(heading.text));
-  if (enumerations.length === 0) {
+  const positions = all.flatMap((heading, i) => (EFFORT_LABEL_HEADING.test(heading.text) ? [i] : []));
+  if (positions.length === 0) {
     return [`${file}: no heading enumerating the closed set of effort labels`];
   }
   const violations = [];
-  if (enumerations.length > 1) {
-    const named = enumerations.map((heading) => `"${heading.text}"`).join(", ");
+  if (positions.length > 1) {
+    const named = positions.map((i) => `"${all[i].text}"`).join(", ");
     violations.push(
-      `${file}: the effort labels are enumerated under ${enumerations.length} headings (${named}); the writing-style section is their one home`,
+      `${file}: the effort labels are enumerated under ${positions.length} headings (${named}); the writing-style section is their one home`,
     );
   }
   // The first enumeration is the one `enumeratedEffortLabels` below reads as the closed set.
-  const ancestors = ancestorsOf(all.indexOf(enumerations[0]), all);
-  if (!ancestors.some((heading) => WRITING_STYLE_SECTION.test(heading.text))) {
+  const home = all[positions[0]];
+  const ancestors = ancestorsOf(positions[0], all);
+  if (!ancestors.some((heading) => WRITING_STYLE_HEADING.test(heading.text))) {
     const under = ancestors.length > 0 ? `"${ancestors[ancestors.length - 1].text}"` : "no section";
-    violations.push(
-      `${file}: the "${enumerations[0].text}" heading sits under ${under}, not the writing-style section`,
-    );
+    violations.push(`${file}: the "${home.text}" heading sits under ${under}, not the writing-style section`);
   }
   return violations;
 }
 
 /**
- * The closed set of effort labels: every double-quoted string between the
- * heading whose text contains "Effort label" and the next heading. Keep that
- * section terse; any quoted string in it is read as a label.
+ * The closed set of effort labels: every double-quoted string in the body of
+ * the first heading whose text names the effort labels. Keep that section
+ * terse; any quoted string in it is read as a label.
  */
 function enumeratedEffortLabels(reportMd) {
-  const section = reportMd.match(/^#{1,6}[ \t]+[^\n]*effort label[^\n]*\r?\n([\s\S]*?)(?=^#{1,6}[ \t]|(?![\s\S]))/im);
-  if (!section) return null;
-  return [...section[1].matchAll(/"([^"\n]+)"/g)].map((m) => m[1]);
+  const home = headings(reportMd).find((heading) => EFFORT_LABEL_HEADING.test(heading.text));
+  if (home === undefined) return null;
+  return [...home.body.matchAll(/"([^"\n]+)"/g)].map((m) => m[1]);
 }
 
 /** Pre-publish conditions (a) to (d) plus the slug and name rules; see the header comment. */
