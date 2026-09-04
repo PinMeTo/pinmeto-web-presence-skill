@@ -121,14 +121,16 @@ stage — budget it, and record evidence as you go.
 ### Stage 5 — Score and prioritize
 
 Compute pillar scores (0–100) and the weighted overall score + grade exactly per
-[references/scoring.md](references/scoring.md). Then rank failing checks by points returned
-(check weight × pillar weight × how far from passing) to pick the **top 3 fixes**.
+[references/scoring.md](references/scoring.md). Then compute points returned per failing check
+(check weight × pillar weight × how far from passing) and rank **Themes** by summed points
+returned, per the Theme mapping in [references/artifact-report.md](references/artifact-report.md).
 
 ### Stage 6 — Report (host-native, updatable)
 
 Produce the report per [references/artifact-report.md](references/artifact-report.md), matching
 the PinMeTo Presence Report design and including a fix-brief drawer (with a copy-paste
-coding-agent prompt) for every failing check. Choose the delivery path from the host,
+coding-agent prompt) for every failing check, plus a Theme brief per Theme card that stacks
+those drawers unchanged behind one copy-all control. Choose the delivery path from the host,
 identified from the runtime context (the product named in the system prompt and the
 first-party tool surface) — never inferred from which workflow happens to load:
 

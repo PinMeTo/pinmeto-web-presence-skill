@@ -27,6 +27,10 @@
 //      Theme is an "Other" catch-all; every `name` is at most NAME_WORD_LIMIT
 //      words and carries no check id or file token. Any failure blocks
 //      publishing: the report reference lists these as pre-publish checks.
+//   5. Retired vocabulary (RETIRED_VOCABULARY: the wording the Themes work
+//      list replaced) is absent from SKILL.md, CONTEXT.md and every file under
+//      references/. Matching ignores case and treats any whitespace run,
+//      including a line wrap, as one space.
 //
 // Every assertion is about an externally observable property of the shipped
 // files, never about how the markdown is laid out.
@@ -36,7 +40,7 @@
 // `checkReferences`, cover it in tests/check-references.test.mjs with a
 // passing and a failing input, and extend the list above.
 
-import { readFileSync, realpathSync } from "node:fs";
+import { readdirSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -46,8 +50,13 @@ const REQUIRED_GLOSSARY_TERMS = [
   "Report",
   "Theme",
   "Theme mapping",
+  "Theme brief",
   "Effort label",
 ];
+
+// Wording the Themes work list replaced (#16). A prefix such as "top fix" also
+// catches "top fixes"; historical records under docs/ are not swept.
+const RETIRED_VOCABULARY = ["Fix these first", "top fix", "top 3 fixes", "three highest-point fixes"];
 
 export function checkVersionMatchesChangelog(skillMd, changelogMd) {
   const skillVersion = skillMd.match(/^version:[ \t]*(\S+)/m)?.[1];
@@ -225,9 +234,15 @@ export function checkThemeMapping(reportMd, rubricMd) {
       violations.push(`${file}: Theme at index ${index} is not an object`);
       return;
     }
-    const slug = String(theme.slug);
-    slugs.set(slug, (slugs.get(slug) ?? 0) + 1);
-    if (!KEBAB_CASE.test(slug)) violations.push(`${file}: Theme slug \`${slug}\` is not kebab-case`);
+    // A missing, empty or non-string slug is its own violation; String(42) would pass the kebab-case test.
+    const hasSlug = typeof theme.slug === "string" && theme.slug !== "";
+    const slug = hasSlug ? theme.slug : `at index ${index}`;
+    if (hasSlug) {
+      slugs.set(slug, (slugs.get(slug) ?? 0) + 1);
+      if (!KEBAB_CASE.test(slug)) violations.push(`${file}: Theme slug \`${slug}\` is not kebab-case`);
+    } else {
+      violations.push(`${file}: Theme at index ${index} has no non-empty string \`slug\``);
+    }
     if (!Array.isArray(theme.checks)) {
       violations.push(`${file}: Theme \`${slug}\` has no \`checks\` array`);
     }
@@ -273,12 +288,41 @@ export function checkThemeMapping(reportMd, rubricMd) {
   return violations;
 }
 
-export function checkReferences({ skillMd, changelogMd, rubricMd, contextMd, reportMd }) {
+/**
+ * Retired vocabulary must be absent from every swept file. `filesByPath` maps a
+ * repo-relative path to its contents. Case-insensitive; a whitespace run in the
+ * phrase matches any whitespace run in the file, so a phrase wrapped across
+ * lines is still caught. One line per occurrence, with its line number.
+ */
+export function checkRetiredVocabulary(filesByPath, phrases = RETIRED_VOCABULARY) {
+  const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const patterns = phrases.map((phrase) => ({
+    phrase,
+    regex: new RegExp(phrase.split(/\s+/).map(escape).join("\\s+"), "gi"),
+  }));
+  const violations = [];
+  for (const [path, contents] of Object.entries(filesByPath)) {
+    for (const { phrase, regex } of patterns) {
+      for (const match of contents.matchAll(regex)) {
+        const line = contents.slice(0, match.index).split("\n").length;
+        violations.push(`${path}: uses retired vocabulary "${phrase}" (line ${line})`);
+      }
+    }
+  }
+  return violations;
+}
+
+/**
+ * `referenceMds` maps `references/<file>.md` to its contents for every reference
+ * file, including rubric.md and artifact-report.md, which are also passed by name.
+ */
+export function checkReferences({ skillMd, changelogMd, rubricMd, contextMd, reportMd, referenceMds = {} }) {
   return [
     ...checkVersionMatchesChangelog(skillMd, changelogMd),
     ...checkRubricJson(rubricMd),
     ...checkGlossaryTerms(contextMd),
     ...checkThemeMapping(reportMd, rubricMd),
+    ...checkRetiredVocabulary({ "SKILL.md": skillMd, "CONTEXT.md": contextMd, ...referenceMds }),
   ];
 }
 
@@ -293,12 +337,17 @@ function main() {
       return "";
     }
   };
+  const referenceMds = {};
+  for (const name of readdirSync(join(root, "references")).filter((f) => f.endsWith(".md")).sort()) {
+    referenceMds[`references/${name}`] = read(`references/${name}`);
+  }
   const contents = {
     skillMd: read("SKILL.md"),
     changelogMd: read("CHANGELOG.md"),
-    rubricMd: read("references/rubric.md"),
+    rubricMd: referenceMds["references/rubric.md"] ?? read("references/rubric.md"),
     contextMd: read("CONTEXT.md"),
-    reportMd: read("references/artifact-report.md"),
+    reportMd: referenceMds["references/artifact-report.md"] ?? read("references/artifact-report.md"),
+    referenceMds,
   };
   const violations = missing.length > 0 ? missing : checkReferences(contents);
   for (const line of violations) console.error(line);

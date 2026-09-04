@@ -5,6 +5,7 @@ import {
   checkRubricJson,
   checkGlossaryTerms,
   checkThemeMapping,
+  checkRetiredVocabulary,
 } from "../scripts/check-references.mjs";
 
 const skill = (version) => `---\nname: pinmeto-web-presence\nversion: ${version}\n---\n# Title\n`;
@@ -106,9 +107,9 @@ test("a term mentioned only in prose, not as an entry, does not count", () => {
   assert.equal(checkGlossaryTerms(prose, ["Theme brief"]).length, 1);
 });
 
-test("the default required glossary terms include Theme, Theme mapping and Effort label", () => {
+test("the default required glossary terms include Theme, Theme mapping, Theme brief and Effort label", () => {
   const violations = checkGlossaryTerms(glossary);
-  for (const term of ["Theme", "Theme mapping", "Effort label"]) {
+  for (const term of ["Theme", "Theme mapping", "Theme brief", "Effort label"]) {
     assert.ok(violations.some((v) => v.includes(`\`${term}\``)), `expected a violation for ${term}`);
   }
 });
@@ -233,6 +234,19 @@ test("a duplicated slug is a violation naming the slug", () => {
   assert.match(violations[0], /in-code/);
 });
 
+test("a slug that is missing or not a string is one violation naming the Theme's position, not a kebab-case pass", () => {
+  for (const slug of [undefined, null, 42, true, ""]) {
+    const md = withMapping((m) => {
+      if (slug === undefined) delete m.themes[1].slug;
+      else m.themes[1].slug = slug;
+    });
+    const violations = checkThemeMapping(md, themeRubric());
+    assert.equal(violations.length, 1, `slug ${JSON.stringify(slug)}: ${violations.join("\n")}`);
+    assert.match(violations[0], /index 1/);
+    assert.match(violations[0], /slug/);
+  }
+});
+
 test("a slug that is not kebab-case is a violation naming the slug", () => {
   const md = withMapping((m) => (m.themes[1].slug = "Fresh_Listings"));
   const violations = checkThemeMapping(md, themeRubric());
@@ -292,4 +306,48 @@ test("an unreadable rubric is reported once by the mapping check, without cascad
   const violations = checkThemeMapping(reportMd({ json: mapping() }), "# Rubric\n\nno json\n");
   assert.equal(violations.length, 1);
   assert.match(violations[0], /rubric/i);
+});
+
+// --- Retired vocabulary --------------------------------------------------------
+
+const clean = {
+  "SKILL.md": "# Skill\n\nRank Themes by summed points returned.\n",
+  "references/scoring.md": "## 4. Points returned\n\nThemes rank by summed points returned.\n",
+};
+
+test("files free of retired vocabulary pass", () => {
+  assert.deepEqual(checkRetiredVocabulary(clean), []);
+});
+
+test("each retired phrase is a violation naming the file, the phrase and the line", () => {
+  const phrases = ["Fix these first", "top fix", "top 3 fixes", "three highest-point fixes"];
+  for (const phrase of phrases) {
+    const files = { ...clean, "references/monitoring.md": `# Monitoring\n\nStagnation on a ${phrase} matters.\n` };
+    const violations = checkRetiredVocabulary(files);
+    assert.equal(violations.length, 1, phrase);
+    assert.match(violations[0], /^references\/monitoring\.md: /);
+    assert.ok(violations[0].includes(phrase), violations[0]);
+    assert.match(violations[0], /line 3/);
+  }
+});
+
+test("retired vocabulary is caught regardless of case and of plural or line-wrapped spelling", () => {
+  const files = {
+    "a.md": 'The report\'s "Fix\nthese first" section.\n',
+    "b.md": "## 4. Top fixes\n",
+    "c.md": "the TOP FIX list\n",
+  };
+  const violations = checkRetiredVocabulary(files);
+  assert.equal(violations.length, 3, violations.join("\n"));
+  assert.match(violations[0], /^a\.md: /);
+  assert.match(violations[1], /^b\.md: /);
+  assert.match(violations[2], /^c\.md: /);
+});
+
+test("a phrase used several times in one file is one violation per occurrence", () => {
+  const files = { "a.md": "top fix\n\ntop fix\n" };
+  const violations = checkRetiredVocabulary(files);
+  assert.equal(violations.length, 2);
+  assert.match(violations[0], /line 1/);
+  assert.match(violations[1], /line 3/);
 });

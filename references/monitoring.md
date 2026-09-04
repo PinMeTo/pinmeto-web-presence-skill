@@ -23,7 +23,7 @@ A re-run is the same workflow as a first scan, with three differences:
    scan and since first scan, per-pillar deltas, and the concrete check-level changes
    (`fail→pass`, `pass→fail`, new warns). "What moved" lines come from the check diff, not
    from vibes. Checks that have never moved across ≥3 scans deserve a call-out — stagnation
-   on a top fix is the most useful thing a monitor can say.
+   on a high-worth Theme is the most useful thing a monitor can say.
 3. **Publish to the same URL.** Redeploy the same Site project in ChatGPT/Codex or republish
    the same artifact in Claude. Never mint a second deliverable for the **same report
    identity** — the exact title *and* scope matched in step 1; two living scorecards for one
