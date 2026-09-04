@@ -34,7 +34,7 @@ Location Reports skill. It calls the PinMeTo Location MCP tools, so it needs tha
    scores, bump `rubric_version` in `references/rubric.md` too and record what moved there:
    the re-run attribution rule cannot separate rubric drift from real customer progress
    unless the version moved with the rules.
-2. Tag and push: `git tag v0.12.1 && git push --tags`.
+2. Tag and push: `git tag v0.13.0 && git push --tags`.
 3. `release.yml` packages the `.skill`, attaches it to a GitHub release, and sends a
    `skill-released` `repository_dispatch` (with `skill_name: pinmeto-web-presence`) to the
    marketplace.
@@ -52,7 +52,7 @@ Before the marketplace will vendor this skill, add it to the registry in `claude
 {
   "skills": {
     "pinmeto-location-reports": { "repo": "PinMeTo/pinmeto-location-reports-skill", "version": "1.2.0" },
-    "pinmeto-web-presence":     { "repo": "PinMeTo/pinmeto-web-presence-skill",     "version": "0.12.1" }
+    "pinmeto-web-presence":     { "repo": "PinMeTo/pinmeto-web-presence-skill",     "version": "0.13.0" }
   }
 }
 ```
@@ -62,10 +62,11 @@ lands, every future `vX.Y.Z` tag here syncs automatically.
 
 ## Status
 
-`v0.12.1` — four-pillar methodology on rubric 2.14.0-skill.1 (MLPR 2.8.0 + Bing re-added +
+`v0.13.0` — four-pillar methodology on rubric 2.14.0-skill.1 (MLPR 2.8.0 + Bing re-added +
 PinMeTo-connection check); GEO evidence via real map surfaces in a browser (no Places API /
-MapKit); host-native updatable report with embedded scan history. Refine against real audits
-before v1.
+MapKit); host-native updatable report with embedded scan history, rendered as the two-layer
+Presence Report (Themes and the progress story first, the full audit behind one expander).
+Refine against real audits before v1.
 
 ## License
 

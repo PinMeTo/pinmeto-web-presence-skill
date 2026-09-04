@@ -1,7 +1,7 @@
 ---
 name: pinmeto-web-presence
 description: This skill should be used when the user asks to "check our web presence", "audit or monitor our SEO / AIO / GEO / agent readiness", "how do we look in AI search / ChatGPT / Gemini", "are our locations correct on Google, Apple, and Bing Maps", "run a presence scan", "update the presence report", or otherwise requests an SEO, AI-visibility (AIO), generative-engine (GEO), or agent-readiness analysis of a multi-location brand's website and map listings. Scores the brand against the PinMeTo MLPR rubric, produces an updatable report as a Site in ChatGPT/Codex or an HTML artifact in Claude, and can set up scheduled monitoring. Requires the PinMeTo Location MCP server; GEO checks use a browser against the real Google, Apple, and Bing Maps.
-version: 0.12.1
+version: 0.13.0
 license: Proprietary - (c) PinMeTo AB. See LICENSE.
 ---
 
@@ -194,7 +194,11 @@ Route each kind of work to the cheapest thing that does it correctly:
    within that surface. Two independent surfaces (e.g. the in-app Browser *and* Claude in
    Chrome) may run one driver each. Do not go wider against the map platforms regardless:
    parallel automation from one IP invites bot detection and consent loops, which cost
-   more time than they save.
+   more time than they save. **The constraint is machine-wide, not per-agent.** Another
+   session on the same machine may already hold the browser's profile, and the launch then
+   fails with a profile-in-use error. Start your own browser on a separate profile or user
+   data directory instead; do not terminate the running one, because you cannot tell from a
+   process list whether somebody is working in it.
 5. **Parallelize everything that is not the browser.** The wall-clock order that works:
    - Kick off the **PSI API calls first, in the background** — they are the slowest
      single fetches in the scan and nothing depends on them until scoring.

@@ -128,6 +128,12 @@ misbehaves. Never use `javascript_tool` to *change* anything on the page.
    business matches** — a result whose name is a place name rather than the brand counts as
    *not found*, not as an ambiguous result to refine. When the auid link was used, still run
    one search to confirm the listing is findable.
+   **Trap when reading the claim state:** every Apple place page carries the generic invitation
+   "Have a Business on Maps? Manage Your Business" in its chrome, on claimed listings too. A
+   text search for "business" or "claim" therefore matches everywhere and would downgrade
+   `geo.listing_connected_pinmeto` on every location. The signal is the literal
+   **"Claim This Place"** string in the listing's own detail block, next to the address and
+   phone. Match that, and record where on the page you found it.
 3. Extract: **name, address, phone**, and the **pin coordinates** (from the share link:
    `⋯ → Share → Copy Link`, the URL contains `&ll=lat,lng` — or read `coordinate=` in the
    page URL). Hours/photos/URL may be visible; record them as prose evidence, but they are
@@ -140,7 +146,13 @@ misbehaves. Never use `javascript_tool` to *change* anything on the page.
    non-essential cookies. Two query variants before declaring *no Bing listing*.
 2. Extract from the place card: **name, address, phone, website URL**, and the **pin
    coordinates** — read the `cp=<lat>~<lng>` parameter from the URL once the card has
-   centered the map, or take them from the share link. Bing wraps outbound links as
+   centered the map, or take them from the share link. **Wait for it.** The parameter is
+   absent for the first seconds after navigation, and a page-wide hunt for a latitude and
+   longitude in that window finds the *viewer's* geolocated position instead, which looks like
+   a perfectly plausible pin and is the same value for every location you check. Identical
+   coordinates across two different locations is the tell. The destination coordinates also
+   appear in the card's directions link as `pos.<lat>_<lng>_<address>_<name>`, which is a
+   good cross-check. Bing wraps outbound links as
    `bing.com/alink/link?url=<encoded>` — decode the `url` parameter to get the real target.
 3. Hours/photos/reviews on Bing are recorded as prose evidence only — Bing is scored on
    existence + NAP + website + pin (no richness checks).
