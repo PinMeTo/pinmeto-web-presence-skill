@@ -65,7 +65,9 @@ product cannot run through its APIs:
 Consequence: **GEO scores are not 1:1 comparable with MLPR product scores**; SEO, AIO, and
 Agent Readiness remain identical to 2.8.0. Do not add, drop, or reweight checks in a scan; if
 the rubric needs changing, change it here with a version bump (and reconcile upstream when
-the product catches up).
+the product catches up). A rubric version bump requires updating the Theme mapping in
+`artifact-report.md` and its pinned `theme_mapping_for_rubric_version` in the same change;
+`scripts/check-references.mjs` fails, and publishing is blocked, until they agree.
 
 ## Re-run rule (unambiguous — two readings here make scans incomparable)
 

@@ -112,6 +112,18 @@ _Avoid_: state blob, metadata
 The drawer attached to a failing check in the report: plain-English why, fix steps, and a copy-paste coding-agent brief.
 _Avoid_: recommendation, action item
 
+**Theme**:
+A fixed cross-pillar group of checks that one fix and one owner resolve, defined by the Theme mapping in the report delivery reference. The unit of the Layer 1 work list; a Theme card's headline is the Theme's name from the mapping, verbatim. Themes are presentation only; the rubric stays the closed set.
+_Avoid_: focus area, opportunity, category, bucket, issue group
+
+**Theme mapping**:
+The fixed table assigning every point-bearing check id (pillar checks and GEO sub-group B/C fields) to exactly one Theme, pinned to a rubric version. Publishing fails when the mapping and the rubric disagree.
+_Avoid_: grouping, categorisation, bucket list
+
+**Effort label**:
+One of the closed set of eight fixed strings in the Theme mapping naming the size of a Theme's fix and who does it; never rewritten per scan.
+_Avoid_: difficulty, cost, complexity
+
 **Schedule**:
 A recurring host automation that triggers scans of exactly one report, named by its exact title.
 _Avoid_: monitor, cron (as a domain term)
