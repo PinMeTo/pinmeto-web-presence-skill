@@ -14,8 +14,8 @@ The customer organization whose web presence is being measured; owns one PinMeTo
 _Avoid_: client, company
 
 **Location**:
-A physical place managed in PinMeTo, identified by its `storeId`. The unit of sampling and of GEO evaluation.
-_Avoid_: store, branch, place
+A physical place managed in PinMeTo, identified by its `storeId`. The unit of sampling and of GEO evaluation. Fixed strings in the report always say location; per-scan prose may use the brand's own kind-specific noun when every sampled location shares one primary category.
+_Avoid_ (except in that per-scan prose): store, branch, place
 
 **Listing**:
 One map platform's public entry for a location (on Google, Apple, or Bing Maps).

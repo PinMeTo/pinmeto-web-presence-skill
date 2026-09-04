@@ -6,6 +6,7 @@ import {
   checkGlossaryTerms,
   checkThemeMapping,
   checkRetiredVocabulary,
+  checkEffortLabelsHome,
   RETIRED_VOCABULARY,
 } from "../scripts/check-references.mjs";
 
@@ -118,8 +119,9 @@ test("the default required glossary terms include Theme, Theme mapping, Theme br
 // --- Theme mapping -----------------------------------------------------------
 
 const DEFAULT_LABELS = ['- "One template change"', '- "Content task"'].join("\n");
+// The effort labels are enumerated inside the writing-style section, which is their one home (#18).
 const reportMd = ({ json, labels = DEFAULT_LABELS }) =>
-  `# Report delivery\n\nProse.\n\n\`\`\`html\n<script id="pmt-scan-history">{"schema":1}</script>\n\`\`\`\n\n## Theme mapping\n\n\`\`\`json\n${json}\n\`\`\`\n\n### Effort labels\n\nThe closed set:\n\n${labels}\n\n## Writing style inside the report\n\nSober.\n`;
+  `# Report delivery\n\nProse.\n\n\`\`\`html\n<script id="pmt-scan-history">{"schema":1}</script>\n\`\`\`\n\n## Theme mapping\n\n\`\`\`json\n${json}\n\`\`\`\n\n## Writing style inside the report\n\nSober.\n\n### Layer 1 templates\n\nTemplates.\n\n### Effort labels\n\nThe closed set:\n\n${labels}\n`;
 const mapping = (overrides = {}) =>
   JSON.stringify({
     theme_mapping_for_rubric_version: "2.14.0-skill.1",
@@ -223,7 +225,7 @@ test("a null Theme entry or a non-array checks field is a violation, not a crash
 });
 
 test("a report reference with no effort-label enumeration is a violation", () => {
-  const md = reportMd({ json: mapping() }).replace(/### Effort labels[\s\S]*?(?=## Writing)/, "");
+  const md = reportMd({ json: mapping() }).replace(/### Effort labels[\s\S]*$/, "");
   const violations = checkThemeMapping(md, themeRubric());
   assert.ok(violations.some((v) => /effort label/i.test(v)), violations.join("\n"));
 });
@@ -359,4 +361,74 @@ test("a phrase used several times in one file is one violation per occurrence", 
   assert.equal(violations.length, 2);
   assert.match(violations[0], /line 1/);
   assert.match(violations[1], /line 3/);
+});
+
+// --- Effort labels have one home ---------------------------------------------
+
+test("an effort-label enumeration inside the writing-style section passes", () => {
+  assert.deepEqual(checkEffortLabelsHome(reportMd({ json: mapping() })), []);
+});
+
+test("an enumeration nested deeper inside the writing-style section still passes", () => {
+  const md = reportMd({ json: mapping() }).replace("### Effort labels", "#### Effort labels");
+  assert.deepEqual(checkEffortLabelsHome(md), []);
+});
+
+test("an enumeration outside the writing-style section names the section it sits under", () => {
+  const md = reportMd({ json: mapping() })
+    .replace(/### Effort labels[\s\S]*$/, "")
+    .replace("## Writing style inside the report", '### Effort labels\n\nThe closed set:\n\n- "One template change"\n\n## Writing style inside the report');
+  const violations = checkEffortLabelsHome(md);
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /references\/artifact-report\.md/);
+  assert.match(violations[0], /Theme mapping/);
+});
+
+test("a second enumeration heading is a violation: the writing-style section is the one home", () => {
+  const md = reportMd({ json: mapping() }) + '\n## Effort labels (again)\n\n- "Content task"\n';
+  const violations = checkEffortLabelsHome(md);
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /2 headings/);
+  assert.match(violations[0], /one home/);
+});
+
+test("a report reference with no effort-label heading at all is a violation", () => {
+  const violations = checkEffortLabelsHome("# Report\n\n## Writing style inside the report\n\nSober.\n");
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /effort label/i);
+});
+
+test("a bullet naming the effort label in prose is not a second enumeration", () => {
+  const md = reportMd({ json: mapping() }).replace(
+    "Templates.",
+    "- **Effort label.** The mapping `effort`, verbatim; the closed set is enumerated below.",
+  );
+  assert.deepEqual(checkEffortLabelsHome(md), []);
+});
+
+// A fenced example is illustration, not document structure: a `###` line inside a fence is
+// not a heading, and its quoted strings are not the closed set.
+const FENCED_EXAMPLE = [
+  "```markdown",
+  "### Effort labels",
+  "",
+  '- "Bogus label"',
+  "```",
+].join("\n");
+
+test("an effort-label heading inside a fenced example is not a second enumeration", () => {
+  const md = reportMd({ json: mapping() }).replace("## Theme mapping", `${FENCED_EXAMPLE}\n\n## Theme mapping`);
+  assert.deepEqual(checkEffortLabelsHome(md), []);
+});
+
+test("a fenced example's quoted strings are not read as the closed set", () => {
+  const md = reportMd({ json: mapping() }).replace("## Theme mapping", `${FENCED_EXAMPLE}\n\n## Theme mapping`);
+  assert.deepEqual(checkThemeMapping(md, themeRubric()), []);
+});
+
+test("a tilde-fenced example is ignored the same way", () => {
+  const tilde = FENCED_EXAMPLE.replaceAll("```", "~~~");
+  const md = reportMd({ json: mapping() }).replace("## Theme mapping", `${tilde}\n\n## Theme mapping`);
+  assert.deepEqual(checkEffortLabelsHome(md), []);
+  assert.deepEqual(checkThemeMapping(md, themeRubric()), []);
 });

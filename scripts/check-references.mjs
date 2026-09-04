@@ -27,7 +27,11 @@
 //      Theme is an "Other" catch-all; every `name` is at most NAME_WORD_LIMIT
 //      words and carries no check id or file token. Any failure blocks
 //      publishing: the report reference lists these as pre-publish checks.
-//   5. Retired vocabulary (RETIRED_VOCABULARY: the wording the Themes work
+//   5. The effort labels are enumerated under exactly one heading, and the
+//      writing-style section encloses it, so the closed set has one home and
+//      cannot drift between two copies. Headings inside fenced code blocks are
+//      illustration, not structure, and are ignored here and in (d).
+//   6. Retired vocabulary (RETIRED_VOCABULARY: the wording the Themes work
 //      list replaced) is absent from SKILL.md, CONTEXT.md and every file under
 //      references/. Matching ignores case, treats any whitespace run,
 //      including a line wrap, as one space, and stops at word boundaries
@@ -179,14 +183,107 @@ function idOrFileToken(words, pointBearingIds) {
 }
 
 /**
- * The closed set of effort labels: every double-quoted string between the
- * heading whose text contains "Effort label" and the next heading. Keep that
- * section terse; any quoted string in it is read as a label.
+ * The markdown with every fenced code block blanked out, offsets and line
+ * lengths preserved. A fenced block is illustration, not document structure: a
+ * `### Effort labels` line inside a markdown example is not a heading, and its
+ * quoted strings are not the closed set.
+ */
+function withoutFencedBlocks(markdown) {
+  let fenceChar = null;
+  return markdown
+    .split("\n")
+    .map((line) => {
+      const blanked = " ".repeat(line.length);
+      if (fenceChar === null) {
+        const opening = line.match(/^[ \t]*(`{3,}|~{3,})/);
+        if (opening === null) return line;
+        fenceChar = opening[1][0];
+        return blanked;
+      }
+      const closing = line.match(/^[ \t]*(`{3,}|~{3,})[ \t]*\r?$/);
+      if (closing !== null && closing[1][0] === fenceChar) fenceChar = null;
+      return blanked;
+    })
+    .join("\n");
+}
+
+/**
+ * Every markdown heading, in document order: its level, its text, and the body
+ * that follows it up to the next heading, fenced blocks excluded. One reading
+ * of the document's structure, so the checks below cannot disagree about where
+ * a section is.
+ */
+function headings(rawMarkdown) {
+  const markdown = withoutFencedBlocks(rawMarkdown);
+  const found = [...markdown.matchAll(/^(#{1,6})[ \t]+([^\n]*)\r?\n?/gm)].map((match) => ({
+    level: match[1].length,
+    text: match[2].trim(),
+    start: match.index,
+    bodyStart: match.index + match[0].length,
+  }));
+  return found.map((heading, i) => ({
+    ...heading,
+    body: markdown.slice(heading.bodyStart, found[i + 1]?.start ?? markdown.length),
+  }));
+}
+
+/** The headings that enclose the heading at `position` in `all`, outermost first. */
+function ancestorsOf(position, all) {
+  const ancestors = [];
+  let level = all[position].level;
+  for (let i = position - 1; i >= 0; i -= 1) {
+    if (all[i].level < level) {
+      ancestors.unshift(all[i]);
+      level = all[i].level;
+    }
+  }
+  return ancestors;
+}
+
+const WRITING_STYLE_HEADING = /writing style/i;
+const EFFORT_LABEL_HEADING = /effort label/i;
+
+/**
+ * The effort labels have exactly one home, the writing-style section: that is
+ * where the scanning agent reads its prose contract, and a second enumeration
+ * elsewhere is how the closed set drifts out of step with the mapping
+ * unnoticed. Checked structurally, on the headings rather than on the
+ * enumeration's wording: exactly one heading names the effort labels, and the
+ * writing-style section encloses it.
+ */
+export function checkEffortLabelsHome(reportMd) {
+  const file = "references/artifact-report.md";
+  const all = headings(reportMd);
+  const positions = all.flatMap((heading, i) => (EFFORT_LABEL_HEADING.test(heading.text) ? [i] : []));
+  if (positions.length === 0) {
+    return [`${file}: no heading enumerating the closed set of effort labels`];
+  }
+  const violations = [];
+  if (positions.length > 1) {
+    const named = positions.map((i) => `"${all[i].text}"`).join(", ");
+    violations.push(
+      `${file}: the effort labels are enumerated under ${positions.length} headings (${named}); the writing-style section is their one home`,
+    );
+  }
+  // The first enumeration is the one `enumeratedEffortLabels` below reads as the closed set.
+  const home = all[positions[0]];
+  const ancestors = ancestorsOf(positions[0], all);
+  if (!ancestors.some((heading) => WRITING_STYLE_HEADING.test(heading.text))) {
+    const under = ancestors.length > 0 ? `"${ancestors[ancestors.length - 1].text}"` : "no section";
+    violations.push(`${file}: the "${home.text}" heading sits under ${under}, not the writing-style section`);
+  }
+  return violations;
+}
+
+/**
+ * The closed set of effort labels: every double-quoted string in the body of
+ * the first heading whose text names the effort labels. Keep that section
+ * terse; any quoted string in it is read as a label.
  */
 function enumeratedEffortLabels(reportMd) {
-  const section = reportMd.match(/^#{1,6}[ \t]+[^\n]*effort label[^\n]*\r?\n([\s\S]*?)(?=^#{1,6}[ \t]|(?![\s\S]))/im);
-  if (!section) return null;
-  return [...section[1].matchAll(/"([^"\n]+)"/g)].map((m) => m[1]);
+  const home = headings(reportMd).find((heading) => EFFORT_LABEL_HEADING.test(heading.text));
+  if (home === undefined) return null;
+  return [...home.body.matchAll(/"([^"\n]+)"/g)].map((m) => m[1]);
 }
 
 /** Pre-publish conditions (a) to (d) plus the slug and name rules; see the header comment. */
@@ -325,6 +422,7 @@ export function checkReferences({ skillMd, changelogMd, contextMd, referenceMds 
     ...checkRubricJson(rubricMd),
     ...checkGlossaryTerms(contextMd),
     ...checkThemeMapping(reportMd, rubricMd),
+    ...checkEffortLabelsHome(reportMd),
     ...checkRetiredVocabulary({ "SKILL.md": skillMd, "CONTEXT.md": contextMd, ...referenceMds }),
   ];
 }
