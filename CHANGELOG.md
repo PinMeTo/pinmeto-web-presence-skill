@@ -54,14 +54,17 @@ movement on the web, not this release.
   absent from an older scan as unknown, so rubric drift cannot invent a reopened Theme
 - **The glossary** (`CONTEXT.md`) defines Theme, Theme mapping, Theme brief, Effort label, Cleared,
   Reopened, Layer 1 and Layer 2, so every future ticket uses the same words
-- **A reference-consistency script** (`scripts/check-references.mjs`, 85 unit tests) checks that the
+- **A reference-consistency script** (`scripts/check-references.mjs`, 92 unit tests) checks that the
   shipped references agree with each other: skill version against the newest changelog heading,
   mapping totality against the rubric, the closed effort-label set and its single home, the
   two-layer section order, the trend templates in both of their homes, the required glossary terms,
   and retired vocabulary absent from the entry point, the glossary, the README and every reference.
-  It runs on every push and pull request. It is also packaged into the `.skill`, but a run inside
-  an installed skill still needs the repo files it reads (`CHANGELOG.md`, `CONTEXT.md`,
-  `README.md`), so today it is a repo gate rather than a scan-time one
+  Its default mode runs on every push and pull request as a repo gate, checking all of the above.
+  A `--scan` mode runs only the checks that read files a skill payload ships (the references plus
+  `SKILL.md`): mapping totality, the effort-label set and its home, the section order, the trend
+  templates and retired vocabulary in the references. That is the pre-publish gate a scanning agent
+  runs from inside an installed skill, where the repo-only files (`CHANGELOG.md`, `CONTEXT.md`,
+  `README.md`) are absent by design
 - **Four gaps the dogfood scan of `pinmeto.com` found in the new prose**, all presentation and none
   of them scoring: data-driven strings now render the singular at one (the scan printed
   "Worth ~1 points", "1 checks" and "Copy all 1 briefs"); the NAP summary chip omits its green chip
