@@ -156,6 +156,15 @@ renders identically in light and dark viewers.
   scores and headlines, tight letter-spacing (−0.02em) on big numbers; 13px uppercase
   kickers with `.14em` tracking in orange.
 - Cards: 14–22px radius, 1px `#E2E6EA` border, subtle shadow `0 1px 2px rgba(0,0,80,.06)`.
+- Rank badge (the top three Theme cards): orange `#FF8854` fill with a navy `#000050`
+  numeral, never white on orange. It is the one place orange appears on a Theme card.
+- **No orange borders anywhere**: orange is kicker text and badge fill, never a card edge or
+  top rule.
+- Secondary buttons ("How to fix" on a Theme card, "Copy all N briefs") are outline style:
+  white background, link blue `#1E7FE0` text, 1px `#E2E6EA` border.
+- Adjacent pills never share a fill: alternate the soft blue wash `#EAF4FF`, the page grey
+  `#F2F3F4` and white with a hairline so a rank badge, worth pill or pillar tag never sits
+  beside a twin.
 - Max width 1080px, centered; wide tables scroll inside their own `overflow-x:auto` container.
 - Print: hide interactive chrome (`.np` class + `@media print`), `break-inside: avoid` on
   cards.
@@ -193,9 +202,44 @@ renders identically in light and dark viewers.
    worse than no trend at all. When two scans share a date, label the chart points with
    date **and** ordinal ("9 Aug (1st)", "9 Aug (2nd)"). With only two points the chart is
    thin but still correct — keep it.
-5. **Fix these first**: the top 3 fixes by points returned (scoring.md §4). Each row: rank ·
-   pillar · "Worth ~N points" · plain-English headline (a change, not a check name) · 1–2
-   sentence summary · a "How to fix" button opening the drawer.
+5. **Themes** (the work list): kicker THEMES in orange · a data-driven h2,
+   `<Count> themes, worth ~<summed points> points together`, with the count in words ("Six
+   themes, worth ~28 points together"; "One theme, worth ~4 points" when a single Theme
+   remains) · the subline "Ranked by the score points a fix would return. One theme is one
+   plain-language issue; a single fix can earn points in several pillars." Then one **Theme
+   card** per Theme in the Theme mapping (below) whose worth is above 0, ranked by worth
+   descending: the top three are promoted (rank badge, larger card, three across), the rest
+   follow in a tighter three-column grid. A Theme whose worth is 0 (every member passes or is
+   `warn`) is omitted and not counted in the h2. The h2 total is the sum of the displayed
+   worth pills, so the heading and the cards agree. When no Theme has worth above 0, render
+   the kicker and one sentence saying every scored check passed or could not be measured,
+   and no cards.
+
+   **Worth and ranking.** A Theme's worth is the sum of points returned (`scoring.md` §4:
+   `check_weight × (1 − ratio) × pillar_weight / 100`, GEO ids at their effective weights)
+   over its member checks whose status is `fail`, rendered-only half credit included (ratio
+   0.5). `warn` members contribute 0. Display the worth as an integer, rounded half up. Rank
+   by worth descending; break ties with the §4 tie-breakers (fleet-wide template fixes beat
+   per-location manual edits), then by the rubric order of each Theme's first member.
+   Membership comes from the Theme mapping, never from per-scan judgment.
+
+   **Theme card contract.** Every card carries, in this order:
+   - a "Worth ~N points" pill (integer, round half up, summed across pillars);
+   - on the top three only, a rank badge: orange `#FF8854` fill, navy `#000050` numeral, the
+     only orange on the card;
+   - the headline: the mapping `name`, verbatim;
+   - a one-to-two sentence per-scan summary: the observation with its count and denominator,
+     then what it costs the brand (see "Writing style inside the report");
+   - pillar tags, one per distinct pillar among the failing members;
+   - a muted meta line `<check count> checks · <effort label> · one fix, pays in <N> pillars`,
+     where the check count is the number of failing members (the sections the Theme brief
+     will hold), the effort label is the mapping `effort` verbatim, and N is the number of
+     distinct pillars among the failing members;
+   - one outline "How to fix" button (white, link-blue text, hairline border) opening the
+     Theme brief (below).
+
+   No orange borders; adjacent pills never share a fill (the rules are in "Brand look"). The
+   card carries the `id="theme-<slug>"` anchor specified under "The Theme brief".
 6. **Sticky section nav**: pill links (Trend · SEO n · GEO n · AIO n · Agent n · Locations)
    plus a filter toggle (All / Needs attention / Passing) that shows/hides check rows.
 7. **Per-pillar sections** (SEO, GEO, AIO, Agent readiness): section header with kicker,
@@ -252,8 +296,12 @@ renders identically in light and dark viewers.
 ## The fix-brief drawer
 
 A fixed right-side drawer (or, if scripting is constrained, an anchored details section —
-but prefer the drawer) opened from any check row or top fix. Contents, in order:
+but prefer the drawer) opened from any check row, or as a section inside a Theme brief.
+Contents, in order:
 
+- one muted header line "Part of theme: <Theme name>" linking to the Theme's card
+  (`#theme-<slug>`), the name being the mapping `name` verbatim; a pointer, not content, and
+  omitted when the drawer renders as a section inside that Theme's own brief,
 - status tag + `check.id` + check name,
 - **why** (2–3 sentences, customer-priced: what it costs them today),
 - **How to fix it** — numbered steps (3–4, imperative),
@@ -322,6 +370,54 @@ Fix: Find the server route or shared location-page template that renders /locati
 Skill: None
 Docs: https://developers.google.com/search/docs/appearance/structured-data/local-business, https://schema.org/LocalBusiness
 ```
+
+## The Theme brief
+
+The drawer a Theme card's "How to fix" button opens. It is a **container** of the per-check
+fix briefs of the Theme's failing members, each unchanged; nothing in it is merged or
+rewritten per scan. It uses the same drawer surface as the fix-brief drawer, or the same
+anchored-details fallback where scripting is constrained. Nine rules:
+
+1. **Header**: Theme name (the mapping `name`, verbatim) · "Worth ~N points" pill · effort
+   label · the mapping `description` · "M of K checks already pass", where K counts every
+   member in the mapping and M those with status `pass` · one "Copy all N briefs" button
+   (rule 6).
+2. **Sections**: one per member check whose status is `fail`, rendered-only half credit
+   included. Each section is that check's fix brief exactly as "The fix-brief drawer" specifies
+   it (status tag + `check.id` + check name, why, How to fix it, Copy to your coding agent,
+   What we found); only the "Part of theme" pointer is omitted, since the header names the
+   Theme. `warn` members are not sections: they are one muted footer line under the sections
+   ("2 checks could not be verified: <check names>"). Passing members appear only in the
+   header count.
+3. **Ids without a drawer** (GEO sub-group B and C fields, `consistency.*` and `page.*`)
+   render as evidence pointers into the NAP consistency matrix, linking to it: no steps, no
+   prompt. The pointer sentence carries the observation the matrix does not show as a chip:
+   the field, the count and denominator of sampled locations, and what disagreed ("Phone on
+   the location page differs from the dominant listing value at 3 of 5 sampled locations,
+   see the matrix"). The header's effort label is their instruction.
+4. **Order**: sections by points returned descending, ties by rubric order. The same rule
+   ranks the Theme cards.
+5. **Dual-scored pairs** inside one Theme (the known duplicates listed under "Theme mapping")
+   show **both** sections; the later one carries
+   the muted cross-reference "also scored in <pillar>, same fix, pays twice". Never collapse a
+   pair: the two checks differ in threshold, so choosing whose steps survive would be judgment.
+6. **Copy all N briefs** concatenates the sections' five-field blocks in section order, each
+   block exactly as its drawer shows it, separated by a line containing only `---`. Sections
+   without a prompt (rule 3) are skipped and excluded from N; when N is 0 the button is
+   omitted. The label is neutral in every Theme, never "coding agent"; the per-check "Copy to
+   your coding agent" labels stay as the drawer contract writes them.
+7. **Expansion**: three or fewer sections, all expanded. Four or more: the first expanded, the
+   rest collapsed to a one-line header (status dot · check name · worth), using the same
+   accordion as the per-pillar check rows.
+8. **Anchors**: the Theme card carries `id="theme-<slug>"` and its brief
+   `id="theme-<slug>-brief"`, both from the mapping `slug` (an HTML document may not repeat an
+   id, so the card owns the bare anchor). Loading the report at `#theme-<slug>` scrolls to the
+   card and opens its brief; the summary card, the NAP chip and the trend section may link
+   there. Where scripting is constrained, the brief is an anchored details element inside the
+   card: the hash scrolls to the card and the reader opens the brief with one click.
+9. **Back-pointer**: every per-check drawer opened from a check row carries the "Part of
+   theme: <Theme name>" line linking to `#theme-<slug>` (see "The fix-brief drawer"). It is a
+   pointer, not content: nothing else in the drawer or in the five-field prompt format changes.
 
 ## Embedded state — the scan history contract
 

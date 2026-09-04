@@ -84,7 +84,7 @@ The letter A–F read from the rounded overall score. Decided once at scoring ti
 The label shown on the hero and scorecards — Strong, Healthy, Needs work, Critical — mapped from the grade thresholds.
 
 **Points returned**:
-The overall-score points a fix would recover (`check_weight × (1 − ratio) × pillar_weight / 100`). The ranking key for the report's top fixes.
+The overall-score points a fix would recover (`check_weight × (1 − ratio) × pillar_weight / 100`). The ranking key for Themes (summed across a Theme's failing members) and for sections inside a Theme brief.
 _Avoid_: impact, priority score
 
 ### Deliverable
@@ -111,6 +111,7 @@ _Avoid_: state blob, metadata
 **Fix brief**:
 The drawer attached to a failing check in the report: plain-English why, fix steps, and a copy-paste coding-agent brief.
 _Avoid_: recommendation, action item
+_See also_: Theme brief
 
 **Theme**:
 A fixed cross-pillar group of checks that one fix and one owner resolve, defined by the Theme mapping in the report delivery reference. The unit of the Layer 1 work list; a Theme card's headline is the Theme's name from the mapping, verbatim. Themes are presentation only; the rubric stays the closed set.
@@ -119,6 +120,10 @@ _Avoid_: focus area, opportunity, category, bucket, issue group
 **Theme mapping**:
 The fixed table assigning every point-bearing check id (pillar checks and GEO sub-group B/C fields) to exactly one Theme, pinned to a rubric version. Publishing fails when the mapping and the rubric disagree.
 _Avoid_: grouping, categorisation, bucket list
+
+**Theme brief**:
+The drawer opened from a Theme card. Contains, unchanged, the fix brief of every failing member check (an evidence pointer into the NAP matrix for the GEO sub-group B/C fields, which have no drawer), ordered by points returned, plus a header with the Theme's worth, effort and a copy-all control. Never a merged brief: nothing in it is written per Theme per scan.
+_Avoid_: theme drawer, combined brief, mega-prompt
 
 **Effort label**:
 One of the closed set of eight fixed strings in the Theme mapping naming the size of a Theme's fix and who does it; never rewritten per scan.
