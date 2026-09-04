@@ -6,6 +6,13 @@
 // ("<file>: <property that failed>") and exit 1. CI runs it on every push and
 // pull request (.github/workflows/check-references.yml).
 //
+// Two modes. The default (full) mode checks everything below and is the repo
+// gate CI runs; it requires the repo-only files (CHANGELOG.md, CONTEXT.md,
+// README.md). `--scan` mode runs only the assertions that read files a skill
+// payload ships (the references plus SKILL.md), so a scanning agent can run it
+// before publishing from inside an unpacked `.skill`, where the repo-only files
+// are absent by design. A missing *reference* still fails in both modes.
+//
 // Assertions made today:
 //   1. The `version:` in SKILL.md equals the newest `## vX.Y.Z` heading in
 //      CHANGELOG.md.
@@ -735,62 +742,123 @@ export function checkRetiredVocabulary(filesByPath, phrases = RETIRED_VOCABULARY
  * references/. Every field is required: an omitted one reads as an empty file, so
  * its assertions would silently pass.
  */
-export function checkReferences({ skillMd, changelogMd, contextMd, readmeMd, referenceMds }) {
+/**
+ * The reference-only checks: every assertion that reads only files a skill
+ * payload ships (references/ plus SKILL.md), so it is meaningful at scan time
+ * inside an unpacked `.skill`. Scan mode runs exactly these; full mode adds the
+ * repo-only checks below.
+ */
+function referenceOnlyChecks({ skillMd, referenceMds }) {
   const rubricMd = referenceMds["references/rubric.md"] ?? "";
   const reportMd = referenceMds["references/artifact-report.md"] ?? "";
   return [
-    ...checkVersionMatchesChangelog(skillMd, changelogMd),
     ...checkRubricJson(rubricMd),
-    ...checkGlossaryTerms(contextMd),
     ...checkThemeMapping(reportMd, rubricMd),
     ...checkEffortLabelsHome(reportMd),
     ...checkSectionOrder(reportMd),
     ...checkTrendContract(reportMd),
-    ...checkRetiredVocabulary({
-      "SKILL.md": skillMd,
-      "CONTEXT.md": contextMd,
-      "README.md": readmeMd,
-      ...referenceMds,
-    }),
+    ...checkRetiredVocabulary({ "SKILL.md": skillMd, ...referenceMds }),
   ];
+}
+
+/**
+ * The repo-only checks: they read files a skill payload does not contain
+ * (CHANGELOG.md, CONTEXT.md, README.md), so they are meaningful only in the
+ * repo, where CI runs the full check on every push.
+ */
+function repoOnlyChecks({ skillMd, changelogMd, contextMd, readmeMd }) {
+  return [
+    ...checkVersionMatchesChangelog(skillMd, changelogMd),
+    ...checkGlossaryTerms(contextMd),
+    // Retired vocabulary in the two repo-only prose files; SKILL.md and the
+    // references are already swept by the reference-only check.
+    ...checkRetiredVocabulary({ "CONTEXT.md": contextMd, "README.md": readmeMd }),
+  ];
+}
+
+export function checkReferences(contents, { scanTime = false } = {}) {
+  const referenceOnly = referenceOnlyChecks(contents);
+  return scanTime ? referenceOnly : [...repoOnlyChecks(contents), ...referenceOnly];
+}
+
+/**
+ * Run the reference check over an injected filesystem, so the mode split is
+ * unit-testable without a subprocess. `readFile(rel)` returns a file's contents
+ * or null when it does not exist; `listReferences()` returns the
+ * `references/*.md` names or null when the directory is missing. `--scan` in
+ * `argv` selects scan mode (reference-only checks; the repo-only files are not
+ * required, so their absence never pre-empts the reference checks — the defect
+ * #27 fixes); the default full mode also requires and checks the repo-only
+ * files, so a genuinely deleted CONTEXT.md still fails CI. Returns one
+ * "<file>: <what failed>" line per violation, empty when the mode's checks all
+ * hold. A missing required file short-circuits: checking over an absent file
+ * would only cascade noise.
+ */
+export function runCheck({ readFile, listReferences, argv = [] }) {
+  const scanTime = argv.includes("--scan");
+  const missing = [];
+  const read = (rel) => {
+    const text = readFile(rel);
+    if (text === null) {
+      missing.push(`${rel}: file is missing`);
+      return "";
+    }
+    return text;
+  };
+
+  const referenceMds = {};
+  const referenceNames = listReferences();
+  if (referenceNames === null) {
+    missing.push("references/: directory is missing");
+  } else {
+    for (const name of ["rubric.md", "artifact-report.md"]) {
+      if (!referenceNames.includes(name)) missing.push(`references/${name}: file is missing`);
+    }
+    for (const name of referenceNames) referenceMds[`references/${name}`] = read(`references/${name}`);
+  }
+
+  const contents = {
+    skillMd: read("SKILL.md"),
+    changelogMd: "",
+    contextMd: "",
+    readmeMd: "",
+    referenceMds,
+  };
+  if (!scanTime) {
+    contents.changelogMd = read("CHANGELOG.md");
+    contents.contextMd = read("CONTEXT.md");
+    contents.readmeMd = read("README.md");
+  }
+
+  return missing.length > 0 ? missing : checkReferences(contents, { scanTime });
 }
 
 function main() {
   const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-  const missing = [];
-  const read = (rel) => {
-    try {
-      return readFileSync(join(root, rel), "utf8");
-    } catch {
-      missing.push(`${rel}: file is missing`);
-      return "";
-    }
-  };
-  const referenceMds = {};
-  let referenceNames = [];
-  try {
-    referenceNames = readdirSync(join(root, "references"), { recursive: true })
-      .map(String)
-      .filter((f) => f.endsWith(".md"))
-      .sort();
-  } catch {
-    missing.push("references/: directory is missing");
-  }
-  for (const name of ["rubric.md", "artifact-report.md"]) {
-    if (!referenceNames.includes(name)) missing.push(`references/${name}: file is missing`);
-  }
-  for (const name of referenceNames) referenceMds[`references/${name}`] = read(`references/${name}`);
-  const contents = {
-    skillMd: read("SKILL.md"),
-    changelogMd: read("CHANGELOG.md"),
-    contextMd: read("CONTEXT.md"),
-    readmeMd: read("README.md"),
-    referenceMds,
-  };
-  const violations = missing.length > 0 ? missing : checkReferences(contents);
+  const argv = process.argv.slice(2);
+  const violations = runCheck({
+    readFile: (rel) => {
+      try {
+        return readFileSync(join(root, rel), "utf8");
+      } catch {
+        return null;
+      }
+    },
+    listReferences: () => {
+      try {
+        return readdirSync(join(root, "references"), { recursive: true })
+          .map(String)
+          .filter((f) => f.endsWith(".md"))
+          .sort();
+      } catch {
+        return null;
+      }
+    },
+    argv,
+  });
   for (const line of violations) console.error(line);
   if (violations.length > 0) process.exit(1);
-  console.log("references consistent");
+  console.log(argv.includes("--scan") ? "references consistent (scan mode)" : "references consistent");
 }
 
 // Compare real paths: on macOS /tmp is a symlink, and import.meta.url is already resolved.

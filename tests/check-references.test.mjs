@@ -1,5 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync, readdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   checkVersionMatchesChangelog,
   checkRubricJson,
@@ -9,6 +12,7 @@ import {
   checkEffortLabelsHome,
   checkSectionOrder,
   checkTrendContract,
+  runCheck,
   RETIRED_VOCABULARY,
   LAYER_1_SECTIONS,
   LAYER_2_ITEMS,
@@ -808,4 +812,90 @@ test("the default required glossary terms include Cleared and Reopened", () => {
   for (const term of ["Cleared", "Reopened"]) {
     assert.ok(violations.some((v) => v.includes(`\`${term}\``)), `expected a violation for ${term}`);
   }
+});
+
+// --- The scan/full mode split (#27) -----------------------------------------
+//
+// runCheck is driven through injected fs so a test can present exactly the file
+// set an unpacked `.skill` has (references + SKILL.md, no repo-only files) and
+// assert the pre-publish check can pass. The consistent fixture is the real
+// shipped tree, which CI keeps green; each failing case mutates one file.
+
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const REPO_ONLY = ["CHANGELOG.md", "CONTEXT.md", "README.md"];
+
+/** The real shipped tree as a { path: contents } map plus the reference names. */
+function realTree() {
+  const referenceNames = readdirSync(join(repoRoot, "references"), { recursive: true })
+    .map(String)
+    .filter((f) => f.endsWith(".md"))
+    .sort();
+  const files = { "SKILL.md": readFileSync(join(repoRoot, "SKILL.md"), "utf8") };
+  for (const rel of REPO_ONLY) files[rel] = readFileSync(join(repoRoot, rel), "utf8");
+  for (const name of referenceNames) files[`references/${name}`] = readFileSync(join(repoRoot, "references", name), "utf8");
+  return { files, referenceNames };
+}
+
+/** runCheck over an in-memory tree; a file absent from `files` reads as missing. */
+function runOverTree({ files, referenceNames }, argv = []) {
+  return runCheck({
+    readFile: (rel) => (rel in files ? files[rel] : null),
+    listReferences: () => referenceNames,
+    argv,
+  });
+}
+
+test("scan mode passes on consistent references even with every repo-only file absent", () => {
+  const { files, referenceNames } = realTree();
+  for (const rel of REPO_ONLY) delete files[rel];
+  assert.deepEqual(runOverTree({ files, referenceNames }, ["--scan"]), []);
+});
+
+test("scan mode still fails on a real reference inconsistency", () => {
+  const tree = realTree();
+  for (const rel of REPO_ONLY) delete tree.files[rel];
+  tree.files["references/artifact-report.md"] = tree.files["references/artifact-report.md"].replace(
+    /"theme_mapping_for_rubric_version":\s*"[^"]+"/,
+    '"theme_mapping_for_rubric_version": "0.0.0-broken"',
+  );
+  const violations = runOverTree(tree, ["--scan"]);
+  assert.ok(violations.length > 0, "a broken mapping pin should fail scan mode");
+  assert.ok(violations.every((v) => v.includes("artifact-report.md")), violations.join("\n"));
+});
+
+test("scan mode fails when a required reference file is missing", () => {
+  const tree = realTree();
+  for (const rel of REPO_ONLY) delete tree.files[rel];
+  delete tree.files["references/rubric.md"];
+  tree.referenceNames = tree.referenceNames.filter((n) => n !== "rubric.md");
+  const violations = runOverTree(tree, ["--scan"]);
+  assert.ok(
+    violations.some((v) => /references\/rubric\.md: file is missing/.test(v)),
+    violations.join("\n"),
+  );
+});
+
+test("scan mode does not report a repo-only inconsistency such as a stale skill version", () => {
+  const tree = realTree();
+  for (const rel of REPO_ONLY) delete tree.files[rel];
+  tree.files["SKILL.md"] = tree.files["SKILL.md"].replace(/^version:.*/m, "version: 999.0.0");
+  assert.deepEqual(runOverTree(tree, ["--scan"]), []);
+});
+
+test("full mode passes on the consistent shipped tree", () => {
+  assert.deepEqual(runOverTree(realTree()), []);
+});
+
+test("full mode still catches a skill version that disagrees with the changelog", () => {
+  const tree = realTree();
+  tree.files["SKILL.md"] = tree.files["SKILL.md"].replace(/^version:.*/m, "version: 999.0.0");
+  const violations = runOverTree(tree);
+  assert.ok(violations.some((v) => /SKILL\.md.*999\.0\.0/.test(v)), violations.join("\n"));
+});
+
+test("full mode still fails when a repo-only file such as CONTEXT.md is missing", () => {
+  const tree = realTree();
+  delete tree.files["CONTEXT.md"];
+  const violations = runOverTree(tree);
+  assert.ok(violations.some((v) => /CONTEXT\.md: file is missing/.test(v)), violations.join("\n"));
 });

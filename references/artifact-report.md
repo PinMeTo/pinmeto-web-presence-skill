@@ -68,13 +68,16 @@ and other schemes; render a rejected value as inert text instead of a link or em
   blocks there; serve the file over `http://localhost` if you want the clipboard round-trip
   itself;
 - escape non-ASCII inside artifact CSS `content:` rules as `\00B7`-style escapes;
-- in both modes, the Theme mapping (below) agrees with the rubric. `scripts/check-references.mjs`
-  checks this mechanically; run it before publishing (CI runs it on every push as well):
-  (a) `theme_mapping_for_rubric_version` equals `rubric_version` in `rubric.md`; (b) the union
-  of all `checks` arrays equals the rubric's set of point-bearing ids, every pillar check id
+- in both modes, the Theme mapping (below) agrees with the rubric. Run
+  `node scripts/check-references.mjs --scan` before publishing: `--scan` runs only the checks
+  that read files a skill payload ships (this reference and `rubric.md`), so it can pass or fail
+  on the references you actually have, never on a repo file the skill does not contain. It
+  verifies (a) `theme_mapping_for_rubric_version` equals `rubric_version` in `rubric.md`; (b) the
+  union of all `checks` arrays equals the rubric's set of point-bearing ids, every pillar check id
   plus the GEO sub-group B and C field ids; (c) no id appears in two Themes; (d) every `effort`
   value is one of the eight effort labels enumerated under "Effort labels" in the
-  writing-style section below. **Any failure blocks publishing.** There is no "Other" catch-all
+  writing-style section below. **Any failure blocks publishing.** (The script's default mode adds
+  the repo-only checks and is what CI runs on every push.) There is no "Other" catch-all
   Theme: a catch-all would hide exactly the drift this check exists to catch, in front of a
   customer.
 
@@ -667,7 +670,7 @@ bump:
 1. The mapping lives as this machine-readable JSON block in `artifact-report.md` (not a new
    file, not prose only) and pins `theme_mapping_for_rubric_version`.
 2. The pre-publish sanity check above (conditions (a) to (d), run by
-   `scripts/check-references.mjs`) fails when the mapping and the rubric disagree, and any
+   `scripts/check-references.mjs --scan`) fails when the mapping and the rubric disagree, and any
    failure blocks publishing. There is no "Other" catch-all Theme: a catch-all would hide
    exactly the drift this rule exists to catch, in front of a customer.
 3. `rubric.md`'s version-bump paragraph states that bumping the rubric version requires
