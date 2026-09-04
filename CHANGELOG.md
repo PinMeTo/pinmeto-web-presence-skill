@@ -62,6 +62,16 @@ movement on the web, not this release.
   It runs on every push and pull request. It is also packaged into the `.skill`, but a run inside
   an installed skill still needs the repo files it reads (`CHANGELOG.md`, `CONTEXT.md`,
   `README.md`), so today it is a repo gate rather than a scan-time one
+- **Four gaps the dogfood scan of `pinmeto.com` found in the new prose**, all presentation and none
+  of them scoring: data-driven strings now render the singular at one (the scan printed
+  "Worth ~1 points", "1 checks" and "Copy all 1 briefs"); the NAP summary chip omits its green chip
+  when no location agrees on every field, rather than printing "0 of 5" in a pass colour; a
+  category-conditional check excluded for every sampled location is omitted from the history
+  `checks` map and named in `notes` instead of being recorded as a `warn` nobody attempted, and it
+  reads "not applicable" rather than "could not be verified" in a Theme brief's footer; and the
+  pre-publish copy-button check reads the payload from the DOM, because a browser denies clipboard
+  writes on a `file://` origin while a handler can still report success. The two records are under
+  `docs/test-runs/`
 
 ## v0.12.1 · 2026-08-18 · rubric 2.14.0-skill.1
 

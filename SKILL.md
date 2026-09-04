@@ -194,7 +194,11 @@ Route each kind of work to the cheapest thing that does it correctly:
    within that surface. Two independent surfaces (e.g. the in-app Browser *and* Claude in
    Chrome) may run one driver each. Do not go wider against the map platforms regardless:
    parallel automation from one IP invites bot detection and consent loops, which cost
-   more time than they save.
+   more time than they save. **The constraint is machine-wide, not per-agent.** Another
+   session on the same machine may already hold the browser's profile, and the launch then
+   fails with a profile-in-use error. Start your own browser on a separate profile or user
+   data directory instead; do not terminate the running one, because you cannot tell from a
+   process list whether somebody is working in it.
 5. **Parallelize everything that is not the browser.** The wall-clock order that works:
    - Kick off the **PSI API calls first, in the background** — they are the slowest
      single fetches in the scan and nothing depends on them until scoring.

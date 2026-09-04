@@ -62,7 +62,11 @@ and other schemes; render a rejected value as inert text instead of a link or em
   audit detail", then click one accordion, one drawer button, one copy button and one filter
   inside it, since all four live in Layer 2 now and the expander is the first click
   (`document.scripts.length` being 0 is the instant tell that malformed markup swallowed the
-  script);
+  script). **Check a copy button by its payload, not its label.** A browser denies clipboard
+  writes on a `file://` origin, and a handler that reports success either way will say "Copied"
+  over a rejected write, so read the text of the element the button copies from and count the
+  blocks there; serve the file over `http://localhost` if you want the clipboard round-trip
+  itself;
 - escape non-ASCII inside artifact CSS `content:` rules as `\00B7`-style escapes;
 - in both modes, the Theme mapping (below) agrees with the rubric. `scripts/check-references.mjs`
   checks this mechanically; run it before publishing (CI runs it on every push as well):
@@ -307,6 +311,9 @@ matrix, or a per-check drawer. A reader must never be sent into a closed expande
    disagrees, one orange chip with the number of mismatches and the sharpest example, naming
    the location, the platform and the field ("1 mismatch: Malmö, Apple shows the old street
    address"). When every sampled location agrees on every field, the green chip stands alone.
+   When **no** location agrees on every field, omit the green chip and let the orange chip
+   stand alone: a green "0 of 5 locations match everywhere" prints a pass colour over a
+   failure, the same mistake the Themes-cleared line avoids by being omitted at zero.
    Then a link, "See the full matrix in the audit detail", pointing at the NAP consistency
    matrix inside Layer 2: it **expands the expander if it is collapsed**, then scrolls to the
    matrix. Both counts come from the same GEO evidence as the matrix, so the chip and the
@@ -479,7 +486,11 @@ anchored-details fallback where scripting is constrained. Nine rules:
    What we found); only the "Part of theme" pointer is omitted, since the header names the
    Theme. `warn` members are not sections: they are one muted footer line under the sections
    ("2 checks could not be verified: <check names>"). Passing members appear only in the
-   header count.
+   header count. A member that produced **no result at all** (a category-conditional check
+   excluded for every sampled location) joins that footer line as a separate clause in its own
+   words ("1 check not applicable to these locations: <check name>"), never as "could not be
+   verified": nobody failed to measure it, it did not apply. It stays inside the header's
+   `M of K` denominator, since `K` counts every member in the mapping.
 3. **Ids without a drawer** (GEO sub-group B and C fields, `consistency.*` and `page.*`)
    render as evidence pointers into the NAP consistency matrix, linking to it: no steps, no
    prompt. The pointer sentence carries the observation the matrix does not show as a chip:
@@ -549,9 +560,15 @@ The report carries its own memory. Embed exactly one block in the rendered page:
   reweighted three pillars, and name the degraded scan in `notes`. A renderer must treat null
   as "not plotted" — never as 0, and never recompute the overall with the standard weights,
   or a scan nobody could measure prints as a collapse. The other three pillars are never null.
-- `checks` records status+ratio for **every** check (compact but complete): it is what lets
-  the next scan say "internal linking hasn't moved across four scans" without guessing, and
-  it is the input to the trend section's mechanical diff.
+- `checks` records status+ratio for **every** check that produced a result (compact but
+  complete): it is what lets the next scan say "internal linking hasn't moved across four
+  scans" without guessing, and it is the input to the trend section's mechanical diff. A
+  **category-conditional check excluded for every sampled location** produced no result and is
+  the one exception: `rubric.md` drops it from the GEO denominator, so **omit the id from
+  `checks` and name the exclusion in `notes`**. Do not record it as `warn`, which would count
+  it among "could not be measured" and imply somebody tried, and do not record it as `fail`.
+  The trend's mechanical diff reads an id missing from one side as unknown, so an exclusion
+  that persists across scans never shows up as movement.
 - `notes` (optional) records **measurement corrections** discovered about *that* scan — so
   a later run can see "this check was mis-scored" without re-deriving it. Append notes to
   the older entry when you find the error; never edit its scores.
@@ -688,7 +705,14 @@ surfaces. Fix-brief drawer text follows its own contract above.
   is a sample ("3 of the 5 checked locations"); never extrapolate to the fleet. Integers only.
   Numbers one to twelve are words when they open a sentence, digits elsewhere. The summary
   card carries at most one score pair (from and to); all other scores live in the hero,
-  scorecards and trend.
+  scorecards and trend. **Every data-driven string agrees with its own number.** The templates
+  below are written in the plural because that is the common case; at one, render the singular:
+  `Worth ~1 point`, `1 check`, `pays in 1 pillar`, `Copy all 1 brief`, `One theme cleared since
+  your first scan on <date>`, `Up 1 point since your first scan on <date>`, `+1 since <date>`,
+  and `One theme, worth ~1 point` in the Themes h2, which also drops its "together" at a single
+  Theme. A pill reading "Worth ~1 points" is the tell that a count was pasted into a fixed
+  string instead of rendered from the data. A one-point move is the most likely delta a re-run
+  will ever print, so the trend headline meets this first.
 - **Technical names.** None in Layer 1 headlines. A Theme summary or summary-card sentence may
   name one file or standard, once, right after the plain-language phrase ("a text guide at
   /llms.txt"), and only when the reader will need the word to brief a developer. Check ids
