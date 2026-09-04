@@ -578,7 +578,8 @@ surfaces. Fix-brief drawer text follows its own contract above.
 - **Voice.** Sober, concrete, advisory. Address the brand as "you". State what was observed
   and what it costs; never promise rankings, traffic, or revenue. No exclamation marks.
 - **PinMeTo brand tone rules apply.** No em dashes; use commas, periods, colons, or
-  parentheses. No hype vocabulary and nothing else from the brand's banned list. No
+  parentheses. No hype vocabulary: the brand's banned list governs, and the pinmeto-brand
+  plugin's ai-slop-guards reference carries it in full for every language. No
   "not just X, it's Y". Sentence case in every heading; the orange kickers are the only
   uppercase. Say "customer", never "client".
 - **warn is never a failure.** Checks that could not be measured are always labelled so;
@@ -612,8 +613,9 @@ surfaces. Fix-brief drawer text follows its own contract above.
 - **Summary card.** Two paragraphs, two or three sentences each. Paragraph 1: what is strong,
   then what holds the score back. Paragraph 2: the shape of the effort ("one template change,
   not fourteen page edits"), and from the second scan on, what moved since the previous scan
-  with the one allowed score pair. First scan: paragraph 2 is effort shape only; never invent
-  a "since" clause.
+  with the one allowed score pair. First scan: paragraph 2 is effort shape only and ends with
+  the sentence "This scan is your baseline; the next one shows what moved." Never invent a
+  "since" clause.
 - **Theme headline.** The Theme's `name` from the mapping table, verbatim, every scan. Names
   are written as a change the reader can picture (Put, Make, Let, Give, Keep, Tell, Connect),
   name the outcome rather than the check, and contain no technical token. Twelve words is the
@@ -624,8 +626,8 @@ surfaces. Fix-brief drawer text follows its own contract above.
   at random for 'bike shop Malmö'"). Never a third sentence, and never the fix: the effort
   label and the Theme brief carry that.
 - **Effort label.** The Theme's `effort` from the mapping table, verbatim. Each names the size
-  of the job and who does it, in a handful of words. The closed set of eight is enumerated
-  under "Effort labels" below, its one home in this file; pre-publish sanity check condition
+  of the job and who does it, in eight words or fewer. The closed set is enumerated under
+  "Effort labels" below, its one home in this file; pre-publish sanity check condition
   (d) is that every `effort` in the mapping is in that set.
 - **Themes h2.** `<Count> themes, worth ~<summed points> points together`, count in words.
 - **Trend prose.** One template for movement in either direction, no adjectives, no
@@ -633,8 +635,8 @@ surfaces. Fix-brief drawer text follows its own contract above.
   classified as rubric change, measurement correction, or real change, and credit the change
   that moved the score.
 
-<!-- The trend headline and subline pair, the Themes-cleared line, and the first-scan
-     baseline sentence for paragraph 2 arrive in this list with the trend card. -->
+<!-- The trend headline and subline pair and the Themes-cleared line arrive in this list
+     with the trend card, as the exact templates the "Trend prose" bullet governs. -->
 
 ### Effort labels
 
