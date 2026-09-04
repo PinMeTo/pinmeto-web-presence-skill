@@ -214,17 +214,29 @@ test("a Theme name of thirteen words passes; fourteen is a violation naming the 
 });
 
 test("a Theme name carrying a check id is a violation naming the token", () => {
-  const md = withMapping((m) => (m.themes[0].name = "Fix seo.a on every page"));
-  const violations = checkThemeMapping(md, themeRubric());
-  assert.equal(violations.length, 1);
-  assert.match(violations[0], /seo\.a/);
+  for (const name of ["Fix seo.a on every page", "Fix seo.h1_unique_has_location, then re-scan"]) {
+    const violations = checkThemeMapping(withMapping((m) => (m.themes[0].name = name)), themeRubric());
+    assert.equal(violations.length, 1, name);
+    assert.match(violations[0], /check id or file token/);
+  }
 });
 
 test("a Theme name carrying a file token is a violation naming the token", () => {
-  const md = withMapping((m) => (m.themes[0].name = "Publish an llms.txt file"));
-  const violations = checkThemeMapping(md, themeRubric());
-  assert.equal(violations.length, 1);
-  assert.match(violations[0], /llms\.txt/);
+  for (const name of ["Publish an llms.txt file", "Add /.well-known/mcp for agents", "Serve the .well-known files"]) {
+    const violations = checkThemeMapping(withMapping((m) => (m.themes[0].name = name)), themeRubric());
+    assert.equal(violations.length, 1, name);
+    assert.match(violations[0], /check id or file token/);
+  }
+});
+
+test("numbers and abbreviations in a Theme name are not check ids or file tokens", () => {
+  const md = withMapping((m) => (m.themes[0].name = "Load in 2.5 seconds (e.g. on U.S. phones)"));
+  assert.deepEqual(checkThemeMapping(md, themeRubric()), []);
+});
+
+test("an unrelated json fence before the mapping, even a broken one, is not mistaken for it", () => {
+  const md = reportMd({ json: mapping() }).replace("## Theme mapping", "```json\n{ not the mapping\n```\n\n## Theme mapping");
+  assert.deepEqual(checkThemeMapping(md, themeRubric()), []);
 });
 
 test("a report reference without a theme-mapping json block is one violation, not a crash", () => {
@@ -235,7 +247,7 @@ test("a report reference without a theme-mapping json block is one violation, no
 });
 
 test("a mapping block that does not parse is one violation naming the file", () => {
-  const violations = checkThemeMapping(reportMd({ json: "{ nope" }), themeRubric());
+  const violations = checkThemeMapping(reportMd({ json: '{ "theme_mapping_for_rubric_version": nope' }), themeRubric());
   assert.equal(violations.length, 1);
   assert.match(violations[0], /references\/artifact-report\.md/);
   assert.match(violations[0], /parse/i);

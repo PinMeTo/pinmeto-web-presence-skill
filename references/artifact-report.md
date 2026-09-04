@@ -61,8 +61,8 @@ and other schemes; render a rejected value as inert text instead of a link or em
   button, and one filter before publishing (`document.scripts.length` being 0 is the instant
   tell that malformed markup swallowed the script);
 - escape non-ASCII inside artifact CSS `content:` rules as `\00B7`-style escapes;
-- in both modes, the Theme mapping (below) agrees with the rubric, checked mechanically by
-  `scripts/check-references.mjs` (which the scoring script `scoring.md` mandates can call):
+- in both modes, the Theme mapping (below) agrees with the rubric. `scripts/check-references.mjs`
+  checks this mechanically; run it before publishing (CI runs it on every push as well):
   (a) `theme_mapping_for_rubric_version` equals `rubric_version` in `rubric.md`; (b) the union
   of all `checks` arrays equals the rubric's set of point-bearing ids, every pillar check id
   plus the GEO sub-group B and C field ids; (c) no id appears in two Themes; (d) every `effort`
@@ -382,7 +382,7 @@ The report carries its own memory. Embed exactly one block in the rendered page:
 
 A **Theme** is a fixed cross-pillar group of checks that one fix and one owner resolve. The
 table below is the **Theme mapping**: the scanning agent computes Theme membership and worth
-mechanically from it, never by per-scan judgment. Grouping principle: one fix, one owner. A
+mechanically from it, never by per-scan judgment. Membership rule: one fix, one owner. A
 check lives where the person who fixes it sits (developer template, developer infrastructure,
 content, PinMeTo listings); the reader-facing story is the tie-breaker. The mapping covers
 every id that can produce points returned: the 52 pillar checks plus GEO's three sub-group B
@@ -462,13 +462,10 @@ bump:
 
 1. The mapping lives as this machine-readable JSON block in `artifact-report.md` (not a new
    file, not prose only) and pins `theme_mapping_for_rubric_version`.
-2. The pre-publish sanity check above, run by the scoring script that `scoring.md` already
-   mandates, verifies (a) the pinned version equals `rubric_version` in `rubric.md`; (b) the
-   union of all `checks` arrays equals the set of point-bearing ids in `rubric.md` (pillar
-   checks plus sub-group B and C field ids); (c) no id appears in two Themes; (d) every
-   `effort` is one of the eight labels below. Any failure blocks publishing. There is no
-   "Other" catch-all Theme: a catch-all would hide exactly the drift this rule exists to
-   catch, in front of a customer.
+2. The pre-publish sanity check above (conditions (a) to (d), run by
+   `scripts/check-references.mjs`) fails when the mapping and the rubric disagree, and any
+   failure blocks publishing. There is no "Other" catch-all Theme: a catch-all would hide
+   exactly the drift this rule exists to catch, in front of a customer.
 3. `rubric.md`'s version-bump paragraph states that bumping the rubric version requires
    updating the Theme mapping and its pinned version.
 

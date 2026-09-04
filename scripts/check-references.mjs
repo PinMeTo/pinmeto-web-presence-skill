@@ -89,27 +89,32 @@ function parseRubric(rubricMd) {
   return { rubric };
 }
 
+/** The `id` of every object in an array whose key satisfies `keyMatches`, anywhere under `node`. */
+function collectIds(node, keyMatches) {
+  const ids = [];
+  const walk = (value) => {
+    if (Array.isArray(value)) return value.forEach(walk);
+    if (!value || typeof value !== "object") return;
+    for (const [key, child] of Object.entries(value)) {
+      if (keyMatches(key) && Array.isArray(child)) {
+        for (const entry of child) {
+          if (entry && typeof entry === "object" && "id" in entry) ids.push(String(entry.id));
+        }
+      }
+      walk(child);
+    }
+  };
+  walk(node);
+  return ids;
+}
+
 /**
  * Check ids: the `id` of every object in an array whose key ends in `checks`,
  * anywhere under `pillars`. Other `id` fields (browser-downgrade reasons and
  * the like) are not check ids and may legitimately repeat.
  */
 function collectCheckIds(pillars) {
-  const ids = [];
-  const walk = (node) => {
-    if (Array.isArray(node)) return node.forEach(walk);
-    if (!node || typeof node !== "object") return;
-    for (const [key, value] of Object.entries(node)) {
-      if (key.endsWith("checks") && Array.isArray(value)) {
-        for (const entry of value) {
-          if (entry && typeof entry === "object" && "id" in entry) ids.push(String(entry.id));
-        }
-      }
-      walk(value);
-    }
-  };
-  walk(pillars);
-  return ids;
+  return collectIds(pillars, (key) => key.endsWith("checks"));
 }
 
 /**
@@ -119,21 +124,7 @@ function collectCheckIds(pillars) {
  * an effective weight.
  */
 function collectPointBearingIds(pillars) {
-  const ids = [...collectCheckIds(pillars)];
-  const walk = (node) => {
-    if (Array.isArray(node)) return node.forEach(walk);
-    if (!node || typeof node !== "object") return;
-    for (const [key, value] of Object.entries(node)) {
-      if (key === "fields" && Array.isArray(value)) {
-        for (const entry of value) {
-          if (entry && typeof entry === "object" && "id" in entry) ids.push(String(entry.id));
-        }
-      }
-      walk(value);
-    }
-  };
-  walk(pillars);
-  return ids;
+  return collectIds(pillars, (key) => key.endsWith("checks") || key === "fields");
 }
 
 export function checkRubricJson(rubricMd) {
@@ -167,8 +158,18 @@ const KEBAB_CASE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 // Issue #15 asked for twelve, but the approved mapping (#13, landed verbatim) names
 // `agent-front-door` in thirteen words. Thirteen is the smallest limit that admits it.
 const NAME_WORD_LIMIT = 13;
-/** A rubric check id (`seo.h1_unique_has_location`) or a file token (`llms.txt`, `robots.txt`, `.well-known`). */
-const ID_OR_FILE_TOKEN = /\S*(?:[a-z0-9_-]\.[a-z0-9_-]|\/\.?[a-z])\S*/i;
+/** A check-id shaped word: `seo.h1_unique_has_location`. Plain abbreviations (`e.g.`, `U.S.`) and numbers (`2.5`) are not. */
+const CHECK_ID_SHAPE = /^[a-z]{2,}\.[a-z][a-z0-9_]{2,}$/i;
+/** A file or path token: `llms.txt`, `robots.txt`, `sitemap.xml`, `/llms.txt`, `.well-known`, `/.well-known/mcp`. */
+const FILE_TOKEN = /^(?:\/?[\w.-]*\.(?:txt|md|json|xml|html?|js)|\/[\w./-]*[a-z][\w./-]*|\.well-known(?:\/\S*)?)$/i;
+
+/** The first word of `name` that reads as a rubric check id or a file token, or undefined. */
+function idOrFileToken(words, pointBearingIds) {
+  return words.find((word) => {
+    const bare = word.replace(/^[("'“‘]+|[)"'”’.,;:!?]+$/g, "");
+    return pointBearingIds.has(bare) || CHECK_ID_SHAPE.test(bare) || FILE_TOKEN.test(bare);
+  });
+}
 
 /**
  * The closed set of effort labels: every double-quoted string between the
@@ -184,24 +185,24 @@ function enumeratedEffortLabels(reportMd) {
 /** Pre-publish conditions (a) to (d) plus the slug and name rules; see the header comment. */
 export function checkThemeMapping(reportMd, rubricMd) {
   const file = "references/artifact-report.md";
-  const blocks = [];
-  for (const block of jsonBlocks(reportMd)) {
-    try {
-      blocks.push({ value: JSON.parse(block) });
-    } catch (error) {
-      blocks.push({ error });
-    }
+  // The mapping is the json fence that mentions the pin key; other fences in the file are not ours.
+  const KEY = "theme_mapping_for_rubric_version";
+  const mappingBlock = jsonBlocks(reportMd).find((block) => block.includes(KEY));
+  if (mappingBlock === undefined) return [`${file}: no \`\`\`json block with \`${KEY}\` found`];
+  let mapping;
+  try {
+    mapping = JSON.parse(mappingBlock);
+  } catch (error) {
+    return [`${file}: Theme mapping JSON block does not parse (${error.message})`];
   }
-  const candidate = blocks.find(
-    (b) => b.error || (b.value && typeof b.value === "object" && "theme_mapping_for_rubric_version" in b.value),
-  );
-  if (!candidate) return [`${file}: no \`\`\`json block with \`theme_mapping_for_rubric_version\` found`];
-  if (candidate.error) return [`${file}: JSON block does not parse (${candidate.error.message})`];
-  const mapping = candidate.value;
+  if (mapping === null || typeof mapping !== "object" || Array.isArray(mapping)) {
+    return [`${file}: Theme mapping JSON block is not an object`];
+  }
 
   const parsedRubric = parseRubric(rubricMd);
   if (parsedRubric.violation) return [`${file}: Theme mapping cannot be checked, ${parsedRubric.violation}`];
   const { rubric } = parsedRubric;
+  const pointBearing = new Set(collectPointBearingIds(rubric.pillars ?? {}));
 
   const violations = [];
   if (mapping.theme_mapping_for_rubric_version !== rubric.rubric_version) {
@@ -219,7 +220,7 @@ export function checkThemeMapping(reportMd, rubricMd) {
   const labelSet = new Set(labels ?? []);
   const usedEfforts = new Set();
   const slugs = new Map();
-  const owners = new Map();
+  const themesById = new Map();
   for (const theme of mapping.themes) {
     const slug = String(theme.slug);
     slugs.set(slug, (slugs.get(slug) ?? 0) + 1);
@@ -230,7 +231,7 @@ export function checkThemeMapping(reportMd, rubricMd) {
     if (words.length > NAME_WORD_LIMIT) {
       violations.push(`${file}: Theme \`${slug}\` name is ${words.length} words, the limit is ${NAME_WORD_LIMIT} words`);
     }
-    const token = words.find((w) => ID_OR_FILE_TOKEN.test(w));
+    const token = idOrFileToken(words, pointBearing);
     if (token) violations.push(`${file}: Theme \`${slug}\` name carries the check id or file token \`${token}\``);
 
     usedEfforts.add(theme.effort);
@@ -238,8 +239,8 @@ export function checkThemeMapping(reportMd, rubricMd) {
       violations.push(`${file}: Theme \`${slug}\` effort "${theme.effort}" is not one of the enumerated effort labels`);
     }
     for (const id of theme.checks ?? []) {
-      if (!owners.has(id)) owners.set(id, []);
-      owners.get(id).push(slug);
+      if (!themesById.has(id)) themesById.set(id, []);
+      themesById.get(id).push(slug);
     }
   }
   for (const [slug, count] of slugs) {
@@ -248,16 +249,15 @@ export function checkThemeMapping(reportMd, rubricMd) {
   for (const label of labels ?? []) {
     if (!usedEfforts.has(label)) violations.push(`${file}: enumerated effort label "${label}" is used by no Theme`);
   }
-  for (const [id, themes] of owners) {
+  for (const [id, themes] of themesById) {
     if (themes.length > 1) {
       violations.push(`${file}: check id \`${id}\` is in ${themes.length} Themes (${themes.join(", ")})`);
     }
   }
-  const pointBearing = new Set(collectPointBearingIds(rubric.pillars ?? {}));
   for (const id of pointBearing) {
-    if (!owners.has(id)) violations.push(`${file}: rubric id \`${id}\` is not in any Theme`);
+    if (!themesById.has(id)) violations.push(`${file}: rubric id \`${id}\` is not in any Theme`);
   }
-  for (const id of owners.keys()) {
+  for (const id of themesById.keys()) {
     if (!pointBearing.has(id)) violations.push(`${file}: Theme id \`${id}\` is not a point-bearing id in the rubric`);
   }
   return violations;
