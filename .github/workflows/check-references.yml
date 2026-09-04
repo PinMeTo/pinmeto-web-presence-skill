@@ -1,0 +1,25 @@
+name: Check references
+
+# The shipped references must agree with each other (skill version vs changelog,
+# rubric JSON well-formed with unique check ids, required glossary terms). The
+# tag-time release workflow keeps its own version-vs-tag check; this one runs on
+# every push and pull request so a contradiction cannot merge unnoticed.
+on:
+  push:
+  pull_request:
+
+jobs:
+  check-references:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Unit-test the checks
+        run: node --test 'tests/*.test.mjs'
+
+      - name: Check the shipped references agree with each other
+        run: node scripts/check-references.mjs
