@@ -1,0 +1,972 @@
+<!doctype html>
+<!--
+PROTOTYPE, throwaway. Not the report template. Round 2.
+
+Question: how does Layer 1 make it unmistakable what to do first, and tell the progress story
+when the report has run more than once, while staying a brand-true, professional document?
+
+Round 1 (report-visual-structure.html): A (briefing document) and C (three tiers) were the
+keepers, B was rejected, and all three were judged too generic with no clear focus.
+
+Three new variants, switchable via ?variant=d|e|f, each rendered against three scan states via
+?scan=1|2|3 (first scan, real re-run, illustrative third scan). Bottom bar switches both.
+
+  d  Lead with the action   editorial page; the headline is the first Theme, a "missing points"
+                            bar shows where the gap is, one Theme expanded, the rest one line each
+  e  Route to 100           the brand's A-to-B journey line as the hero: first scan to 100, cleared
+                            Themes as passed stops, the next stop in orange
+  f  One focus card         the first screen is one card: where you stand on the left, the one thing
+                            to do on the right; everything else follows in muted density
+
+Data: scans 1 and 2 are the real 4 September 2026 scans of pinmeto.com (docs/test-runs/).
+Scan 3 is ILLUSTRATIVE: a hypothetical 12 October 2026 re-run after the template change shipped,
+written to exercise cleared Themes and a large movement. Nothing here is a real report.
+-->
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE round 2: report focus and trend, pinmeto.com</title>
+<style>
+:root{--navy:#000050;--blue:#3399FF;--link:#1E7FE0;--orange:#FF8854;--lblue:#BBD9FA;--lgrey:#F2F3F4;
+--grey:#333333;--muted:#6A6F76;--line:#E2E6EA;--wash:#EAF4FF;--fail:#B5481E;--pass:#137A50;
+--dotfail:#FF8854;--dotpass:#1FA971;--dotwarn:#6A6F76;--chipok:#D8F3E7}
+*{box-sizing:border-box}
+html{font-family:Montserrat,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.55;color:var(--grey);-webkit-font-smoothing:antialiased}
+body{margin:0;background:#fff}
+h1,h2,h3,h4{color:var(--navy);margin:0;font-weight:700;letter-spacing:-.01em;line-height:1.2}
+p{margin:0}
+a{color:var(--link)}
+button{font:inherit;cursor:pointer}
+.num{font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.btn{display:inline-block;background:#fff;color:var(--link);border:1px solid var(--line);border-radius:6px;padding:8px 14px;font-size:13.5px;font-weight:600;text-decoration:none}
+.btn:hover{background:var(--wash)}
+.btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn.primary:hover{background:#000040}
+.btn.link{border:0;padding:0;background:none;text-decoration:underline;text-underline-offset:3px}
+.btn.link:hover{background:none;color:var(--navy)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-right:7px}
+.d-fail{background:var(--dotfail)}.d-warn{background:var(--dotwarn)}.d-pass{background:var(--dotpass)}
+.rank{display:inline-flex;width:30px;height:30px;border-radius:50%;background:var(--orange);color:var(--navy);font-weight:800;font-size:15px;align-items:center;justify-content:center;flex:0 0 auto}
+.band-fail{color:var(--fail)}.band-pass{color:var(--pass)}
+.delta{display:inline-block;font-weight:700;font-size:13px;border-radius:4px;padding:3px 8px;background:var(--chipok);color:var(--pass)}
+.delta.down{background:#FFE0D1;color:var(--fail)}
+.delta.flat{background:var(--lgrey);color:var(--muted)}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:13px;font-weight:600;color:var(--navy)}
+details>summary{cursor:pointer;list-style:none}
+details>summary::-webkit-details-marker{display:none}
+.chart text{font-family:inherit}
+.moved ul{margin:8px 0 0;padding-left:20px}
+.moved li{margin:0 0 6px}
+.moved li+li{margin-top:6px}
+
+/* ---------- drawer stub ---------- */
+.scrim{position:fixed;inset:0;background:rgba(0,0,60,.34);z-index:55;display:none}
+.scrim.open{display:block}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,96vw);background:#fff;border-left:1px solid var(--line);
+box-shadow:-8px 0 30px rgba(0,0,80,.16);padding:28px;overflow-y:auto;z-index:60;display:none}
+.drawer.open{display:block}
+.drawer h3{font-size:22px;margin:14px 0 8px}
+.drawer .meta{font-size:13px;color:var(--muted);margin:0 0 14px}
+.drawer .stub{background:var(--lgrey);border-radius:8px;padding:16px;font-size:13.5px;color:var(--muted);margin-top:22px}
+
+/* ---------- prototype switcher (not part of the design) ---------- */
+.proto-bar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:100;display:flex;align-items:center;gap:2px;
+background:#333;color:#fff;border-radius:999px;padding:6px 8px;box-shadow:0 6px 24px rgba(0,0,0,.28);font-size:13px;white-space:nowrap}
+.proto-bar button{background:none;border:0;color:#fff;height:32px;min-width:32px;border-radius:999px;font-size:13px;line-height:1;padding:0 10px}
+.proto-bar button.arrow{font-size:18px;padding:0}
+.proto-bar button:hover{background:rgba(255,255,255,.14)}
+.proto-bar button.on{background:#fff;color:#333;font-weight:700}
+.proto-bar .lbl{padding:0 10px}
+.proto-bar .lbl b{color:var(--orange);margin-right:6px;font-weight:700}
+.proto-bar .sep{width:1px;height:20px;background:rgba(255,255,255,.3);margin:0 8px}
+.proto-bar a{color:#fff;font-size:12px;padding:0 10px 0 4px}
+@media print{.proto-bar,.drawer,.scrim{display:none !important}}
+
+/* =====================================================================
+   D. Lead with the action (editorial, from round-1 A)
+   ===================================================================== */
+.vd{background:#fff;min-height:100vh}
+.vd .page{max-width:900px;margin:0 auto;padding:40px 32px 96px}
+.vd .mast{display:flex;justify-content:space-between;align-items:center;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.vd .mast svg{height:30px;width:auto;display:block}
+.vd .mast .doc{font-size:13.5px;color:var(--muted)}
+.vd .mast .doc b{color:var(--navy);font-weight:600}
+.vd .lead{display:grid;grid-template-columns:1fr 220px;gap:48px;padding:48px 0 40px;align-items:start}
+.vd .lead h1{font-size:44px;font-weight:700;letter-spacing:-.025em;line-height:1.1}
+.vd .lead .first{font-size:14px;color:var(--muted);margin:10px 0 22px}
+.vd .lead .sum{font-size:16px;line-height:1.6;max-width:62ch}
+.vd .lead .sum+.sum{margin-top:14px}
+.vd .lead .counts{margin-top:20px;font-size:13.5px;color:var(--muted);display:flex;gap:22px;flex-wrap:wrap}
+.vd .lead .counts b{color:var(--grey);font-weight:600}
+.vd .lead .facts{display:flex;gap:28px;margin-top:22px;flex-wrap:wrap;align-items:center}
+.vd .lead .facts div{font-size:14px}
+.vd .lead .facts small{display:block;font-size:12px;color:var(--muted)}
+.vd .score{text-align:right}
+.vd .score .n{font-size:96px;font-weight:800;line-height:.88;letter-spacing:-.035em;color:var(--navy)}
+.vd .score .of{font-size:13px;color:var(--muted);margin-top:8px}
+.vd .score .band{font-size:15px;font-weight:700;margin-top:2px}
+.vd .score .delta{margin-top:10px}
+.vd .score .since{font-size:12px;color:var(--muted);margin-top:4px}
+.vd .gap{padding:28px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.vd .gap .cap{font-size:15px;color:var(--grey);margin-bottom:16px;max-width:70ch}
+.vd .gap .cap b{color:var(--navy);font-weight:600}
+.vd .above{display:flex;height:22px;font-size:11.5px;color:var(--navy);font-weight:600}
+.vd .above .todo{border-top:1px solid var(--navy);border-left:1px solid var(--navy);border-right:1px solid var(--navy);height:8px;margin-top:14px;position:relative}
+.vd .above .todo span{position:absolute;right:-1px;top:-17px;white-space:nowrap;padding:0 0 0 6px}
+.vd .bar{display:flex;height:28px;gap:2px}
+.vd .bar i{display:block;height:100%;position:relative}
+.vd .bar .have{background:#CFEBDC;border-radius:4px 0 0 4px;color:var(--navy);font-size:13px;font-weight:700;text-align:right;line-height:28px;padding-right:10px}
+.vd .bar .have small{font-weight:400;font-size:11.5px;color:var(--pass);margin-right:8px}
+.vd .bar .t1{background:repeating-linear-gradient(135deg,var(--orange) 0 3px,#fff 3px 7px);outline:1px solid var(--orange);outline-offset:-1px}
+.vd .bar .tn{background:repeating-linear-gradient(135deg,var(--navy) 0 2px,#fff 2px 7px);outline:1px solid var(--navy);outline-offset:-1px}
+.vd .bar .rest{background:radial-gradient(var(--muted) 1px,transparent 1.3px) 0 0/6px 6px;border:1px dashed var(--muted);border-radius:0 4px 4px 0}
+.vd .bar .end{position:absolute;right:0;bottom:-20px;font-size:11.5px;color:var(--muted)}
+.vd .keys{display:flex;flex-direction:column;gap:7px;margin-top:14px;font-size:13.5px;color:var(--grey)}
+.vd .keys i{display:inline-block;width:14px;height:14px;border-radius:2px;vertical-align:-2px;margin-right:9px}
+.vd .keys b{color:var(--navy);font-weight:600}
+.vd .trend{display:grid;grid-template-columns:1fr 260px;gap:40px;padding:26px 0;border-bottom:1px solid var(--line);align-items:center}
+.vd .trend h2{font-size:20px;letter-spacing:-.015em}
+.vd .trend .sub{font-size:14px;color:var(--muted);margin-top:4px}
+.vd .trend .cleared{font-size:14px;color:var(--pass);font-weight:600;margin-top:10px}
+.vd .trend .pl{display:flex;gap:22px;margin-top:14px;flex-wrap:wrap}
+.vd .trend .pl div{font-size:13px;color:var(--muted)}
+.vd .trend .pl b{color:var(--navy);font-weight:700;font-size:15px;margin-right:6px}
+.vd .trend details{margin-top:14px}
+.vd .trend summary{font-size:13.5px;font-weight:600;color:var(--link)}
+.vd .trend .moved{font-size:14px;margin-top:8px;max-width:64ch}
+.vd .verdict{padding:36px 0 8px}
+.vd .verdict p{font-size:16px;line-height:1.6;max-width:66ch}
+.vd .verdict .counts{margin-top:18px;font-size:13.5px;color:var(--muted);display:flex;gap:22px;flex-wrap:wrap}
+.vd .verdict .counts b{color:var(--grey);font-weight:600}
+.vd .pillars{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);padding:24px 0}
+.vd .pillars>div+div{border-left:1px solid var(--line);padding-left:24px}
+.vd .pillars .nm{font-size:13px;font-weight:600;color:var(--navy)}
+.vd .pillars .v{font-size:32px;font-weight:800;letter-spacing:-.02em;color:var(--navy);line-height:1.1;margin:6px 0 2px}
+.vd .pillars .v small{font-size:13px;font-weight:700;margin-left:6px;letter-spacing:0}
+.vd .pillars .bw{font-size:13px;font-weight:600}
+.vd h2.sec{font-size:26px;letter-spacing:-.02em;margin:64px 0 6px}
+.vd .lede{color:var(--muted);font-size:15px;max-width:62ch;margin-bottom:20px}
+.vd .top1{display:grid;grid-template-columns:44px 1fr 170px;gap:16px;padding:26px 0;border-top:1px solid var(--line)}
+.vd .top1 h3{font-size:24px;letter-spacing:-.02em}
+.vd .top1 .sum{font-size:16px;line-height:1.6;margin-top:12px;max-width:60ch}
+.vd .top1 .facts{display:flex;gap:28px;margin-top:18px;flex-wrap:wrap}
+.vd .top1 .facts div{font-size:14px}
+.vd .top1 .facts small{display:block;font-size:12px;color:var(--muted)}
+.vd .top1 .side{text-align:right}
+.vd .top1 .side .w{font-size:30px;font-weight:800;color:var(--navy);letter-spacing:-.025em;line-height:1.1}
+.vd .top1 .side .wl{font-size:12.5px;color:var(--muted);margin-bottom:14px}
+.vd .rest{margin:0;padding:0;list-style:none;border-top:1px solid var(--line)}
+.vd .rest li{display:grid;grid-template-columns:44px 1fr 90px 220px 90px;gap:16px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--line)}
+.vd .rest .rk{font-size:17px;font-weight:600;color:var(--muted)}
+.vd .rest h3{font-size:16px;font-weight:600;letter-spacing:0}
+.vd .rest .open{display:block;font-size:12.5px;color:var(--muted);font-weight:400;margin-top:2px}
+.vd .rest .w{font-size:16px;font-weight:700;color:var(--navy)}
+.vd .rest .ef{font-size:13px;color:var(--muted)}
+.vd .rest .fx{text-align:right}
+.vd .split{margin-top:22px;font-size:15px;color:var(--grey);max-width:66ch}
+.vd .nap{display:grid;grid-template-columns:1fr 160px;gap:24px;padding:26px 0;border-bottom:1px solid var(--line);margin-top:44px}
+.vd .nap h3{font-size:18px}
+.vd .nap p{margin-top:8px;max-width:60ch}
+.vd .nap .w{font-size:26px;font-weight:700;text-align:right;letter-spacing:-.02em;line-height:1.1}
+.vd .nap .wl{font-size:12.5px;color:var(--muted);text-align:right}
+.vd details.l2{border-bottom:1px solid var(--line)}
+.vd details.l2 summary{padding:22px 0;font-size:17px;font-weight:700;color:var(--navy);display:flex;justify-content:space-between;align-items:center}
+.vd details.l2 summary span{font-size:13px;font-weight:600;color:var(--link)}
+.vd details.l2 .body{padding:0 0 26px;color:var(--muted);font-size:14px}
+.vd .next{background:var(--lgrey);border-radius:10px;padding:32px 36px;margin-top:64px}
+.vd .next h2{margin:0 0 14px;font-size:24px}
+.vd .next ol{margin:0;padding-left:22px}
+.vd .next li{margin:0 0 10px;max-width:70ch}
+.vd .prompt{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-top:18px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.vd .prompt code{font-family:inherit;font-size:14px;color:var(--navy)}
+.vd .method{margin-top:64px}
+.vd .method h2{font-size:24px;margin:0 0 16px}
+.vd .method p{font-size:14px;margin-top:12px;max-width:72ch}
+.vd .method p b{color:var(--navy)}
+.vd footer{margin-top:64px;padding-top:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);display:flex;justify-content:space-between}
+@media (max-width:720px){
+  .vd .lead,.vd .trend,.vd .nap{grid-template-columns:1fr;gap:20px}
+  .vd .score,.vd .nap .w,.vd .nap .wl{text-align:left}
+  .vd .lead h1{font-size:32px}.vd .score .n{font-size:72px}
+  .vd .top1{grid-template-columns:1fr}.vd .top1 .side{text-align:left}
+  .vd .pillars{grid-template-columns:1fr 1fr;gap:18px}
+  .vd .pillars>div+div{border-left:0;padding-left:0}
+  .vd .rest li{grid-template-columns:32px 1fr 70px;gap:10px}
+  .vd .rest .ef,.vd .rest .fx{display:none}
+}
+
+/* =====================================================================
+   E. Route to 100 (panels, from round-1 C)
+   ===================================================================== */
+.ve{background:var(--lgrey);min-height:100vh}
+.ve .top{background:#fff;border-bottom:1px solid var(--line)}
+.ve .top .in{max-width:1080px;margin:0 auto;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;gap:20px}
+.ve .top svg{height:24px;width:auto;display:block}
+.ve .top .doc{font-size:13.5px;font-weight:600;color:var(--navy);text-align:right}
+.ve .top .doc small{display:block;font-weight:400;color:var(--muted);font-size:12.5px;margin-top:2px}
+.ve .page{max-width:1080px;margin:0 auto;padding:36px 24px 96px}
+.ve .panel{background:#fff;border-radius:12px;padding:30px 32px}
+.ve .hero{display:grid;grid-template-columns:230px 1fr;gap:40px;align-items:start}
+.ve .hero .n{font-size:84px;font-weight:800;line-height:.88;letter-spacing:-.035em;color:var(--navy)}
+.ve .hero .of{font-size:13px;color:var(--muted);margin-top:10px}
+.ve .hero .tag{display:inline-block;background:var(--lblue);color:var(--navy);font-size:13px;font-weight:700;border-radius:4px;padding:4px 10px;margin-top:10px}
+.ve .hero .delta{margin-top:10px;display:block;width:max-content}
+.ve .hero .since{font-size:12px;color:var(--muted);margin-top:4px}
+.ve .route h2{font-size:15px;font-weight:600;color:var(--muted);letter-spacing:0}
+.ve .route h2 b{color:var(--navy);font-weight:700}
+.ve .route .next{margin-top:18px;display:flex;gap:12px;align-items:flex-start}
+.ve .route .next .lbl{font-size:12.5px;color:var(--muted)}
+.ve .route .next h3{font-size:22px;letter-spacing:-.015em;line-height:1.2}
+.ve .route .next .w{font-size:14px;color:var(--grey);margin-top:6px}
+.ve .route svg{display:block;width:100%;height:auto;margin-top:14px;overflow:visible}
+.ve .route .legend{display:flex;gap:24px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px}
+.ve .route .legend i{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-2px;margin-right:6px}
+.ve .pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:30px;padding-top:26px;border-top:1px solid var(--line)}
+.ve .pillars .nm{font-size:13px;font-weight:600;color:var(--navy)}
+.ve .pillars .v{font-size:30px;font-weight:800;letter-spacing:-.02em;color:var(--navy);line-height:1.1;margin:4px 0 8px}
+.ve .pillars .v small{font-size:13px;font-weight:700;margin-left:6px;letter-spacing:0}
+.ve .pillars .bar{height:6px;background:var(--lgrey);border-radius:3px;overflow:hidden}
+.ve .pillars .bar i{display:block;height:100%;background:var(--navy);border-radius:3px}
+.ve .pillars .bw{font-size:12.5px;font-weight:600;margin-top:8px}
+.ve .tier{margin-top:40px}
+.ve .tier .hd{display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.ve .tier h2{font-size:22px;letter-spacing:-.015em}
+.ve .tier .hd p{font-size:14px;color:var(--muted)}
+.ve .feature{display:grid;grid-template-columns:1fr 250px;gap:36px}
+.ve .feature .head{display:flex;gap:14px;align-items:flex-start}
+.ve .feature h3{font-size:28px;letter-spacing:-.02em;line-height:1.15}
+.ve .feature .sum{font-size:17px;line-height:1.6;margin-top:16px;max-width:64ch}
+.ve .facts{display:flex;gap:32px;margin-top:22px;flex-wrap:wrap}
+.ve .facts div{font-size:14px;color:var(--grey)}
+.ve .facts small{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
+.ve .worth{background:var(--lblue);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:6px;align-self:stretch}
+.ve .worth .w{font-size:56px;font-weight:800;color:var(--navy);letter-spacing:-.035em;line-height:.95}
+.ve .worth .wl{font-size:13px;color:var(--navy);margin-bottom:14px}
+.ve .worth .btn{margin-top:auto;text-align:center}
+.ve .list{padding:8px 32px}
+.ve .list .r{display:grid;grid-template-columns:36px 1fr 110px 220px 100px;gap:16px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+.ve .list .r:last-child{border-bottom:0}
+.ve .list .rk{width:26px;height:26px;border-radius:50%;border:2px solid var(--navy);color:var(--navy);font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+.ve .list h3{font-size:15.5px;font-weight:600;letter-spacing:0}
+.ve .list .eff{font-size:12.5px;color:var(--muted);margin-top:3px}
+.ve .list .w{font-size:15px;font-weight:700;color:var(--navy)}
+.ve .list .pil{font-size:13px;color:var(--grey)}
+.ve .list .fix{text-align:right}
+.ve .split{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px}
+.ve .split h2{font-size:18px;margin-bottom:10px}
+.ve .split p{font-size:15px;line-height:1.6}
+.ve .split p+p{margin-top:12px}
+.ve .moved .sub{font-size:14px;color:var(--muted);margin-bottom:10px}
+.ve .moved .cleared{font-size:14px;color:var(--pass);font-weight:600;margin:10px 0}
+.ve .moved li{font-size:14px}
+.ve .counts{margin-top:16px;font-size:13.5px;color:var(--muted);display:flex;gap:22px;flex-wrap:wrap}
+.ve .counts b{color:var(--grey);font-weight:600}
+.ve .nap{margin-top:24px;display:grid;grid-template-columns:auto 1fr auto;gap:28px;align-items:center}
+.ve .nap .w{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.ve .nap .wl{font-size:12.5px;color:var(--muted);margin-top:4px}
+.ve .nap h3{font-size:16px;margin-bottom:4px}
+.ve .nap p{font-size:14px}
+.ve details.panel{padding:0;margin-top:24px}
+.ve details summary{padding:22px 32px;font-size:16px;font-weight:700;color:var(--navy);display:flex;justify-content:space-between;align-items:center}
+.ve details summary span{font-size:13px;font-weight:600;color:var(--link)}
+.ve details .body{padding:0 32px 26px;color:var(--muted);font-size:14px}
+.ve .nextp{background:var(--navy);color:#fff;margin-top:44px}
+.ve .nextp h2{color:#fff;font-size:24px;margin-bottom:14px}
+.ve .nextp ol{margin:0;padding-left:22px}
+.ve .nextp li{margin:0 0 10px;max-width:70ch;color:rgba(255,255,255,.9)}
+.ve .nextp b{color:#fff}
+.ve .prompt{background:rgba(255,255,255,.08);border-radius:8px;padding:14px 16px;margin-top:20px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.ve .prompt code{font-family:inherit;font-size:14px;color:#fff}
+.ve .nextp .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.4)}
+.ve .method{margin-top:24px}
+.ve .method h2{font-size:22px;margin-bottom:14px}
+.ve .method p{font-size:14px;margin-top:12px;max-width:72ch}
+.ve .method p b{color:var(--navy)}
+.ve footer{margin-top:28px;font-size:12.5px;color:var(--muted);text-align:center}
+@media (max-width:820px){
+  .ve .hero,.ve .feature,.ve .split{grid-template-columns:1fr;gap:20px}
+  .ve .pillars{grid-template-columns:1fr 1fr}
+  .ve .list .r{grid-template-columns:30px 1fr auto;gap:10px}
+  .ve .list .pil,.ve .list .fix{display:none}
+  .ve .nap{grid-template-columns:1fr}
+  .ve .hero .n{font-size:64px}.ve .feature h3{font-size:22px}
+}
+
+/* =====================================================================
+   F. One focus card
+   ===================================================================== */
+.vf{background:var(--lgrey);min-height:100vh}
+.vf .top{max-width:1080px;margin:0 auto;padding:22px 24px 0;display:flex;justify-content:space-between;align-items:center;gap:20px}
+.vf .top svg{height:26px;width:auto;display:block}
+.vf .top .doc{font-size:13.5px;color:var(--muted)}
+.vf .top .doc b{color:var(--navy);font-weight:600}
+.vf .page{max-width:1080px;margin:0 auto;padding:22px 24px 96px}
+.vf .focus{background:#fff;border-radius:14px;display:grid;grid-template-columns:340px 1fr;min-height:520px}
+.vf .stand{background:var(--navy);color:#fff;border-radius:14px 0 0 14px;padding:36px 32px;display:flex;flex-direction:column}
+.vf .stand .lbl{font-size:13px;color:rgba(255,255,255,.72)}
+.vf .stand .n{font-size:96px;font-weight:800;line-height:.88;letter-spacing:-.035em;color:#fff;margin-top:6px}
+.vf .stand .of{font-size:13px;color:rgba(255,255,255,.72);margin-top:8px}
+.vf .stand .tag{display:inline-block;background:var(--lblue);color:var(--navy);font-size:13px;font-weight:700;border-radius:4px;padding:4px 10px;margin-top:12px;width:max-content}
+.vf .stand .move{margin-top:26px;padding-top:22px;border-top:1px solid rgba(255,255,255,.18)}
+.vf .stand .move .h{font-size:15px;font-weight:700;color:#fff}
+.vf .stand .move .s{font-size:12.5px;color:rgba(255,255,255,.72);margin-top:4px}
+.vf .stand .move .cl{font-size:13px;color:#fff;margin-top:10px;line-height:1.5}
+.vf .stand .move .cl b{color:var(--lblue);font-weight:700}
+.vf .stand svg{display:block;width:100%;height:auto;margin-top:16px}
+.vf .stand .pl{margin-top:auto;padding-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:12px 20px}
+.vf .stand .pl div{font-size:12.5px;color:rgba(255,255,255,.72)}
+.vf .stand .pl b{display:block;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.02em;line-height:1.1}
+.vf .stand .pl b small{font-size:12px;font-weight:700;color:var(--lblue);margin-left:5px;letter-spacing:0}
+.vf .act{padding:36px 40px;display:flex;flex-direction:column}
+.vf .act .lbl{font-size:13px;font-weight:600;color:var(--muted)}
+.vf .act .head{display:flex;gap:16px;align-items:flex-start;margin-top:10px}
+.vf .act h1{font-size:34px;letter-spacing:-.025em;line-height:1.12}
+.vf .act .sum{font-size:17px;line-height:1.6;margin-top:18px;max-width:60ch}
+.vf .facts{display:flex;gap:32px;margin-top:24px;flex-wrap:wrap}
+.vf .facts div{font-size:14px;color:var(--grey)}
+.vf .facts small{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
+.vf .act .cta{margin-top:auto;padding-top:28px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.vf .act .cta .w{font-size:30px;font-weight:800;color:var(--navy);letter-spacing:-.03em}
+.vf .act .cta .w small{font-size:13px;font-weight:400;color:var(--muted);margin-left:6px;letter-spacing:0}
+.vf .verdict{margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.vf .verdict .panel{background:#fff;border-radius:12px;padding:26px 30px}
+.vf .verdict h2{font-size:16px;margin-bottom:10px}
+.vf .verdict p{font-size:15px;line-height:1.6}
+.vf .verdict p+p{margin-top:12px}
+.vf .verdict .counts{margin-top:16px;font-size:13.5px;color:var(--muted);display:flex;gap:22px;flex-wrap:wrap}
+.vf .verdict .counts b{color:var(--grey);font-weight:600}
+.vf .verdict .moved li{font-size:14px}
+.vf .verdict .moved .cleared{font-size:14px;color:var(--pass);font-weight:600;margin:0 0 8px}
+.vf .others{margin-top:36px}
+.vf .others .hd{display:flex;align-items:baseline;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+.vf .others h2{font-size:20px;letter-spacing:-.015em}
+.vf .others .hd p{font-size:14px;color:var(--muted)}
+.vf .others table{background:#fff;border-radius:12px;overflow:hidden}
+.vf .others th{padding:14px 18px}
+.vf .others td{padding:14px 18px;border-bottom:1px solid var(--line)}
+.vf .others tr:last-child td{border-bottom:0}
+.vf .others .rk{color:var(--muted);font-weight:600;width:44px}
+.vf .others h3{font-size:15px;font-weight:600;letter-spacing:0}
+.vf .others .open{display:block;font-size:12.5px;color:var(--muted);margin-top:3px}
+.vf .others .w{font-weight:700;color:var(--navy);white-space:nowrap}
+.vf .others .ef{font-size:13px;color:var(--grey)}
+.vf .others .fx{text-align:right;white-space:nowrap}
+.vf .nap{margin-top:20px;background:#fff;border-radius:12px;padding:26px 30px;display:grid;grid-template-columns:auto 1fr auto;gap:28px;align-items:center}
+.vf .nap .w{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.vf .nap .wl{font-size:12.5px;color:var(--muted);margin-top:4px}
+.vf .nap h3{font-size:16px;margin-bottom:4px}
+.vf .nap p{font-size:14px}
+.vf details.l2{background:#fff;border-radius:12px;margin-top:20px}
+.vf details.l2 summary{padding:22px 30px;font-size:16px;font-weight:700;color:var(--navy);display:flex;justify-content:space-between;align-items:center}
+.vf details.l2 summary span{font-size:13px;font-weight:600;color:var(--link)}
+.vf details.l2 .body{padding:0 30px 26px;color:var(--muted);font-size:14px}
+.vf .next{background:#fff;border-radius:12px;padding:30px 32px;margin-top:36px}
+.vf .next h2{font-size:22px;margin-bottom:14px}
+.vf .next ol{margin:0;padding-left:22px}
+.vf .next li{margin:0 0 10px;max-width:70ch}
+.vf .prompt{background:var(--lgrey);border-radius:8px;padding:14px 16px;margin-top:18px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.vf .prompt code{font-family:inherit;font-size:14px;color:var(--navy)}
+.vf .method{background:#fff;border-radius:12px;padding:30px 32px;margin-top:20px}
+.vf .method h2{font-size:22px;margin-bottom:14px}
+.vf .method p{font-size:14px;margin-top:12px;max-width:72ch}
+.vf .method p b{color:var(--navy)}
+.vf footer{margin-top:28px;font-size:12.5px;color:var(--muted);text-align:center}
+@media (max-width:860px){
+  .vf .focus,.vf .verdict{grid-template-columns:1fr}
+  .vf .stand{border-radius:14px 14px 0 0}
+  .vf .act h1{font-size:26px}.vf .stand .n{font-size:72px}
+  .vf .others .ef,.vf .others th:nth-child(4){display:none}
+  .vf .nap{grid-template-columns:1fr}
+}
+</style></head>
+<body>
+<div id="root"></div>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-label="Theme brief"></aside>
+<div class="proto-bar" role="group" aria-label="Prototype switcher">
+  <button type="button" class="arrow" data-cycle="-1" aria-label="Previous variant">&#8249;</button>
+  <span class="lbl" id="proto-label"></span>
+  <button type="button" class="arrow" data-cycle="1" aria-label="Next variant">&#8250;</button>
+  <span class="sep"></span>
+  <button type="button" data-scan="1">Scan 1</button>
+  <button type="button" data-scan="2">Scan 2</button>
+  <button type="button" data-scan="3" title="Illustrative data, not a real scan">Scan 3 (illustrative)</button>
+  <span class="sep"></span>
+  <a href="report-visual-structure.html?variant=a">Round 1</a>
+</div>
+
+<script>
+/* ------------------------------------------------------------------ data */
+const BRAND = { domain: 'pinmeto.com', locations: 5, rubric: '2.14.0-skill.1' };
+const PILLARS = [
+  { key: 'seo', name: 'SEO', weight: 30, blurb: 'the store locator and your office pages: can search engines and AI crawlers read them' },
+  { key: 'geo', name: 'GEO', weight: 30, blurb: 'your offices on Google, Apple and Bing Maps: do the listings exist and match your record' },
+  { key: 'aio', name: 'AIO', weight: 25, blurb: 'whether generative answers can ground on you: liftable data, answer-shaped content' },
+  { key: 'ar', name: 'Agent readiness', weight: 15, blurb: 'whether an AI agent acting for a customer can use your site' }
+];
+const band = s => s >= 90 ? 'Strong' : s >= 80 ? 'Healthy' : s >= 60 ? 'Needs work' : 'Critical';
+const MAP = {
+  'crawlable-site': { name: 'Let search engines find and crawl every location page', effort: 'One developer task', k: 9, pillars: ['SEO', 'AIO'],
+    description: 'Canonicals, sitemaps, robots rules, breadcrumbs, language links and link depth that let crawlers discover and index every location page.' },
+  'location-data-in-code': { name: "Put each location's and your brand's details into the page code", effort: 'One template change', k: 7, pillars: ['SEO', 'AIO'],
+    description: 'Structured data (JSON-LD) that names each location and the brand in the HTML the server sends, so search engines and AI crawlers read it without running JavaScript.' },
+  'unique-location-pages': { name: 'Make every location page introduce its own location', effort: 'One template change', k: 5, pillars: ['SEO'],
+    description: 'Every location page carries its own title, description, heading, image text and social preview, so search engines can tell the pages apart and show the right one.' },
+  'same-details-everywhere': { name: 'Same name, address, phone and pin everywhere', effort: 'Fix the record in PinMeTo, then the page', k: 13, pillars: ['GEO'],
+    description: 'Name, address, phone, website, hours and map pin agree across the PinMeTo record, every map platform and the location page.' },
+  'connect-listings': { name: 'Connect every listing through PinMeTo', effort: 'PinMeTo task, no code', k: 2, pillars: ['GEO'],
+    description: "Every location's Google, Apple and Bing listing exists and is connected through PinMeTo, with no duplicates or stale closed pages." },
+  'text-for-ai': { name: 'Give AI assistants a text version of your site', effort: 'One developer task', k: 4, pillars: ['AIO', 'Agent readiness'],
+    description: 'A plain-text guide at /llms.txt and Markdown versions of pages on request, so AI assistants read your own words instead of third-party summaries.' },
+  'answers-on-page': { name: "Answer customers' questions on the page itself", effort: 'Content task', k: 5, pillars: ['AIO'],
+    description: 'Question-and-answer content, quick answers, speakable sections and author signals that AI search can quote directly.' },
+  'fresh-google-listings': { name: 'Keep each Google listing complete and fresh', effort: 'Ongoing, no code', k: 7, pillars: ['GEO'],
+    description: 'Each Google listing shows hours, holiday hours, five or more photos, services, recent reviews and no consumer alerts.' }
+};
+const S1_THEMES = [
+  { slug: 'crawlable-site', worth: 7, checks: 5, pass: 4, summary: 'Neither of the two office-finder pages links to any of the five office pages in the HTML your server sends, and none of the five carries a breadcrumb trail. Crawlers reach your offices only by running JavaScript.' },
+  { slug: 'location-data-in-code', worth: 4, checks: 3, pass: 4, summary: 'All five office pages describe their location in code only after the browser runs JavaScript. The AI crawlers that feed ChatGPT and Perplexity read raw HTML, so they see five pages that never say where the office is.' },
+  { slug: 'unique-location-pages', worth: 4, checks: 4, pass: 1, summary: 'In the HTML your server sends, five office pages share one title and one description. Stockholm and Helsinki share a description even after rendering, so search engines keep one page and drop the other.' },
+  { slug: 'same-details-everywhere', worth: 3, checks: 4, pass: 9, summary: 'Four of the five offices send map visitors to your homepage instead of their own page, and two offices disagree with your record on address or map pin. People arrive somewhere they have to start searching again.' },
+  { slug: 'connect-listings', worth: 2, checks: 2, pass: 0, summary: 'Two of the five offices have no Apple listing at all, and two more are connected on Apple but the connection is not reaching the platform. Apple users find nothing, or find the wrong address.' },
+  { slug: 'text-for-ai', worth: 1, checks: 2, pass: 2, summary: 'Ask your site for a text version and the homepage and articles hand one over, but all five office pages return the full web page instead. Assistants get markup where they need words.' },
+  { slug: 'answers-on-page', worth: 1, checks: 1, pass: 4, summary: 'One page template connects itself to the thing it covers. Product, article and office templates do not, so an AI answer has to infer what each of those pages is about.' },
+  { slug: 'fresh-google-listings', worth: 1, checks: 2, pass: 4, summary: 'No office holds a future holiday-hours entry, and three of the five have had no Google review in the last six months. The listings look unattended at exactly the moments customers check them.' }
+];
+const S2_THEMES = S1_THEMES.map(t => ({ ...t }));
+S2_THEMES[3] = { ...S2_THEMES[3], worth: 2, checks: 2, pass: 11, summary: 'Four of the five offices still send map visitors to your homepage instead of their own page, and Helsinki remains the one office whose address disagrees across platforms. Malmö now agrees everywhere.' };
+S2_THEMES[4] = { ...S2_THEMES[4], summary: 'Two of the five offices have no Apple listing at all, and Helsinki is connected on Apple but the connection is not reaching the platform. Apple users find nothing, or find the wrong address.' };
+const METHOD_COMMON = [
+  '<b>The sample.</b> All 5 open locations in the account were checked: Mumbai, Malmö, Gdańsk, Stockholm, Helsinki. Pages checked: the homepage, both office-finder pages (/locations and /locator/), the five office pages, the blog index and one blog article, plus robots.txt, three sitemaps, /llms.txt, /llms-full.txt and three .well-known paths. Not covered: paid or social presence, platforms other than Google, Apple and Bing, and any location outside this account.',
+  '<b>How pages were judged.</b> Every markup check ran twice: once against the HTML your server sends, and once against the page after the browser had run its JavaScript. A value in the served HTML earns full credit; a value that appears only after rendering earns half. That is not a penalty for using JavaScript, it is the audience split: Google and agent browsers render, and the crawlers that feed AI training and retrieval read raw HTML only.',
+  '<b>Two things could not be measured.</b> Loading speed and mobile usability both depend on PageSpeed Insights, whose anonymous daily quota was already exhausted when this scan ran. They are reported as evidence gaps at half credit, not as failures.'
+];
+const SCANS = [
+  { n: 1, date: '4 September 2026', shortDate: '4 Sep (1st)', label: 'First scan', illustrative: false,
+    overall: 72, pillars: { seo: 50, geo: 74, aio: 80, ar: 97 }, counts: { fail: 23, warn: 2, pass: 34 },
+    summary: [
+      'Your machine surfaces are in excellent shape: the MCP server card, the agent skills index, the API catalog, content signals in robots.txt and both llms.txt files are all live and valid, which makes agent readiness the strongest of the four pillars. What holds the overall score back is that each office page exists twice: once as the near-empty shell your server sends, and once as the complete page the browser builds afterwards.',
+      'Most of the work is one template change rather than five page edits. Titles, descriptions, headings, canonicals, structured data and the links to your office pages all come from the same location-page template, so serving them from the server would move four of the eight themes below at once. The listing work is separate and is done in PinMeTo, not in code. This scan is your baseline; the next one shows what moved.'
+    ],
+    themes: S1_THEMES,
+    nap: { match: 0, mismatches: 14, sharpest: 'Sharpest: Helsinki, where Apple shows the address Firdonkatu 2 in Helsinki instead of Karhumäentie 3 in Vantaa, 11.6 km from your record.' },
+    next: [
+      'Hand the briefs behind <b>Let search engines find and crawl every location page</b> to a developer, then <b>Put each location\'s and your brand\'s details into the page code</b> and <b>Make every location page introduce its own location</b>. Each theme\'s "How to fix" button copies every brief it holds in one go.',
+      'The listing work is not a code change: connect the Mumbai and Gdańsk offices to Apple Maps in PinMeTo, reconnect the Malmö and Helsinki Apple listings, and point each office\'s website field at its own page.',
+      'Re-run this scan once the template change is live, so the trend shows what moved.'
+    ],
+    method: METHOD_COMMON },
+  { n: 2, date: '4 September 2026', shortDate: '4 Sep (2nd)', label: 'Re-run', illustrative: false,
+    overall: 73, pillars: { seo: 50, geo: 78, aio: 80, ar: 97 }, counts: { fail: 21, warn: 2, pass: 36 },
+    summary: [
+      'Your machine surfaces stay in excellent shape: the MCP server card, the agent skills index, the API catalog, content signals in robots.txt and both llms.txt files are all live and valid, which keeps agent readiness the strongest of the four pillars. What still holds the overall score back is that each office page exists twice: once as the near-empty shell your server sends, and once as the complete page the browser builds afterwards.',
+      'The work ahead is unchanged in shape: one template change rather than five page edits, because titles, descriptions, headings, canonicals, structured data and the links to your office pages all come from the same location-page template. What moved since the first scan is the Malmö office on Apple Maps, which now carries the address and map pin your record holds instead of an old Lund address, taking the overall score from 72 to 73.'
+    ],
+    themes: S2_THEMES,
+    moved: {
+      intro: 'All five movements are the same observation: the Apple listing reached through the Malmö office\'s stored connection now carries the address and map pin your PinMeTo record holds. In the first scan of today it returned Brunnsgatan 30 in Lund with the pin 16.5 km from the record; it now returns Adelgatan 9 in Malmö, unchanged across five further reads. Nothing else on the site or the listings moved.',
+      bullets: [
+        'The same address across platforms: fail 0.70 to pass 0.80. Real change.',
+        'Map pins clustered within 50 m: pass 0.80 to pass 0.90. Real change.',
+        'Listing address matches the record: fail 0.67 to fail 0.73. Real change.',
+        'Map pin within 50 m of the record: fail 0.73 to pass 0.80. Real change.',
+        'Listings connected through PinMeTo: fail 0.67 to fail 0.73. Real change.'
+      ] },
+    cleared: [],
+    nap: { match: 1, mismatches: 12, sharpest: 'Sharpest: Helsinki, where Apple shows the address Firdonkatu 2 in Helsinki instead of Karhumäentie 3 in Vantaa, 11.6 km from your record.' },
+    next: null, method: METHOD_COMMON },
+  { n: 3, date: '12 October 2026', shortDate: '12 Oct', label: 'Re-run', illustrative: true,
+    overall: 87, pillars: { seo: 80, geo: 84, aio: 90, ar: 97 }, counts: { fail: 10, warn: 2, pass: 47 },
+    summary: [
+      'Your office pages now introduce themselves in the HTML your server sends: title, description, heading, canonical, breadcrumb trail and structured data are all present before any JavaScript runs, and three of the eight themes from your first scan have cleared. SEO is no longer the weakest pillar. What holds the score back now is the listing side: four offices still point map visitors to your homepage, and Helsinki\'s Apple listing shows an old address.',
+      'The remaining work is done in PinMeTo rather than in code: fix the Helsinki record, point each office\'s website field at its own page, and keep holiday hours and reviews moving. Since the previous scan the overall score moved from 73 to 87.'
+    ],
+    themes: [
+      { slug: 'same-details-everywhere', worth: 2, checks: 2, pass: 11, summary: 'Four of the five offices still send map visitors to your homepage instead of their own page, and Helsinki remains the one office whose address disagrees across platforms. People arrive somewhere they have to start searching again.' },
+      { slug: 'connect-listings', worth: 2, checks: 1, pass: 1, summary: 'Mumbai and Gdańsk now have Apple listings connected through PinMeTo. Helsinki is connected on Apple but the connection is not reaching the platform, so Apple users there find an old address.' },
+      { slug: 'text-for-ai', worth: 1, checks: 2, pass: 2, summary: 'Ask your site for a text version and the homepage and articles hand one over, but all five office pages return the full web page instead. Assistants get markup where they need words.' },
+      { slug: 'answers-on-page', worth: 1, checks: 1, pass: 4, summary: 'One page template connects itself to the thing it covers. Product, article and office templates do not, so an AI answer has to infer what each of those pages is about.' },
+      { slug: 'fresh-google-listings', worth: 1, checks: 2, pass: 4, summary: 'No office holds a future holiday-hours entry, and three of the five have had no Google review in the last six months. The listings look unattended at exactly the moments customers check them.' }
+    ],
+    moved: {
+      intro: null,
+      bullets: [
+        'SEO gained 30 points: the location-page template now serves each office\'s title, description, heading, canonical, breadcrumb trail and LocalBusiness data in the HTML. Real change.',
+        'AIO gained 10 points from the same template change: the structured data and breadcrumbs now pay in AIO too. Real change.',
+        'GEO gained 6 points: the Mumbai and Gdańsk offices now have Apple listings connected through PinMeTo. Real change.',
+        'Agent readiness did not move; the machine surfaces were already complete.'
+      ] },
+    cleared: ['unique-location-pages', 'location-data-in-code', 'crawlable-site'],
+    nap: { match: 3, mismatches: 4, sharpest: 'Sharpest: Helsinki, where Apple shows the address Firdonkatu 2 in Helsinki instead of Karhumäentie 3 in Vantaa, 11.6 km from your record.' },
+    next: [
+      'Fix the Helsinki record in PinMeTo and point each office\'s website field at its own page: the briefs behind <b>Same name, address, phone and pin everywhere</b>.',
+      'Reconnect the Helsinki Apple listing in PinMeTo, the one open item behind <b>Connect every listing through PinMeTo</b>.',
+      'Re-run this scan once the records are updated, so the trend shows what moved.'
+    ],
+    method: METHOD_COMMON }
+];
+const LOGO_COLOR = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="316 342 1288 417" role="img" aria-label="PinMeTo"><g> <path fill="#3399FF" d="M738.2,464.9c9.1,4.8,16.2,11.4,21.1,20,4.9,8.6,7.4,18.5,7.4,29.9s-2.6,21.6-7.7,30.4c-5.1,8.7-12.3,15.5-21.7,20.2-9.4,4.8-20.4,7.2-33.1,7.2h-39v50.6h-40.7v-165.4h81.5c12.3,0,23.1,2.4,32.2,7.2ZM719.9,532.2c4.5-4.2,6.8-9.8,6.8-16.9s-2.3-12.2-6.9-16.4c-4.6-4.2-10.8-6.3-18.5-6.3h-36.1v45.9h36.1c7.9,0,14.1-2.1,18.6-6.3Z"/> <path fill="#3399FF" d="M826.6,446.8c4.4,4.4,6.5,9.7,6.5,15.8s-2.2,11.5-6.5,15.7c-4.4,4.2-9.8,6.3-16.4,6.3s-12-2.1-16.3-6.3c-4.3-4.2-6.4-9.4-6.4-15.7s2.1-11.6,6.4-15.9c4.3-4.4,9.7-6.5,16.3-6.5s12.1,2.2,16.4,6.7ZM790.4,499.2h39.5v123.9h-39.5v-123.9Z"/> <path fill="#3399FF" d="M963.3,501.9c7.2,4.3,12.9,10.3,16.9,18.1,4,7.8,6.1,16.8,6.1,27v76h-39.3v-67.7c0-7.2-2-13.1-5.9-17.7-3.9-4.5-9.1-6.8-15.3-6.8s-14.4,2.8-18.9,8.5c-4.5,5.7-6.8,14.4-6.8,26v57.5h-39.5v-123.9h39.5v11.8c4.8-4.9,10.4-8.8,16.8-11.5,6.4-2.7,13.5-4.1,21.2-4.1s17.9,2.1,25.2,6.4Z"/> <path fill="#3399FF" d="M1164.5,623.1v-82.5l-43.2,82.5h-25.2l-43.5-83v83h-39.5v-165.4h40l55.6,102.5,55.6-102.5h39.8v165.4h-39.5Z"/> <path fill="#3399FF" d="M1263.3,571.3c1.6,7.4,4.9,13.3,9.6,17.5,4.8,4.3,10.5,6.4,17,6.4,12.3,0,21.1-4.8,26.4-14.3l35.1,7.2c-5.3,12.8-13.2,22.5-23.8,29-10.6,6.5-23.2,9.8-37.7,9.8s-22.8-2.8-32.8-8.3c-10-5.5-18-13.2-23.8-23.2-5.8-10-8.8-21.4-8.8-34.2s2.9-24,8.8-33.9c5.8-10,13.8-17.7,23.8-23.3,10-5.6,21.1-8.4,33.1-8.4s22.3,2.7,32,8c9.6,5.4,17.3,13,23.1,23,5.8,10,8.7,21.5,8.9,34.7v10.1h-90.9ZM1274.1,532.8c-4.9,3.5-8.3,8.2-10.1,14.3h51.1c-1.8-6.4-4.9-11.3-9.4-14.6-4.4-3.3-9.6-4.9-15.6-4.9s-11.1,1.7-16.1,5.2Z"/> <path fill="#3399FF" d="M1430.2,623.1h-40.5v-129.9h-53.6v-35.6h147.6v35.6h-53.6v129.9Z"/> <path fill="#3399FF" d="M1570.3,504.3c10.4,5.5,18.6,13.2,24.7,23.1,6.1,9.9,9.1,21.2,9.1,33.8s-3,24-9.1,34c-6.1,10-14.3,17.7-24.7,23.2-10.4,5.5-21.7,8.3-34.1,8.3s-24-2.8-34.4-8.3c-10.5-5.5-18.8-13.2-24.9-23.2-6.2-10-9.3-21.3-9.3-34s3.1-23.9,9.3-33.8c6.2-9.9,14.5-17.6,24.9-23.1,10.5-5.5,21.9-8.3,34.4-8.3s23.7,2.8,34.1,8.3ZM1550.8,589.2c4.6-2.7,8.3-6.5,11.1-11.4,2.8-4.9,4.2-10.4,4.2-16.7s-1.4-11.8-4.2-16.7c-2.8-4.9-6.5-8.6-11.1-11.4-4.6-2.7-9.5-4.1-14.6-4.1s-10.5,1.4-15.2,4.1c-4.7,2.7-8.4,6.5-11.2,11.4-2.8,4.9-4.2,10.4-4.2,16.7s1.4,11.9,4.2,16.8c2.8,4.9,6.5,8.7,11.2,11.4,4.7,2.6,9.8,3.9,15.2,3.9s10-1.4,14.6-4.1Z"/> </g> <g> <path fill="#3399FF" d="M443.6,758.9l-7.8-36.8c-7.7-36.3-21.1-70-42.3-106.2-8.8-15-18.7-29.5-28.2-43.6-5.5-8.2-11.2-16.6-16.7-25.1-3.2-5-6.2-10.1-9-15.1-1.7-3-3.4-6-5.2-9-8.7-14.5-18.6-34.7-18-62.8.5-22.7,6.9-43.6,19-62,19.9-30.2,51.2-49.7,87.9-55.1,29.1-4.2,60.1,1.4,85.1,15.5,17.1,9.6,31.3,22.8,42.2,39.3,12.4,18.7,18.7,38.9,19.3,61.8.3,11.7-1.5,23.9-5.1,35.5-2.5,7.9-6,14.7-9.5,21.3-1,1.9-2,3.8-3,5.8-8.6,17.2-19.3,32.8-29.6,47.9-30.7,44.7-59.3,90-71.7,151.8l-7.4,36.8ZM442.5,357.5c-5.7,0-11.4.4-17,1.2-32.3,4.7-59.7,21.8-77.2,48.3-10.7,16.2-16.1,33.7-16.5,53.7-.5,24.2,8.2,41.8,15.8,54.5,1.8,3.1,3.6,6.2,5.4,9.2,2.9,5,5.6,9.8,8.6,14.4,5.4,8.3,11.1,16.7,16.6,24.8,9.7,14.3,19.7,29.1,28.8,44.5,16.2,27.6,28,54,36.4,81,15.1-49.8,40.1-88.9,66.6-127.6,10-14.7,20.4-29.8,28.5-46,1-2,2.1-4,3.1-6,3.3-6.2,6.3-12.1,8.4-18.7,3.1-9.9,4.6-20.4,4.4-30.4-.5-20.2-5.8-37.2-16.7-53.6-9.6-14.4-22-26-36.9-34.4-17.3-9.7-37.9-14.9-58.3-14.9Z"/> <path fill="#FF8854" d="M395,543.9c4.2,5.1,8.6,6.5,16.7,2.3,24.9-12.9,47.8-25.5,73-38.1,7.2-3.6,7.1-7.1,1.2-11.5-34.8-25.9-69.7-51.7-104.3-77.8-7.7-5.8-11.4-3.3-15.6,3-20,29.9-9.6,74.4,29,122.1"/> <path fill="#3399FF" d="M529.6,453.7c-11.3-52.3-57.1-84.9-123.7-66.7-11.9,4.1-12.7,6.6-3.7,13.3,34.5,25.7,69.1,51.4,103.6,77.1,31,26.2,24.9-13.4,23.7-23.7"/> <path fill="#FF8854" d="M493.8,531.6c-1.5.8-48.2,24.6-72.4,36.9-5.4,2.7-6.2,6.3-3.4,10.7,6.6,10.4,13.1,20.9,19.8,31.3,2.9,4.5,6.9,7.3,10.9,1,16.4-25.8,48.6-75.8,48.6-77.6,0-1.7-2-3.1-3.5-2.3"/> </g> </svg>`;
+const LOGO_WHITE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="187 290 590 191" role="img" aria-label="PinMeTo"><g id="OBJECTS"> <path fill="#FFFFFF" d="M380.4,346.1c4.2,2.2,7.4,5.2,9.7,9.2,2.3,3.9,3.4,8.5,3.4,13.7s-1.2,9.9-3.5,13.9-5.7,7.1-10,9.3c-4.3,2.2-9.4,3.3-15.2,3.3h-17.9v23.2h-18.7v-75.8h37.4c5.7,0,10.6,1.1,14.8,3.3h0ZM372,376.9c2.1-1.9,3.1-4.5,3.1-7.8s-1.1-5.6-3.2-7.5-4.9-2.9-8.5-2.9h-16.5v21.1h16.5c3.6,0,6.5-1,8.5-2.9h.1Z"/> <path fill="#FFFFFF" d="M420.9,337.8c2,2,3,4.5,3,7.2s-1,5.3-3,7.2c-2,1.9-4.5,2.9-7.5,2.9s-5.5-1-7.5-2.9-2.9-4.3-2.9-7.2,1-5.3,2.9-7.3c2-2,4.5-3,7.5-3s5.5,1,7.5,3.1h0ZM404.4,361.8h18.1v56.8h-18.1v-56.8Z"/> <path fill="#FFFFFF" d="M483.6,363c3.3,2,5.9,4.7,7.8,8.3,1.8,3.6,2.8,7.7,2.8,12.4v34.9h-18v-31c0-3.3-.9-6-2.7-8.1-1.8-2.1-4.2-3.1-7-3.1s-6.6,1.3-8.7,3.9-3.1,6.6-3.1,11.9v26.4h-18.1v-56.8h18.1v5.4c2.2-2.3,4.8-4,7.7-5.3,2.9-1.2,6.2-1.9,9.7-1.9s8.2,1,11.5,2.9h0Z"/> <path fill="#FFFFFF" d="M575.8,418.6v-37.8l-19.8,37.8h-11.5l-19.9-38v38h-18.1v-75.8h18.3l25.5,47,25.5-47h18.2v75.8h-18.2Z"/> <path fill="#FFFFFF" d="M621.1,394.8c.8,3.4,2.2,6.1,4.4,8,2.2,2,4.8,2.9,7.8,2.9,5.7,0,9.7-2.2,12.1-6.6l16.1,3.3c-2.4,5.9-6.1,10.3-10.9,13.3-4.9,3-10.6,4.5-17.3,4.5s-10.5-1.3-15.1-3.8-8.2-6.1-10.9-10.6c-2.7-4.6-4-9.8-4-15.7s1.3-11,4-15.6,6.3-8.1,10.9-10.7c4.6-2.6,9.7-3.8,15.2-3.8s10.2,1.2,14.7,3.7c4.4,2.5,7.9,6,10.6,10.5,2.6,4.6,4,9.9,4.1,15.9v4.6h-41.7,0ZM626.1,377.2c-2.3,1.6-3.8,3.8-4.6,6.6h23.4c-.8-2.9-2.3-5.2-4.3-6.7s-4.4-2.3-7.1-2.3-5.1.8-7.4,2.4h0Z"/> <path fill="#FFFFFF" d="M697.7,418.6h-18.6v-59.5h-24.6v-16.3h67.7v16.3h-24.6v59.5h0Z"/> <path fill="#FFFFFF" d="M761.9,364.1c4.8,2.5,8.5,6.1,11.3,10.6s4.2,9.7,4.2,15.5-1.4,11-4.2,15.6-6.6,8.1-11.3,10.6c-4.8,2.5-10,3.8-15.6,3.8s-11-1.3-15.8-3.8-8.6-6.1-11.4-10.6c-2.8-4.6-4.2-9.8-4.2-15.6s1.4-11,4.2-15.5,6.6-8.1,11.4-10.6c4.8-2.5,10.1-3.8,15.8-3.8s10.9,1.3,15.6,3.8ZM753,403c2.1-1.2,3.8-3,5.1-5.2s1.9-4.8,1.9-7.6-.6-5.4-1.9-7.6c-1.3-2.2-3-4-5.1-5.2s-4.3-1.9-6.7-1.9-4.8.6-7,1.9c-2.2,1.2-3.9,3-5.1,5.2-1.3,2.2-1.9,4.8-1.9,7.6s.6,5.4,1.9,7.7c1.3,2.3,3,4,5.1,5.2s4.5,1.8,7,1.8,4.6-.6,6.7-1.9Z"/> <path fill="#FFFFFF" d="M245.4,480.9l-3.6-16.9c-3.5-16.6-9.7-32.1-19.4-48.7-4-6.9-8.6-13.5-12.9-20-2.5-3.7-5.2-7.6-7.7-11.5-1.5-2.3-2.8-4.6-4.1-6.9-.8-1.4-1.6-2.7-2.4-4.1-4-6.6-8.5-15.9-8.3-28.8.2-10.4,3.2-20,8.7-28.4,9.1-13.8,23.5-22.8,40.3-25.3,13.3-1.9,27.5.7,39,7.1,7.8,4.4,14.3,10.5,19.4,18,5.7,8.6,8.6,17.8,8.8,28.3.1,5.4-.7,11-2.3,16.3-1.1,3.6-2.8,6.8-4.3,9.8-.5.9-.9,1.8-1.4,2.7-3.9,7.9-8.8,15-13.6,21.9-14.1,20.5-27.2,41.3-32.9,69.6l-3.4,16.9h0ZM244.8,296.8c-2.6,0-5.2.2-7.8.6-14.8,2.1-27.4,10-35.4,22.1-4.9,7.4-7.4,15.5-7.6,24.6-.2,11.1,3.8,19.2,7.2,25,.8,1.4,1.7,2.8,2.5,4.2,1.3,2.3,2.6,4.5,3.9,6.6,2.5,3.8,5.1,7.7,7.6,11.4,4.4,6.6,9,13.3,13.2,20.4,7.4,12.7,12.9,24.7,16.7,37.2,6.9-22.8,18.4-40.8,30.6-58.5,4.6-6.7,9.4-13.7,13.1-21.1.5-.9.9-1.9,1.4-2.8,1.5-2.9,2.9-5.6,3.9-8.6,1.4-4.5,2.1-9.4,2-14-.2-9.2-2.7-17-7.6-24.5-4.4-6.6-10.1-11.9-16.9-15.8-7.9-4.5-17.4-6.8-26.7-6.8h0Z"/> <path fill="#FFFFFF" d="M223.1,382.3c1.9,2.3,4,3,7.7,1,11.4-5.9,21.9-11.7,33.4-17.5,3.3-1.7,3.3-3.3.6-5.3-16-11.9-31.9-23.7-47.8-35.7-3.5-2.7-5.2-1.5-7.2,1.4-9.2,13.7-4.4,34.1,13.3,56"/> <path fill="#FFFFFF" d="M284.8,340.9c-5.2-24-26.2-38.9-56.7-30.6-5.5,1.9-5.8,3-1.7,6.1,15.8,11.8,31.7,23.5,47.5,35.3,14.2,12,11.4-6.1,10.9-10.9"/> <path fill="#FFFFFF" d="M268.4,376.6c-.7.4-22.1,11.3-33.2,16.9-2.5,1.2-2.8,2.9-1.6,4.9,3,4.8,6,9.6,9.1,14.4,1.3,2,3.2,3.3,5,.5,7.5-11.8,22.3-34.8,22.3-35.6s-.9-1.4-1.6-1.1"/> </g> </svg>`;
+
+/* ------------------------------------------------------------------ helpers */
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const bandClass = b => (b === 'Strong' || b === 'Healthy') ? 'band-pass' : 'band-fail';
+const pts = n => `${n} ${n === 1 ? 'point' : 'points'}`;
+const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const list = a => a.length === 1 ? a[0] : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+const checksWord = n => `${words[n] ? cap(words[n]) : n} ${n === 1 ? 'check' : 'checks'}`;
+const sign = d => d > 0 ? `+${d}` : d < 0 ? `−${Math.abs(d)}` : '0';
+
+function view(scanIndex) {
+  const s = SCANS[scanIndex], first = SCANS[0], prev = scanIndex > 0 ? SCANS[scanIndex - 1] : null;
+  const themes = s.themes.map((t, i) => ({ ...t, ...MAP[t.slug], rank: i + 1 }));
+  const total = themes.reduce((a, t) => a + t.worth, 0);
+  const missing = 100 - s.overall;
+  const openSince = scanIndex > 0 ? `Open since ${first.date}, ${words[scanIndex + 1]} scans` : null;
+  const trend = prev ? {
+    sinceFirst: s.overall - first.overall,
+    sincePrev: s.overall - prev.overall,
+    headline: s.overall === first.overall ? `Unchanged since your first scan on ${first.date}`
+      : `${s.overall > first.overall ? 'Up' : 'Down'} ${pts(Math.abs(s.overall - first.overall))} since your first scan on ${first.date}`,
+    subline: scanIndex >= 2 ? (s.overall === prev.overall ? `No change since ${prev.date}` : `${sign(s.overall - prev.overall)} since ${prev.date}`) : null,
+    pillarDeltas: PILLARS.map(p => ({ ...p, score: s.pillars[p.key], delta: s.pillars[p.key] - prev.pillars[p.key] })),
+    cleared: s.cleared.map(slug => MAP[slug].name),
+    clearedLine: s.cleared.length ? `${cap(words[s.cleared.length])} ${s.cleared.length === 1 ? 'theme' : 'themes'} cleared since your first scan on ${first.date}: ${s.cleared.map(x => MAP[x].name).join(', ')}` : null,
+    moved: s.moved, prevDate: prev.date
+  } : null;
+  return { s, first, prev, themes, total, missing, openSince, trend, band: band(s.overall),
+    pillars: PILLARS.map(p => ({ ...p, score: s.pillars[p.key], band: band(s.pillars[p.key]), delta: prev ? s.pillars[p.key] - prev.pillars[p.key] : null })),
+    history: SCANS.slice(0, scanIndex + 1) };
+}
+
+const countsRow = v => `
+  <span><i class="dot d-fail"></i><b class="num">${v.s.counts.fail}</b> failing checks</span>
+  <span><i class="dot d-warn"></i><b class="num">${v.s.counts.warn}</b> could not be measured</span>
+  <span><i class="dot d-pass"></i><b class="num">${v.s.counts.pass}</b> passing</span>`;
+const methodBlock = v => `
+  <table><thead><tr><th>Pillar</th><th>Weight</th><th>What it covers</th></tr></thead><tbody>
+  ${PILLARS.map(p => `<tr><td><b>${p.name}</b></td><td class="num">${p.weight}%</td><td>${esc(p.blurb)}</td></tr>`).join('')}
+  </tbody></table>
+  <p>Rubric ${BRAND.rubric}, scanned ${v.s.date}. Sources: Google, Apple and Bing Maps as observed in a browser, your website and store locator, PageSpeed Insights, and PinMeTo location data.</p>
+  ${v.s.method.map(m => `<p>${m}</p>`).join('')}`;
+const layer2Stub = (v, cls) => `
+  <details class="${cls}" id="layer2">
+    <summary>Full audit detail: every check, every location, the NAP matrix <span>Open</span></summary>
+    <div class="body">Layer 2 is unchanged in this prototype: ${v.history.length > 1 ? 'the scan-history table, ' : ''}section nav and filter, four pillar sections with ${v.s.counts.fail + v.s.counts.warn + v.s.counts.pass} check rows, the location breakdown, the NAP consistency matrix and the listing content table render here exactly as the current report does.</div>
+  </details>`;
+const fixBtn = (t, cls = 'btn') => `<button type="button" class="${cls}" data-brief="${t.slug}">How to fix</button>`;
+const deltaPill = (d, since) => d === null ? '' : `<span class="delta ${d > 0 ? 'up' : d < 0 ? 'down' : 'flat'}">${d > 0 ? '↑ ' : d < 0 ? '↓ ' : ''}${d === 0 ? 'No change' : sign(d) + ' ' + (Math.abs(d) === 1 ? 'point' : 'points')}</span>`;
+const nextSteps = v => v.s.next || SCANS[0].next;
+const rerun = v => `Re-run the presence scan for ${BRAND.domain} and show me what changed since ${v.s.date}.`;
+const facts = t => `<div class="facts">
+  <div><small>Failing checks</small>${t.checks}</div>
+  <div><small>Effort</small>${esc(t.effort)}</div>
+  <div><small>Pays in</small>${list(t.pillars)}</div>
+  <div><small>Already passing</small>${t.pass} of ${t.k} checks</div></div>`;
+
+/* small line chart of overall score across scans */
+function chart(v, w = 260, h = 96, dark = false) {
+  const hist = v.history, n = hist.length;
+  const padL = 10, padR = 14, padT = 16, padB = 22, W = w - padL - padR, H = h - padT - padB;
+  const x = i => padL + (n === 1 ? W / 2 : i * W / (n - 1));
+  const y = s => padT + H - (s / 100) * H;
+  const line = dark ? 'rgba(255,255,255,.25)' : '#E2E6EA', txt = dark ? 'rgba(255,255,255,.72)' : '#6A6F76', ink = dark ? '#fff' : '#000050';
+  const grid = [0, 50, 100].map(g => `<line x1="${padL}" x2="${w - padR}" y1="${y(g)}" y2="${y(g)}" stroke="${line}" stroke-width="1"/>`).join('');
+  const path = hist.map((s, i) => `${i ? 'L' : 'M'}${x(i)},${y(s.overall)}`).join(' ');
+  const dots = hist.map((s, i) => {
+    const last = i === n - 1;
+    return `<circle cx="${x(i)}" cy="${y(s.overall)}" r="${last ? 5 : 3.5}" fill="${last ? '#FF8854' : ink}"/>
+      <text x="${x(i)}" y="${y(s.overall) - 9}" text-anchor="middle" font-size="11" font-weight="700" fill="${ink}">${s.overall}</text>
+      <text x="${x(i)}" y="${h - 6}" text-anchor="${n > 1 && i === 0 ? 'start' : n > 1 && last ? 'end' : 'middle'}" font-size="10" fill="${txt}">${esc(s.shortDate)}</text>`;
+  }).join('');
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Overall score across scans">${grid}<path d="${path}" fill="none" stroke="${ink}" stroke-width="2"/>${dots}</svg>`;
+}
+
+/* ------------------------------------------------------------------ D. Lead with the action */
+function variantD(v) {
+  const [t1, ...rest] = v.themes;
+  const other = v.total - t1.worth, gap = v.missing - v.total;
+  const pct = n => `${(n / 100 * 100).toFixed(1)}%`;
+  return `<div class="vd"><div class="page">
+    <header class="mast">${LOGO_COLOR}<span class="doc"><b>Web presence report</b></span></header>
+
+    <section class="lead">
+      <div>
+        <h1>${esc(BRAND.domain)}</h1>
+        <p class="first">${cap(words[BRAND.locations])} locations, scanned ${v.s.date}. Rubric ${BRAND.rubric}.</p>
+        ${v.s.summary.map(p => `<p class="sum">${esc(p)}</p>`).join('')}
+        <div class="counts">${countsRow(v)}</div>
+      </div>
+      <div class="score">
+        <div class="n num">${v.s.overall}</div>
+        <div class="of">of 100</div>
+        <div class="band ${bandClass(v.band)}">${v.band}</div>
+        ${v.trend ? `${deltaPill(v.trend.sincePrev)}<div class="since">since ${v.trend.prevDate}</div>` : ''}
+      </div>
+    </section>
+
+    <section class="pillars" aria-label="Pillar scores">
+        ${v.pillars.map(p => `<div><div class="nm">${p.name}</div><div class="v num">${p.score}${p.delta ? `<small class="${p.delta > 0 ? 'band-pass' : 'band-fail'}">${sign(p.delta)}</small>` : ''}</div><div class="bw ${bandClass(p.band)}">${p.band}</div></div>`).join('')}
+    </section>
+
+    <section class="gap">
+      <p class="cap">You have <b>${v.s.overall} of 100 points</b>. Fixing the ${words[v.themes.length]} themes below earns about <b>${pts(v.total)}</b> more; the first one alone earns ${pts(t1.worth)}. The last ${pts(gap)} sit in checks that could not be measured this time.</p>
+      <div class="above" aria-hidden="true">
+        <span style="width:${pct(v.s.overall)}"></span>
+        <span class="todo" style="width:${pct(v.total)}"><span>Left to do: ${words[v.themes.length]} themes, ${pts(v.total)}</span></span>
+      </div>
+      <div class="bar" role="img" aria-label="${v.s.overall} points earned, ${v.total} to earn in the themes below, ${gap} not measurable this scan">
+        <i class="have" style="width:${pct(v.s.overall)}"><small>earned</small>${v.s.overall}</i>
+        <i class="t1" style="width:${pct(t1.worth)}"></i>
+        ${rest.map(t => `<i class="tn" style="width:${pct(t.worth)}"></i>`).join('')}
+        <i class="rest" style="width:${pct(gap)}"><span class="end">100</span></i>
+      </div>
+      <div class="keys">
+        <span><i style="background:#CFEBDC"></i><b>${pts(v.s.overall)}</b> earned in this scan</span>
+        <span><i style="background:repeating-linear-gradient(135deg,var(--orange) 0 3px,#fff 3px 5px);outline:1px solid var(--orange);outline-offset:-1px"></i><b>${pts(t1.worth)}</b> from <a href="#theme-${t1.slug}">${esc(t1.name)}</a>, do this first</span>
+        <span><i style="background:repeating-linear-gradient(135deg,var(--navy) 0 2px,#fff 2px 5px);outline:1px solid var(--navy);outline-offset:-1px"></i><b>${pts(other)}</b> from the <a href="#themes">${words[rest.length]} other themes</a></span>
+        <span><i style="background:radial-gradient(var(--muted) 1px,transparent 1.3px) 0 0/5px 5px;border:1px dashed var(--muted)"></i><b>${pts(gap)}</b> not measurable this time (${v.s.counts.warn} checks)</span>
+      </div>
+    </section>
+
+    ${v.trend ? `<section class="trend" id="trend">
+      <div>
+        <h2>${esc(v.trend.headline)}</h2>
+        ${v.trend.subline ? `<p class="sub">${esc(v.trend.subline)}</p>` : ''}
+        ${v.trend.clearedLine ? `<p class="cleared">${esc(v.trend.clearedLine)}</p>` : ''}
+        <div class="pl">${v.trend.pillarDeltas.map(p => `<div><b class="num">${p.score}</b>${p.name} <span class="num">${p.delta === 0 ? '' : '(' + sign(p.delta) + ')'}</span></div>`).join('')}</div>
+        <details><summary>What moved since ${v.trend.prevDate}</summary>
+          <div class="moved">${v.trend.moved.intro ? `<p>${esc(v.trend.moved.intro)}</p>` : ''}<ul>${v.trend.moved.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul></div>
+        </details>
+      </div>
+      <div>${chart(v, 260, 110)}</div>
+    </section>` : ''}
+
+    <h2 class="sec" id="themes">What to fix, in this order</h2>
+    <p class="lede">${cap(words[v.themes.length])} themes, worth about ${pts(v.total)} together, ranked by the score points a fix would return. One theme is one plain-language issue; a single fix can earn points in several pillars.</p>
+    <div class="top1" id="theme-${t1.slug}">
+      <div><span class="rank">1</span></div>
+      <div>
+        <h3>${esc(t1.name)}</h3>
+        <p class="sum">${esc(t1.summary)}</p>
+        <div class="facts">
+          <div><small>Effort</small>${esc(t1.effort)}</div>
+          <div><small>Pays in</small>${list(t1.pillars)}</div>
+          <div><small>Failing checks</small>${t1.checks}, ${t1.pass} of ${t1.k} already pass</div>
+          ${v.openSince ? `<div><small>Status</small>${v.openSince}</div>` : ''}
+        </div>
+      </div>
+      <div class="side">
+        <div class="w num">~${t1.worth}</div>
+        <div class="wl">${t1.worth === 1 ? 'point' : 'points'} back</div>
+        ${fixBtn(t1, 'btn primary')}
+      </div>
+    </div>
+    <ol class="rest">
+      ${rest.map(t => `<li id="theme-${t.slug}">
+        <span class="rk num">${t.rank}</span>
+        <div><h3>${esc(t.name)}</h3>${v.openSince ? `<span class="open">${v.openSince}</span>` : ''}</div>
+        <span class="w num">~${t.worth} pt${t.worth === 1 ? '' : 's'}</span>
+        <span class="ef">${esc(t.effort)}</span>
+        <span class="fx">${fixBtn(t, 'btn link')}</span>
+      </li>`).join('')}
+    </ol>
+
+    <div class="nap" id="nap">
+      <div>
+        <h3>Name, address and phone</h3>
+        <p>${v.s.nap.match ? `${v.s.nap.match} of ${BRAND.locations} locations match everywhere. ` : ''}${esc(v.s.nap.sharpest)} <a href="#layer2" data-l2link="1">See the full matrix in the audit detail.</a></p>
+      </div>
+      <div>
+        <div class="w num ${v.s.nap.mismatches ? 'band-fail' : 'band-pass'}">${v.s.nap.mismatches}</div>
+        <div class="wl">mismatches across ${BRAND.locations} locations</div>
+      </div>
+    </div>
+
+    ${layer2Stub(v, 'l2')}
+
+    <section class="next" id="next">
+      <h2>Ship the fixes, then scan again</h2>
+      <ol>${nextSteps(v).map(s => `<li>${s}</li>`).join('')}</ol>
+      <div class="prompt"><code>${esc(rerun(v))}</code><button type="button" class="btn" data-copy="rerun">Copy</button></div>
+    </section>
+    <section class="method" id="method"><h2>How this was scored</h2>${methodBlock(v)}</section>
+    <footer><span>Generated by the PinMeTo web presence skill</span><span>Rubric ${BRAND.rubric}</span></footer>
+  </div></div>`;
+}
+
+/* ------------------------------------------------------------------ E. Route to 100 */
+function routeSvg(v) {
+  const W = 1000, H = 150, padL = 40, padR = 40, y = 78;
+  const start = v.first.overall, span = 100 - start;
+  const X = s => padL + (s - start) / span * (W - padL - padR);
+  const out = [];
+  // dotted track, whole route
+  out.push(`<line x1="${X(start)}" x2="${X(100)}" y1="${y}" y2="${y}" stroke="#BBD9FA" stroke-width="3" stroke-dasharray="2 8" stroke-linecap="round"/>`);
+  // travelled part
+  if (v.s.overall > start) out.push(`<line x1="${X(start)}" x2="${X(v.s.overall)}" y1="${y}" y2="${y}" stroke="#000050" stroke-width="4" stroke-linecap="round"/>`);
+  // ahead segments (themes)
+  let pos = v.s.overall;
+  v.themes.forEach((t, i) => {
+    const a = X(pos), b = X(pos + t.worth);
+    if (i === 0) out.push(`<line x1="${a}" x2="${b}" y1="${y}" y2="${y}" stroke="#FF8854" stroke-width="8" stroke-linecap="round"/>`);
+    else out.push(`<line x1="${a}" x2="${b}" y1="${y}" y2="${y}" stroke="#000050" stroke-width="2"/>`);
+    pos += t.worth;
+    const nextW = i + 1 < v.themes.length ? X(pos + v.themes[i + 1].worth) - b : Infinity;
+    if (i === 0 || (b - a >= 40 && nextW >= 40)) out.push(`<circle cx="${b}" cy="${y}" r="11" fill="#fff" stroke="${i === 0 ? '#FF8854' : '#000050'}" stroke-width="2"/>
+      <text x="${b}" y="${y + 4}" text-anchor="middle" font-size="11" font-weight="700" fill="#000050">${t.rank}</text>`);
+    else out.push(`<circle cx="${b}" cy="${y}" r="4.5" fill="#fff" stroke="#000050" stroke-width="2"/>`);
+  });
+  // cleared stops on the travelled part, spread evenly between first and now
+  const cl = v.s.cleared || [];
+  cl.forEach((slug, i) => {
+    const cx = X(start + (v.s.overall - start) * (i + 1) / (cl.length + 1));
+    out.push(`<circle cx="${cx}" cy="${y}" r="11" fill="#1FA971"/><path d="M${cx - 5},${y} l3.5,3.5 l6.5,-7" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`);
+  });
+  // start marker + label
+  const close = X(v.s.overall) - X(start) < 90;
+  out.push(`<circle cx="${X(start)}" cy="${y}" r="5" fill="#000050"/>
+    <text x="${X(start)}" y="${y + 36}" text-anchor="middle" font-size="12" fill="#6A6F76">${v.history.length > 1 && !close ? `First scan ${start}` : ''}</text>`);
+  // now marker (pin)
+  const nx = X(v.s.overall);
+  out.push(`<path d="M${nx},${y - 6} m-11,-14 a11,11 0 1,1 22,0 c0,8 -11,20 -11,20 c0,0 -11,-12 -11,-20z" fill="#000050"/>
+    <circle cx="${nx}" cy="${y - 20}" r="4" fill="#fff"/>
+    <text x="${nx}" y="${y - 32}" text-anchor="middle" font-size="16" font-weight="800" fill="#000050">${v.s.overall}</text>
+    ${v.history.length > 1 ? `<text x="${nx}" y="${y + 36}" text-anchor="${close ? 'start' : 'middle'}" font-size="12" font-weight="700" fill="#000050">Now${close ? ` <tspan font-weight="400" fill="#6A6F76">(first scan ${start})</tspan>` : ''}</text>` : ''}`);
+  // end
+  out.push(`<circle cx="${X(100)}" cy="${y}" r="6" fill="#fff" stroke="#000050" stroke-width="2"/>
+    <text x="${X(100)}" y="${y + 36}" text-anchor="end" font-size="12" font-weight="700" fill="#000050">100</text>`);
+  // gap label (unmeasured)
+  const gap = v.missing - v.total;
+  if (gap > 0) { const gx = (X(pos) + X(100)) / 2; out.push(`<text x="${gx}" y="${y - 20}" text-anchor="middle" font-size="11" fill="#6A6F76">${gap} not measurable yet</text>`); }
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Route from your first score to 100">${out.join('')}</svg>`;
+}
+function variantE(v) {
+  const [t1, ...rest] = v.themes;
+  return `<div class="ve">
+    <header class="top"><div class="in">${LOGO_COLOR}<div class="doc">Web presence report, ${esc(BRAND.domain)}<small>${BRAND.locations} locations, scanned ${v.s.date}, rubric ${BRAND.rubric}</small></div></div></header>
+    <div class="page">
+      <section class="panel hero">
+        <div>
+          <div class="n num">${v.s.overall}</div>
+          <div class="of">of 100</div>
+          <span class="tag">${v.band}</span>
+          ${v.trend ? `${deltaPill(v.trend.sincePrev)}<div class="since">since ${v.trend.prevDate}</div>` : ''}
+        </div>
+        <div class="route">
+          <h2>${v.trend ? `<b>${esc(v.trend.headline)}.</b> ` : ''}${pts(v.missing)} to 100, ${pts(v.total)} of them in ${words[v.themes.length]} themes.</h2>
+          ${routeSvg(v)}
+          <div class="legend">
+            <span><i style="background:#FF8854"></i>Next stop</span>
+            <span><i style="border:2px solid #000050;box-sizing:border-box"></i>Themes still open, in order (small dots: one point each)</span>
+            ${v.s.cleared && v.s.cleared.length ? `<span><i style="background:#1FA971"></i>Cleared since your first scan</span>` : ''}
+          </div>
+          <div class="next">
+            <span class="rank">1</span>
+            <div><div class="lbl">Next stop</div><h3>${esc(t1.name)}</h3><p class="w">About ${pts(t1.worth)} back. ${esc(t1.effort)}.</p></div>
+          </div>
+        </div>
+        <div class="pillars" style="grid-column:1/-1">
+          ${v.pillars.map(p => `<div><div class="nm">${p.name}</div><div class="v num">${p.score}${p.delta ? `<small class="${p.delta > 0 ? 'band-pass' : 'band-fail'}">${sign(p.delta)}</small>` : ''}</div><div class="bar"><i style="width:${p.score}%"></i></div><div class="bw ${bandClass(p.band)}">${p.band}</div></div>`).join('')}
+        </div>
+      </section>
+
+      <section class="tier" id="themes">
+        <div class="hd"><h2>Start here</h2><p>The stop that returns the most points.</p></div>
+        <div class="panel feature" id="theme-${t1.slug}">
+          <div>
+            <div class="head"><span class="rank">1</span><h3>${esc(t1.name)}</h3></div>
+            <p class="sum">${esc(t1.summary)}</p>
+            ${facts(t1)}
+            ${v.openSince ? `<p style="font-size:13px;color:var(--muted);margin-top:14px">${v.openSince}</p>` : ''}
+          </div>
+          <div class="worth">
+            <div class="w num">~${t1.worth}</div>
+            <div class="wl">${t1.worth === 1 ? 'point' : 'points'} back</div>
+            ${fixBtn(t1, 'btn primary')}
+          </div>
+        </div>
+      </section>
+
+      ${rest.length ? `<section class="tier">
+        <div class="hd"><h2>Then the next stops</h2><p>${cap(words[rest.length])} themes, about ${pts(v.total - t1.worth)} together.</p></div>
+        <div class="panel list">
+          ${rest.map(t => `<div class="r" id="theme-${t.slug}">
+            <span class="rk num">${t.rank}</span>
+            <div><h3>${esc(t.name)}</h3><div class="eff">${esc(t.effort)}${v.openSince ? `. ${v.openSince}` : ''}</div></div>
+            <div class="w num">~${pts(t.worth)}</div>
+            <div class="pil">${checksWord(t.checks)}, pays in ${list(t.pillars)}</div>
+            <div class="fix">${fixBtn(t, 'btn link')}</div>
+          </div>`).join('')}
+        </div>
+      </section>` : ''}
+
+      <div class="split">
+        <section class="panel">
+          <h2>Where you stand</h2>
+          ${v.s.summary.map(p => `<p>${esc(p)}</p>`).join('')}
+          <div class="counts">${countsRow(v)}</div>
+        </section>
+        ${v.trend ? `<section class="panel moved">
+          <h2>What moved since ${v.trend.prevDate}</h2>
+          ${v.trend.clearedLine ? `<p class="cleared">${esc(v.trend.clearedLine)}</p>` : ''}
+          ${chart(v, 420, 110)}
+          ${v.trend.moved.intro ? `<p class="sub">${esc(v.trend.moved.intro)}</p>` : ''}
+          <ul style="margin:6px 0 0;padding-left:20px">${v.trend.moved.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>
+        </section>` : `<section class="panel">
+          <h2>Your baseline</h2><p>This is the first scan of ${esc(BRAND.domain)}. The next scan draws the route from here: what cleared, what moved, and what is still open.</p>
+        </section>`}
+      </div>
+
+      <section class="panel nap" id="nap">
+        <div><div class="w num ${v.s.nap.mismatches ? 'band-fail' : 'band-pass'}">${v.s.nap.mismatches}</div><div class="wl">mismatches</div></div>
+        <div><h3>Name, address and phone across ${BRAND.locations} locations</h3><p>${v.s.nap.match ? `${v.s.nap.match} of ${BRAND.locations} locations match everywhere. ` : ''}${esc(v.s.nap.sharpest)}</p></div>
+        <a class="btn" href="#layer2" data-l2link="1">See the full matrix</a>
+      </section>
+      ${layer2Stub(v, 'panel')}
+      <section class="panel nextp" id="next">
+        <h2>Ship the fixes, then scan again</h2>
+        <ol>${nextSteps(v).map(s => `<li>${s}</li>`).join('')}</ol>
+        <div class="prompt"><code>${esc(rerun(v))}</code><button type="button" class="btn" data-copy="rerun">Copy</button></div>
+      </section>
+      <section class="panel method" id="method"><h2>How this was scored</h2>${methodBlock(v)}</section>
+      <footer>Generated by the PinMeTo web presence skill. Rubric ${BRAND.rubric}</footer>
+    </div>
+  </div>`;
+}
+
+/* ------------------------------------------------------------------ F. One focus card */
+function variantF(v) {
+  const [t1, ...rest] = v.themes;
+  return `<div class="vf">
+    <header class="top">${LOGO_COLOR}<span class="doc">Web presence report, <b>${esc(BRAND.domain)}</b>, ${BRAND.locations} locations, scanned ${v.s.date}</span></header>
+    <div class="page">
+      <section class="focus">
+        <div class="stand">
+          <div class="lbl">Where you stand</div>
+          <div class="n num">${v.s.overall}</div>
+          <div class="of">of 100</div>
+          <span class="tag">${v.band}</span>
+          ${v.trend ? `<div class="move">
+            <div class="h">${esc(v.trend.headline)}</div>
+            ${v.trend.subline ? `<div class="s">${esc(v.trend.subline)}</div>` : ''}
+            ${chart(v, 276, 96, true)}
+            ${v.trend.clearedLine ? `<div class="cl"><b>${cap(words[v.s.cleared.length])} ${v.s.cleared.length === 1 ? 'theme' : 'themes'} cleared</b> since your first scan: ${esc(v.trend.cleared.join(', '))}</div>` : ''}
+          </div>` : `<div class="move"><div class="h">Your baseline</div><div class="s">The next scan shows what moved from here.</div></div>`}
+          <div class="pl">${v.pillars.map(p => `<div><b class="num">${p.score}${p.delta ? `<small>${sign(p.delta)}</small>` : ''}</b>${p.name}</div>`).join('')}</div>
+        </div>
+        <div class="act" id="theme-${t1.slug}">
+          <div class="lbl">Do this first</div>
+          <div class="head"><span class="rank">1</span><h1>${esc(t1.name)}</h1></div>
+          <p class="sum">${esc(t1.summary)}</p>
+          ${facts(t1)}
+          ${v.openSince ? `<p style="font-size:13px;color:var(--muted);margin-top:14px">${v.openSince}</p>` : ''}
+          <div class="cta"><span class="w num">~${t1.worth}<small>${t1.worth === 1 ? 'point' : 'points'} back, of the ${v.missing} you are missing</small></span>${fixBtn(t1, 'btn primary')}</div>
+        </div>
+      </section>
+
+      <div class="verdict">
+        <section class="panel">
+          <h2>In short</h2>
+          ${v.s.summary.map(p => `<p>${esc(p)}</p>`).join('')}
+          <div class="counts">${countsRow(v)}</div>
+        </section>
+        ${v.trend ? `<section class="panel moved">
+          <h2>What moved since ${v.trend.prevDate}</h2>
+          ${v.trend.moved.intro ? `<p>${esc(v.trend.moved.intro)}</p>` : ''}
+          <ul style="margin:${v.trend.moved.intro ? '8px' : '0'} 0 0;padding-left:20px">${v.trend.moved.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>
+        </section>` : `<section class="panel">
+          <h2>Name, address and phone</h2>
+          <p><b class="${v.s.nap.mismatches ? 'band-fail' : 'band-pass'}">${v.s.nap.mismatches} mismatches</b> across ${BRAND.locations} locations. ${esc(v.s.nap.sharpest)} <a href="#layer2" data-l2link="1">See the full matrix.</a></p>
+        </section>`}
+      </div>
+
+      <section class="others" id="themes">
+        <div class="hd"><h2>Everything else, in order</h2><p>${cap(words[rest.length])} more themes, about ${pts(v.total - t1.worth)} together.</p></div>
+        <table>
+          <thead><tr><th class="rk">#</th><th>Theme</th><th>Points back</th><th>Effort</th><th></th></tr></thead>
+          <tbody>${rest.map(t => `<tr id="theme-${t.slug}">
+            <td class="rk num">${t.rank}</td>
+            <td><h3>${esc(t.name)}</h3>${v.openSince ? `<span class="open">${v.openSince}</span>` : ''}</td>
+            <td class="w num">~${pts(t.worth)}</td>
+            <td class="ef">${esc(t.effort)}</td>
+            <td class="fx">${fixBtn(t, 'btn link')}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </section>
+
+      ${v.trend ? `<section class="nap" id="nap">
+        <div><div class="w num ${v.s.nap.mismatches ? 'band-fail' : 'band-pass'}">${v.s.nap.mismatches}</div><div class="wl">mismatches</div></div>
+        <div><h3>Name, address and phone across ${BRAND.locations} locations</h3><p>${v.s.nap.match ? `${v.s.nap.match} of ${BRAND.locations} locations match everywhere. ` : ''}${esc(v.s.nap.sharpest)}</p></div>
+        <a class="btn" href="#layer2" data-l2link="1">See the full matrix</a>
+      </section>` : ''}
+      ${layer2Stub(v, 'l2')}
+      <section class="next" id="next">
+        <h2>Ship the fixes, then scan again</h2>
+        <ol>${nextSteps(v).map(s => `<li>${s}</li>`).join('')}</ol>
+        <div class="prompt"><code>${esc(rerun(v))}</code><button type="button" class="btn" data-copy="rerun">Copy</button></div>
+      </section>
+      <section class="method" id="method"><h2>How this was scored</h2>${methodBlock(v)}</section>
+      <footer>Generated by the PinMeTo web presence skill. Rubric ${BRAND.rubric}</footer>
+    </div>
+  </div>`;
+}
+
+/* ------------------------------------------------------------------ switcher + stubs */
+const VARIANTS = [
+  { key: 'd', name: 'Lead with the action', render: variantD },
+  { key: 'e', name: 'Route to 100', render: variantE },
+  { key: 'f', name: 'One focus card', render: variantF }
+];
+const params = () => new URLSearchParams(location.search);
+function currentVariant() { const k = params().get('variant'); return Math.max(0, VARIANTS.findIndex(x => x.key === k)); }
+function currentScan() { const n = parseInt(params().get('scan') || '1', 10); return Math.min(SCANS.length, Math.max(1, isNaN(n) ? 1 : n)); }
+function render() {
+  const vi = currentVariant(), vd = VARIANTS[vi], si = currentScan();
+  const v = view(si - 1);
+  document.body.dataset.variant = vd.key;
+  document.getElementById('root').innerHTML = vd.render(v);
+  document.getElementById('proto-label').innerHTML = `<b>Prototype</b>${vd.key.toUpperCase()}: ${vd.name}`;
+  document.querySelectorAll('[data-scan]').forEach(b => b.classList.toggle('on', +b.dataset.scan === si));
+  document.title = `PROTOTYPE ${vd.key.toUpperCase()} scan ${si}${SCANS[si - 1].illustrative ? ' (illustrative)' : ''}: ${vd.name}`;
+}
+function setParams(o) { const u = new URL(location.href); Object.entries(o).forEach(([k, val]) => u.searchParams.set(k, val)); history.replaceState(null, '', u); render(); window.scrollTo(0, 0); }
+function cycle(dir) { setParams({ variant: VARIANTS[(currentVariant() + dir + VARIANTS.length) % VARIANTS.length].key }); }
+document.querySelectorAll('[data-cycle]').forEach(b => b.addEventListener('click', () => cycle(+b.dataset.cycle)));
+document.querySelectorAll('[data-scan]').forEach(b => b.addEventListener('click', () => setParams({ scan: b.dataset.scan })));
+document.addEventListener('keydown', e => {
+  const t = e.target, tag = t && t.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || (t && t.isContentEditable)) return;
+  if (e.key === 'ArrowLeft') cycle(-1);
+  if (e.key === 'ArrowRight') cycle(1);
+  if (e.key === '1' || e.key === '2' || e.key === '3') setParams({ scan: e.key });
+  if (e.key === 'Escape') closeDrawer();
+});
+const drawer = document.getElementById('drawer'), scrim = document.getElementById('scrim');
+function openBrief(slug) {
+  const v = view(currentScan() - 1), t = v.themes.find(x => x.slug === slug);
+  drawer.innerHTML = `
+    <button type="button" class="btn" data-close="1" style="float:right">Close</button>
+    <h3>${esc(t.name)}</h3>
+    <p class="meta">Worth about ${pts(t.worth)}. ${esc(t.effort)}. ${t.pass} of ${t.k} checks already pass.</p>
+    <p>${esc(t.description)}</p>
+    <p style="margin-top:16px"><button type="button" class="btn" data-copy="briefs">Copy all ${t.checks} ${t.checks === 1 ? 'brief' : 'briefs'}</button></p>
+    <div class="stub">Prototype stub. Below this header the Theme brief holds the per-check fix briefs exactly as the current report renders them (${t.checks} ${t.checks === 1 ? 'section' : 'sections'} here). Nothing in it changes with the Layer 1 restyle.</div>`;
+  drawer.classList.add('open'); scrim.classList.add('open');
+}
+function closeDrawer() { drawer.classList.remove('open'); scrim.classList.remove('open'); }
+scrim.addEventListener('click', closeDrawer);
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-brief]'); if (b) { openBrief(b.dataset.brief); return; }
+  if (e.target.closest('[data-close]')) { closeDrawer(); return; }
+  const c = e.target.closest('[data-copy]');
+  if (c) { const txt = c.dataset.copy === 'rerun' ? rerun(view(currentScan() - 1)) : '(briefs)'; navigator.clipboard && navigator.clipboard.writeText(txt).catch(() => {}); const o = c.textContent; c.textContent = 'Copied'; setTimeout(() => c.textContent = o, 1200); return; }
+  const l = e.target.closest('[data-l2link]');
+  if (l) { const d = document.getElementById('layer2'); if (d) d.open = true; }
+});
+render();
+</script>
+</body></html>
