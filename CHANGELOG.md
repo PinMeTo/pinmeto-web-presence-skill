@@ -11,6 +11,32 @@ A rubric bump is required whenever a change moves scores, because the re-run att
 in `references/rubric.md` can only separate rubric drift from real customer progress if the
 version moved with the rules.
 
+## v0.14.0 · 2026-09-05 · rubric 2.14.0-skill.1
+
+The Presence Report's Layer 1 is redesigned as a briefing document that says what to fix
+first. Presentation only: the rubric stays `2.14.0-skill.1`, no check weight, ratio or procedure
+moved, the history-block schema and every Layer 2 data contract are untouched. Chosen from six
+prototyped variants (branch `prototype/layer1-focus`, never merged).
+
+- **A document, not a dashboard.** White page, one column, hairlines instead of cards, no
+  gradients, no shadows, no colour-coded score numbers, no uppercase kickers, no middle-dot
+  meta strings. The masthead carries the official logo, shipped as `assets/pinmeto-logo.svg`.
+- **Eleven Layer 1 sections in reading order of importance**: hero with the summary beside
+  the score, pillar scores (with per-pillar deltas), the new **points bar**, trend, Themes, the
+  NAP summary line, the expander, next steps, methodology, footer.
+- **The points bar** shows how far from 100 the brand is and what closes the gap: the earned
+  part solid muted green, one hatched segment per open Theme (the top Theme in orange), a
+  dotted segment for points held by `warn` checks, computed from their weights rather than by
+  subtraction. Its legend links to the top Theme and the list.
+- **Theme rows replace Theme cards.** The top Theme is the one expanded row and carries the
+  page's only filled button; every other Theme is one compact line. The Themes h2 is "What to
+  fix, in this order" and the old data-driven h2 becomes the lede.
+- **Trend** loses the per-pillar strip (the deltas sit beside the pillar scores) and folds
+  "What moved" into a collapsed disclosure; the chart anchors its first and last date labels
+  inward so neither clips.
+- `scripts/check-references.mjs` pins the new section list and requires the glossary terms
+  "Points bar" and "Theme row".
+
 ## v0.13.0 · 2026-09-04 · rubric 2.14.0-skill.1
 
 The Presence Report is two layers now, the marketer's work list first and the full audit behind

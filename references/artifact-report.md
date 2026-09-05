@@ -50,7 +50,7 @@ and other schemes; render a rejected value as inert text instead of a link or em
 
 **Pre-publish sanity checks** (cheap, catch the whole failure class):
 
-- in both modes, the history block parses as JSON and the visible hero/scorecards render from
+- in both modes, the history block parses as JSON and the visible hero, pillar scores and points bar render from
   that same history entry;
 - for Sites, complete the build and validation required by `sites-building`, then publish via
   `sites-hosting`; keep the report on one route unless the data genuinely needs more;
@@ -150,134 +150,184 @@ region — each with its own Site or artifact, sample, history, and schedule:
 - A scoped report never silently widens or narrows: if the user asks for a different scope,
   that is a **new report** with a new title, not a mutation of an existing one.
 
-## Brand look (deliberately single-theme)
+## Brand look (a document, not a dashboard)
 
-The page commits to the PinMeTo light design — set explicit colors on every surface so it
-renders identically in light and dark viewers.
+The page reads as a briefing document: one column on a white page, with typography and
+hairlines carrying the structure. No cards, no shadows, no gradients, no colour-coded score
+numbers, no uppercase labels. Set explicit colors on every surface so it renders identically in
+light and dark viewers.
 
-- Page bg `#F2F3F4` · card bg `#fff` · hairlines `#E2E6EA` · navy `#000050` (headings, dark
-  surfaces) · blue `#3399FF` / link blue `#1E7FE0` · orange accent `#FF8854` (kickers,
-  highlights — decoration only) · body text `#333` · muted `#6A6F76` · soft blue wash
-  `#EAF4FF`.
-- **Status colors:** dots/fills may use orange `#FF8854` (fail), grey `#6A6F76` (warn), green
-  `#1FA971` (pass) — but **text** uses the accessible equivalents: fail `#B5481E`, warn
-  `#6A6F76`, pass `#137A50`. Orange and mid-blue are never type on white.
-- Type: `font-family:'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif`
-  (no external font loads — the fallback stack must look right). Black weights (800–900) for
-  scores and headlines, tight letter-spacing (−0.02em) on big numbers; 13px uppercase
-  kickers with `.14em` tracking in orange.
-- Cards: 14–22px radius, 1px `#E2E6EA` border, subtle shadow `0 1px 2px rgba(0,0,80,.06)`.
-- Rank badge (the top three Theme cards): orange `#FF8854` fill with a navy `#000050`
-  numeral, never white on orange. It is the one place orange appears on a Theme card.
-- **No orange borders anywhere**: orange is kicker text and badge fill, never a card edge or
-  top rule.
-- Secondary buttons ("How to fix" on a Theme card, "Copy all N briefs") are outline style:
-  white background, link blue `#1E7FE0` text, 1px `#E2E6EA` border.
-- Adjacent pills never share a fill: alternate the soft blue wash `#EAF4FF`, the page grey
-  `#F2F3F4` and white with a hairline so a rank badge, worth pill or pillar tag never sits
-  beside a twin.
-- Max width 1080px, centered; wide tables scroll inside their own `overflow-x:auto` container.
+- **Surfaces.** Page and every section white `#fff`; hairlines `#E2E6EA` between sections; the
+  one tinted panel is "What to do next" on light grey `#F2F3F4` (10px radius). Nothing else is a
+  container. Buttons and the re-run prompt block use a 6px to 8px radius.
+- **Ink.** Navy `#000050` for headings, every score and the one primary button; body text
+  `#333`; muted `#6A6F76` for labels, datelines and meta; link blue `#1E7FE0` for links and
+  text-link buttons. Light blue `#BBD9FA` and mid blue `#3399FF` appear only in the logo.
+- **Orange `#FF8854` in exactly two places.** The rank badge on the top Theme (orange fill,
+  navy numeral, never white on orange) and the top Theme's hatched segment of the points bar.
+  Never as type on white, never as a border or rule.
+- **Status colors.** Text: fail `#B5481E`, warn `#6A6F76`, pass `#137A50` (the band word under
+  a pillar score, the NAP mismatch count). Dots in the counts row: fail `#FF8854`, warn
+  `#6A6F76`, pass `#1FA971`. The points bar's earned segment is muted green `#CFEBDC` so it reads
+  as done without pulling focus. Delta pill: up `#D8F3E7` on `#137A50` text, down `#FFE0D1` on
+  `#B5481E`, no change `#F2F3F4` on muted.
+- **Type.** `font-family:'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif`
+  (no external font loads). Headings 700, big numbers 800 with tight letter-spacing (overall
+  score 96px, pillar scores 32px, Theme worth 30px), body 15px to 16px, meta 13px. Tabular
+  numerals on every number. Sentence case everywhere: no uppercase kickers, no letter-spaced
+  labels. A label above a value is small muted sentence-case text ("Effort", "Pays in").
+- **Meta reads as language.** Never join facts with middle dots. Write a sentence
+  ("Five locations, scanned 4 September 2026.") or label-and-value cells.
+- **Buttons.** One filled navy primary button per page: the top Theme's "How to fix". Every
+  other "How to fix" is a text link in link blue. Utility buttons (Copy, Close, the Theme
+  brief's "Copy all N briefs") are outline style: white, link-blue text, 1px `#E2E6EA` border.
+- **Logo.** The masthead carries the official PinMeTo landscape logo from
+  `assets/pinmeto-logo.svg`, 30px tall at the left, inlined in the artifact (a Site may import
+  the file). Never recolor, stretch or redraw it. If the asset cannot be read, set the word
+  "PinMeTo" in Montserrat 700 navy in its place rather than drawing a substitute.
+- **Measure.** Max width 900px, centered, 32px side padding; prose no wider than about 66
+  characters; wide tables scroll inside their own `overflow-x:auto` container. Nothing in
+  Layer 1 is sticky.
 
 ### Print
 
 **Layer 1 is the print view.** A printed report is the summary a manager reads, not sixty
 check rows. In `@media print`:
 
-- Layer 1 prints in full: hero, summary card, scorecards, trend, Themes, the NAP summary chip,
-  "What to do next", Methodology and the footer.
+- Layer 1 prints in full: hero, summary, pillar scores, points bar, trend, Themes, the NAP
+  summary line, "What to do next", Methodology and the footer.
 - The "Full audit detail" expander prints **only when the reader has expanded it**. An open
   expander prints its contents; a collapsed one prints nothing, its summary line included.
 - **Theme briefs and per-check drawers never print**, open or not. They are worked from the
   live report, and printing them would bury the summary under thirty sets of fix steps.
-- Unchanged from before: interactive chrome carries `.np` and is hidden in print, and cards
-  keep `break-inside: avoid`.
+- Interactive chrome carries `.np` and is hidden in print; sections keep `break-inside: avoid`;
+  the hatched and dotted fills of the points bar must survive greyscale printing (they are
+  patterns, not colours, for exactly this reason).
 
 ## Section order
 
 The report is **two layers**. **Layer 1** is everything outside the expander: what a marketer
-reads (hero, summary, the four scorecards, the trend, the Themes work list, a one-line NAP
-summary chip) plus the page-level sections under it. **Layer 2** is the full audit, demoted
-behind one "Full audit detail" expander that is collapsed when the page loads. Nothing was
-removed from the audit, only moved one click away: every Layer 2 item keeps the data contract
-it already had. Printing gives you Layer 1, and Layer 2 only where the reader opened the
-expander first (see "Print" above).
+reads (the hero with the summary beside the score, the pillar scores, the points bar, the
+trend, the Themes work list with the top Theme expanded, a one-line NAP summary) plus the
+page-level sections under it. **Layer 2** is the full audit, demoted behind one "Full audit
+detail" expander that is collapsed when the page loads. Nothing was removed from the audit,
+only moved one click away: every Layer 2 item keeps the data contract it already had.
+Printing gives you Layer 1, and Layer 2 only where the reader opened the expander first (see
+"Print" above).
 
-Layer 1 is these ten sections, in this order. Sections 8 to 10 sit below the expander at the
-bottom of the page: "What to do next" is the marketer's next step, Methodology and the footer
-are page-level. **Any link that points into Layer 2 expands the expander first**, then scrolls
-to its target: a scorecard, the NAP summary chip, a Theme brief's evidence pointer into the
+Layer 1 is these eleven sections, in this order. Sections 9 to 11 sit below the expander at
+the bottom of the page: "What to do next" is the marketer's next step, Methodology and the
+footer are page-level. **Any link that points into Layer 2 expands the expander first**, then
+scrolls to its target: the NAP summary line, a Theme brief's evidence pointer into the
 matrix, or a per-check drawer. A reader must never be sent into a closed expander.
 
-1. **Hero** (navy radial-gradient header, white text): kicker "Multi-location presence
-   report" in orange · brand domain as the h1 · meta row (N locations · scan date · rubric
-   version) · right side: the overall score huge (84px, 900), a delta pill vs the previous
-   scan (↑/↓ and points, green/orange), "out of 100, since <previous scan date>", and a grade
-   band tag (Strong / Healthy / Needs work / Critical). First run: no delta pill.
-2. **Summary card**: two short paragraphs written for a marketer, to the "Summary card"
-   template under "Writing style inside the report", then three count tags:
-   `N failing checks` / `N could not be measured` / `N passing`.
-3. **Pillar scorecards**: 4 linked cards (SEO, GEO, AIO, Agent readiness), each carrying the
-   pillar name, the pillar score big (46px, colored by band), a slim progress bar, and the
-   band word. No weight on the card: the four pillar weights live in Methodology (section 9),
-   because a marketer reads the score and the band, not the arithmetic behind them. Each card
-   links to its pillar section inside Layer 2.
-4. **Trend** *(from the second scan onward; omit entirely on the first scan)*. This card tells
-   the progress story: the long arc for whoever the reader reports to, the last step for the
-   reader. Every number in it is read from the history entries, never recomputed.
-   - **Headline, since the first scan**: total movement with the first scan's date. Template:
-     `Up <n> points since your first scan on <date>` /
+The order is the reading order of importance: where you stand, what that is made of, how far
+you are from 100 and what closes the gap, what moved, then the work in the order to do it.
+
+1. **Hero**: a masthead (the PinMeTo logo left, "Web presence report" right, a hairline
+   under both), then a two-column lead. Left: the brand domain as the h1 (46px), a one-sentence
+   dateline ("Five locations, scanned 4 September 2026. Rubric 2.14.0-skill.1."), and the
+   Summary (section 2), which lives in this column. Right, right-aligned: the overall score
+   huge (96px, 800, navy), "of 100", the band word (Strong / Healthy / Needs work / Critical)
+   in its status colour, and from the second scan on a delta pill (↑ or ↓ and points, green or
+   orange) with "since <previous scan date>" under it. First run: no delta pill. The lead
+   closes with a hairline. No gradient, no navy band, no kicker: the masthead names the report.
+2. **Summary**: two short paragraphs written for a marketer, to the "Summary" template under
+   "Writing style inside the report", rendered in the lead's left column under the dateline,
+   then the three counts on one line, each with its status dot: `N failing checks` /
+   `N could not be measured` / `N passing`.
+3. **Pillar scores**: one row of four cells separated by hairlines (SEO, GEO, AIO, Agent
+   readiness), each carrying the pillar name (13px, 600, navy), the pillar score (32px, 800,
+   navy, never colour-coded) with, from the second scan on, a small signed delta against the
+   previous scan beside it (`+4`, green for up, fail colour for down, nothing at zero), and the
+   band word in its status colour. No bars. No weight on the cell: the four pillar weights
+   live in Methodology (section 10), because a marketer reads the score and the band, not the
+   arithmetic behind them. Each cell links to its pillar section inside Layer 2. This row is
+   the only place the per-pillar deltas appear; the trend does not repeat them.
+4. **Points bar**: the one chart every reader understands, answering "how far from 100 am I,
+   and what closes the gap". A caption sentence, then a single 28px horizontal bar from 0 to
+   100 where one point is one hundredth of the width, then a legend. Segments, left to
+   right:
+   - **Earned**: the overall score, muted green fill, the label "earned <score>" inside its
+     right end in navy. Solid fill means done.
+   - **The top Theme's worth**: orange diagonal hatching on white with a 1px orange outline.
+   - **Every other Theme's worth**, in rank order: navy diagonal hatching on white with a 1px
+     navy outline, one segment per Theme, 2px gaps between segments.
+   - **Not measurable**: the points held by `warn` checks, a dotted grey fill with a dashed
+     grey edge. Compute it from the warn checks' weights (`check_weight × pillar_weight / 100`,
+     summed), never as `100 − score − Theme worths`, so a rounding gap in the Theme worths can
+     never be reported as an evidence gap. If the segments do not sum to 100 after rounding,
+     absorb the difference in the earned segment's width, never in a label.
+
+   Hatched and dotted fills mean unfinished; nothing still to earn is a solid colour. Above the
+   hatched Theme segments a thin navy bracket carries "Left to do: <count> themes,
+   <points> points". Under the bar the legend is four lines, each with a swatch in the same
+   fill: "<score> points earned in this scan" · "<worth> points from <top Theme name>, do this
+   first" (the name a link to `#theme-<slug>`) · "<points> points from the <count> other
+   themes" (a link to `#themes`) · "<points> not measurable this time (<n> checks)". At one
+   point, render the singular ("1 point"). The caption reads: "You have <score> of 100 points.
+   Fixing the <count> themes below earns about <points> more; the first one alone earns
+   <worth>. The last <points> sit in checks that could not be measured this time." When no
+   Theme has worth above 0, the bar is earned plus not-measurable and the caption says so.
+   When nothing is `warn`, omit the last segment, legend line and caption sentence.
+5. **Trend** *(from the second scan onward; omit entirely on the first scan)*. A two-column
+   row under a hairline: the story left, an inline SVG line chart right. Every number in it is
+   read from the history entries, never recomputed.
+   - **Headline, since the first scan** (20px, 700, navy): total movement with the first scan's
+     date. Template: `Up <n> points since your first scan on <date>` /
      `Down <n> points since your first scan on <date>` /
      `Unchanged since your first scan on <date>`. Same template up or down; no adjectives.
-   - **Subline, since the previous scan**: `+<n> since <previous scan date>` /
+   - **Subline, since the previous scan** (muted): `+<n> since <previous scan date>` /
      `−<n> since <previous scan date>` / `No change since <previous scan date>`. Omit it when
      the report has exactly two scans (it would repeat the headline).
-   - an inline SVG line chart of overall score across scans (grid lines at 0/50/100, score
-     labels above points, dates below, last point emphasized in orange). When two scans share
-     a date, label the points with date **and** ordinal ("9 Aug (1st)", "9 Aug (2nd)"). With
-     only two points the chart is thin but still correct; keep it.
-   - a per-pillar now/±delta strip, deltas against the previous scan.
-   - **Themes cleared, since the first scan**: one line,
+   - **Themes cleared, since the first scan**: one line in pass green,
      `<count> themes cleared since your first scan on <date>: <name>, <name>`, Themes named by
      the Theme mapping's `name` verbatim, ordered by the scan in which they cleared, most
      recent first. A Theme is **cleared** when no member check is `fail` in the current scan
      and at least one member was `fail` in an earlier scan. Zero cleared: omit the line; never
      print "0 themes cleared". A cleared Theme does not reappear in the Themes list, which
      stays a pure work list, so the names on this line are plain text: there is no
-     `theme-<slug>` card left to link to.
-   - a "What moved since <previous scan>" callout (soft blue wash card): derive the bullets
-     **mechanically from a diff of the previous and current `checks` maps** (that is why
-     the map stores every check), and classify each one as **rubric change**,
-     **measurement correction**, or **real change** per the re-run rule in `rubric.md`. A
-     Theme that was cleared in an earlier scan and has a failing member again is named as
-     **reopened** ("Opening hours consistency reopened: 2 of 5 sampled listings changed
-     hours"), in the same words as progress. Concrete and honest: "Agent readiness gained 12
-     points, the MCP server card went live" (real) vs "SEO gained 10 points because the rubric
-     now gives half credit for client-rendered values; nothing changed on the site" (rubric).
+     `theme-<slug>` row left to link to.
+   - a collapsed "What moved since <previous scan date>" disclosure (a text link that expands
+     in place): derive the bullets **mechanically from a diff of the previous and current
+     `checks` maps** (that is why the map stores every check), and classify each one as
+     **rubric change**, **measurement correction**, or **real change** per the re-run rule in
+     `rubric.md`. A Theme that was cleared in an earlier scan and has a failing member again is
+     named as **reopened** ("Opening hours consistency reopened: 2 of 5 sampled listings
+     changed hours"), in the same words as progress. Concrete and honest: "Agent readiness
+     gained 12 points, the MCP server card went live" (real) vs "SEO gained 10 points because
+     the rubric now gives half credit for client-rendered values; nothing changed on the site"
+     (rubric).
+   - the chart: overall score across scans, grid lines at 0/50/100, score labels above points,
+     dates below (first label anchored at its start, last at its end, so neither clips), last
+     point emphasized in orange. When two scans share a date, label the points with date
+     **and** ordinal ("9 Aug (1st)", "9 Aug (2nd)"). With only two points the chart is thin
+     but still correct; keep it. The per-pillar deltas are not repeated here: they sit beside
+     the pillar scores (section 3).
 
    The chart stays in Layer 1; the scan-history table behind it is the first item inside
-   Layer 2, so the card tells the story and the raw numbers are one click away.
+   Layer 2, so the row tells the story and the raw numbers are one click away.
 
-   **Cross-scan rules.** Theme progress (cleared, reopened, and the "Open since" cell on Theme
-   cards) is computed against the **current mapping table only**: a past scan's Theme was
+   **Cross-scan rules.** Theme progress (cleared, reopened, and the "Open since" status on
+   Theme rows) is computed against the **current mapping table only**: a past scan's Theme was
    failing if any of the Theme's current member ids was `fail` in that scan's `checks`; ids the
    older scan does not contain are **unknown, never failing**, so rubric drift never invents a
-   reopened Theme. Old scans are never re-scored. The hero score, the pillar scorecards, the chart
-   and the Layer 2 scan-history table must all render **from the history entries**, never from
-   separately computed numbers: a report that disagrees with its own embedded state (hero 22,
-   history 23) is worse than no trend at all. Nothing in this card credits PinMeTo or anyone
-   else for the movement; the numbers carry it.
-5. **Themes** (the work list): kicker THEMES in orange · a data-driven h2,
-   `<Count> themes, worth ~<summed points> points together`, with the count in words ("Six
-   themes, worth ~28 points together"; "One theme, worth ~4 points" when a single Theme
-   remains) · the subline "Ranked by the score points a fix would return. One theme is one
-   plain-language issue; a single fix can earn points in several pillars." Then one **Theme
-   card** per Theme in the Theme mapping (below) whose worth is above 0, ranked by worth
-   descending: the top three are promoted (rank badge, larger card, three across), the rest
-   follow in a tighter three-column grid. A Theme whose worth is 0 (every member passes or is
-   `warn`) is omitted and not counted in the h2. The h2 total is the sum of the displayed
-   worth pills, so the heading and the cards agree. When no Theme has worth above 0, render
-   the kicker and one sentence saying every scored check passed or could not be measured,
-   and no cards.
+   reopened Theme. Old scans are never re-scored. The hero score, the pillar scores, the points
+   bar, the chart and the Layer 2 scan-history table must all render **from the history
+   entries**, never from separately computed numbers: a report that disagrees with its own
+   embedded state (hero 22, history 23) is worse than no trend at all. Nothing in this row
+   credits PinMeTo or anyone else for the movement; the numbers carry it.
+6. **Themes** (the work list): the h2 "What to fix, in this order" · a data-driven lede,
+   `<Count> themes, worth ~<summed points> points together, ranked by the score points a fix
+   would return. One theme is one plain-language issue; a single fix can earn points in several
+   pillars.` with the count in words ("Six themes, worth ~28 points together"; "One theme,
+   worth ~4 points" when a single Theme remains). Then one **Theme row** per Theme in the Theme
+   mapping (below) whose worth is above 0, ranked by worth descending, under hairlines. The
+   top Theme is the one expanded row; every other Theme is one compact line. A Theme whose
+   worth is 0 (every member passes or is `warn`) is omitted and not counted in the lede. The
+   lede total is the sum of the displayed worths, so the heading and the rows agree, and it
+   equals the points bar's hatched total. When no Theme has worth above 0, render the h2 and one
+   sentence saying every scored check passed or could not be measured, and no rows.
 
    **Worth and ranking.** A Theme's worth is the sum of points returned (`scoring.md` §4:
    `check_weight × (1 − ratio) × pillar_weight / 100`, GEO ids at their effective weights)
@@ -287,57 +337,63 @@ matrix, or a per-check drawer. A reader must never be sent into a closed expande
    per-location manual edits), then by the rubric order of each Theme's first member.
    Membership comes from the Theme mapping, never from per-scan judgment.
 
-   **Theme card contract.** Every card carries, in this order:
-   - a "Worth ~N points" pill (integer, round half up, summed across pillars);
-   - on the top three only, a rank badge: orange `#FF8854` fill, navy `#000050` numeral, the
-     only orange on the card;
-   - the headline: the mapping `name`, verbatim;
+   **Theme row contract, the expanded top row.** A three-column grid (rank, body, side):
+   - the rank badge: orange `#FF8854` fill, navy `#000050` numeral "1", the only orange badge
+     on the page;
+   - the headline: the mapping `name`, verbatim (24px, 700);
    - a one-to-two sentence per-scan summary: the observation with its count and denominator,
      then what it costs the brand (see "Writing style inside the report");
-   - pillar tags, one per distinct pillar among the failing members;
-   - a muted meta line `<check count> checks · <effort label> · one fix, pays in <N> pillars`,
-     where the check count is the number of failing members (the sections the Theme brief
-     will hold), the effort label is the mapping `effort` verbatim, and N is the number of
-     distinct pillars among the failing members. From the second scan onward the line gains
-     one more cell, `· Open since <date> · <n> scans`: the date is the earliest scan in which
+   - facts as label-and-value cells, in this order: **Effort** (the mapping `effort`
+     verbatim) · **Pays in** (the distinct pillars among the failing members, as a list:
+     "SEO and AIO") · **Failing checks** (`<count>, <M> of <K> already pass`, K counting every
+     member in the mapping and M those with status `pass`) · from the second scan on,
+     **Status**: `Open since <date>, <n> scans`, where the date is the earliest scan in which
      any current member id was `fail`, and `<n>` counts the scans from that one to now
      inclusive. On the first scan there is no "Open since" cell. This is where stagnation
-     shows, next to the work it describes, rather than in the trend card;
-   - one outline "How to fix" button (white, link-blue text, hairline border) opening the
-     Theme brief (below).
+     shows, next to the work it describes, rather than in the trend;
+   - the side column, right-aligned: the worth as `~<N>` (30px, 800, navy) over "points back"
+     (singular at one), and the page's one filled navy "How to fix" button opening the Theme
+     brief (below).
 
-   No orange borders; adjacent pills never share a fill (the rules are in "Brand look"). The
-   card carries the `id="theme-<slug>"` anchor specified under "The Theme brief".
-6. **NAP summary chip**: one card, one line, answering "do my listings agree?" without
-   opening the table. It carries the label "Name, address & phone", one green chip with the
-   count that agrees everywhere ("4 of 5 locations match everywhere"), and, when anything
-   disagrees, one orange chip with the number of mismatches and the sharpest example, naming
-   the location, the platform and the field ("1 mismatch: Malmö, Apple shows the old street
-   address"). When every sampled location agrees on every field, the green chip stands alone.
-   When **no** location agrees on every field, omit the green chip and let the orange chip
-   stand alone: a green "0 of 5 locations match everywhere" prints a pass colour over a
-   failure, the same mistake the Themes-cleared line avoids by being omitted at zero.
-   Then a link, "See the full matrix in the audit detail", pointing at the NAP consistency
-   matrix inside Layer 2: it **expands the expander if it is collapsed**, then scrolls to the
-   matrix. Both counts come from the same GEO evidence as the matrix, so the chip and the
-   table cannot disagree. The chip's contents are this contract; its wording follows
-   "Writing style inside the report", and the sentences above are illustrations, not templates.
-7. **Full audit detail**: one expander, collapsed when the page loads, holding Layer 2. Its
-   summary line reads "Full audit detail: every check, every location, the NAP matrix", and it
-   holds these six items in this order:
+   **Theme row contract, the compact rows.** One line each under a hairline, five cells: the
+   rank numeral in muted grey (no badge) · the mapping `name` (16px, 600) with, from the second
+   scan on, `Open since <date>, <n> scans` in small muted text beneath it · the worth as
+   `~<N> pts` (`~1 pt` at one) · the effort label verbatim · a text-link "How to fix" opening
+   the Theme brief. Pillar tags are not shown on compact rows; the brief header carries them.
+
+   No cards, no orange borders, no pills. Every row carries the `id="theme-<slug>"` anchor
+   specified under "The Theme brief".
+7. **NAP summary line**: one row under a hairline answering "do my listings agree?" without
+   opening the table. Left: the h3 "Name, address and phone" and one or two sentences: when
+   any location agrees on every field, "<n> of <N> locations match everywhere." first; then,
+   when anything disagrees, the sharpest example naming the location, the platform and the
+   field ("Sharpest: Malmö, where Apple shows the old street address"); then the link "See
+   the full matrix in the audit detail", pointing at the NAP consistency matrix inside Layer 2:
+   it **expands the expander if it is collapsed**, then scrolls to the matrix. Right,
+   right-aligned: the mismatch count as a number (26px, 700) in fail colour, or in pass colour
+   when it is zero, over "mismatches across <N> locations". When every sampled location agrees
+   on every field, the sentence is the match count alone and the number reads `0` in pass
+   colour. When **no** location agrees on every field, omit the match sentence rather than
+   print "0 of 5 locations match everywhere". Both counts come from the same GEO evidence as
+   the matrix, so the line and the table cannot disagree. The wording follows "Writing style
+   inside the report"; the sentences above are illustrations, not templates.
+8. **Full audit detail**: one expander, collapsed when the page loads, holding Layer 2. Its
+   summary line reads "Full audit detail: every check, every location, the NAP matrix" with a
+   link-blue "Open" at its right end, sits under a hairline, and it holds these six items in
+   this order:
    1. **Scan-history table** (date, label, SEO, GEO, AIO, Agent, Overall): the numbers behind
       the Layer 1 chart, rendered from the same history entries. Omitted on the first scan,
       like the rest of the trend.
    2. **Sticky section nav**: pill links (Trend · SEO n · GEO n · AIO n · Agent n · Locations)
       plus a filter toggle (All / Needs attention / Passing) that shows/hides check rows. Nav
       and filter sit inside the expander because their targets do. The "Trend" pill is the one
-      exception: it points at the Layer 1 trend card.
-   3. **Per-pillar sections** (SEO, GEO, AIO, Agent readiness): section header with kicker,
-      pillar name, 1-line blurb, score + band tag, separated by a 2px navy rule. Then one
-      accordion row per check: status dot (fail orange / warn grey / pass green) · human check
-      name · the rubric `check.id` in small muted type · right-aligned result label (e.g. "0%",
-      "3 / 5", "Pass") · chevron. Expanded: "Why this matters" prose, the cost of leaving it,
-      and a button — "How to fix it" (fail) or "See evidence" (pass/warn) — opening the drawer.
+      exception: it points at the Layer 1 trend row.
+   3. **Per-pillar sections** (SEO, GEO, AIO, Agent readiness): section header with pillar
+      name, 1-line blurb, score + band tag, separated by a 2px navy rule. Then one accordion
+      row per check: status dot (fail orange / warn grey / pass green) · human check name · the
+      rubric `check.id` in small muted type · right-aligned result label (e.g. "0%", "3 / 5",
+      "Pass") · chevron. Expanded: "Why this matters" prose, the cost of leaving it, and a
+      button — "How to fix it" (fail) or "See evidence" (pass/warn) — opening the drawer.
 
       **Double-scored rows carry a muted cross-reference.** Where one fix earns points under
       two pillars (the pairs listed under "Theme mapping": llms.txt, markdown negotiation,
@@ -365,7 +421,7 @@ matrix, or a per-check drawer. A reader must never be sent into a closed expande
       hours table vs the PinMeTo record" — hours are a Google richness check and a
       page-agreement field, not a three-platform NAP comparison, so the single chip is
       correct and should not read as if Apple and Bing were checked and omitted). This is the money table for the PinMeTo pitch — it
-      must be exactly right per the GEO evidence. It is what the Layer 1 NAP summary chip and
+      must be exactly right per the GEO evidence. It is what the Layer 1 NAP summary line and
       the Theme brief's evidence pointers link to.
    6. **Listing content table** (directly after the matrix): per sampled location, what the
       Google listing actually shows — {Category (vs the category PinMeTo pushes, from
@@ -378,21 +434,23 @@ matrix, or a per-check drawer. A reader must never be sent into a closed expande
       **observed, unscored** — label the columns so the distinction is visible. A stale or
       empty "latest owner post" is a natural talking point for PinMeTo's posting features;
       keep it factual, not salesy.
-8. **What to do next** (navy card): "Ship the fixes, then scan again" — 3 numbered steps
-   (hand a Theme's briefs to a developer / any person-tasks like claiming an Apple listing /
-   re-run), and a literal re-run prompt the customer can say to ChatGPT, Codex, or Claude:
+9. **What to do next** (the one tinted panel, light grey): "Ship the fixes, then scan again" —
+   3 numbered steps (hand a Theme's briefs to a developer / any person-tasks like claiming an
+   Apple listing / re-run), and a literal re-run prompt the customer can say to ChatGPT, Codex,
+   or Claude, in a white bordered block with an outline Copy button:
    `"Re-run the presence scan for <domain> and show me what changed since <date>."` The steps
    refer to Themes, in the order the Themes section ranks them, not to individual checks.
-9. **Methodology**: the four pillar weights with a one-line description each, saying what the
-   pillar covers and why it carries that share of the overall score (the weights moved here
-   from the scorecards, and this is the only place they appear), plus rubric version, scan
-   date, and sources ("Google, Apple, and Bing Maps as observed in a browser, your website
-   and store locator, PageSpeed Insights, PinMeTo location data"). State the sample
-   explicitly: which locations, which pages, what was not covered. When any check used the
-   rendered pass, include the one-paragraph explanation of the dual-pass policy (served =
-   full credit, client-rendered = half, and why: Google renders, AI training crawlers
-   don't) so the half-credit rows read as method, not error.
-10. **Footer**: "Generated by the PinMeTo web presence skill · Rubric <version>".
+10. **Methodology**: the four pillar weights with a one-line description each, saying what the
+    pillar covers and why it carries that share of the overall score (the weights moved here
+    from the pillar scores, and this is the only place they appear), plus rubric version, scan
+    date, and sources ("Google, Apple, and Bing Maps as observed in a browser, your website
+    and store locator, PageSpeed Insights, PinMeTo location data"). State the sample
+    explicitly: which locations, which pages, what was not covered. When any check used the
+    rendered pass, include the one-paragraph explanation of the dual-pass policy (served =
+    full credit, client-rendered = half, and why: Google renders, AI training crawlers
+    don't) so the half-credit rows read as method, not error.
+11. **Footer**: one hairline, then "Generated by the PinMeTo web presence skill" at the left
+    and "Rubric <version>" at the right, both small and muted.
 
 ## The fix-brief drawer
 
@@ -400,7 +458,7 @@ A fixed right-side drawer (or, if scripting is constrained, an anchored details 
 but prefer the drawer) opened from any check row, or as a section inside a Theme brief.
 Contents, in order:
 
-- one muted header line "Part of theme: <Theme name>" linking to the Theme's card
+- one muted header line "Part of theme: <Theme name>" linking to the Theme's row
   (`#theme-<slug>`), the name being the mapping `name` verbatim; a pointer, not content, and
   omitted when the drawer renders as a section inside that Theme's own brief,
 - status tag + `check.id` + check name,
@@ -474,7 +532,7 @@ Docs: https://developers.google.com/search/docs/appearance/structured-data/local
 
 ## The Theme brief
 
-The drawer a Theme card's "How to fix" button opens. It is a **container** of the per-check
+The drawer a Theme row's "How to fix" button opens. It is a **container** of the per-check
 fix briefs of the Theme's failing members, each unchanged; nothing in it is merged or
 rewritten per scan. It uses the same drawer surface as the fix-brief drawer, or the same
 anchored-details fallback where scripting is constrained. Nine rules:
@@ -501,7 +559,7 @@ anchored-details fallback where scripting is constrained. Nine rules:
    the location page differs from the dominant listing value at 3 of 5 sampled locations,
    see the matrix"). The header's effort label is their instruction.
 4. **Order**: sections by points returned descending, ties by rubric order. The same rule
-   ranks the Theme cards.
+   ranks the Theme rows.
 5. **Dual-scored pairs** inside one Theme (the known duplicates listed under "Theme mapping")
    show **both** sections; the later one carries
    the muted cross-reference "also scored in <pillar>, same fix, pays twice". Never collapse a
@@ -514,12 +572,12 @@ anchored-details fallback where scripting is constrained. Nine rules:
 7. **Expansion**: three or fewer sections, all expanded. Four or more: the first expanded, the
    rest collapsed to a one-line header (status dot · check name · worth), using the same
    accordion as the per-pillar check rows.
-8. **Anchors**: the Theme card carries `id="theme-<slug>"` and its brief
+8. **Anchors**: the Theme row carries `id="theme-<slug>"` and its brief
    `id="theme-<slug>-brief"`, both from the mapping `slug` (an HTML document may not repeat an
-   id, so the card owns the bare anchor). Loading the report at `#theme-<slug>` scrolls to the
-   card and opens its brief; the summary card, the NAP chip and the trend section may link
+   id, so the row owns the bare anchor). Loading the report at `#theme-<slug>` scrolls to the
+   row and opens its brief; the summary, the NAP summary line and the trend section may link
    there. Where scripting is constrained, the brief is an anchored details element inside the
-   card: the hash scrolls to the card and the reader opens the brief with one click.
+   row: the hash scrolls to the row and the reader opens the brief with one click.
 9. **Back-pointer**: every per-check drawer opened from a check row carries the "Part of
    theme: <Theme name>" line linking to `#theme-<slug>` (see "The fix-brief drawer"). It is a
    pointer, not content: nothing else in the drawer or in the five-field prompt format changes.
@@ -691,8 +749,8 @@ surfaces. Fix-brief drawer text follows its own contract above.
 - **PinMeTo brand tone rules apply.** No em dashes; use commas, periods, colons, or
   parentheses. No hype vocabulary: the brand's banned list governs, and the pinmeto-brand
   plugin's ai-slop-guards reference carries it in full for every language. No
-  "not just X, it's Y". Sentence case in every heading; the orange kickers are the only
-  uppercase. Say "customer", never "client".
+  "not just X, it's Y". Sentence case in every heading and label; nothing in the report is
+  set in uppercase. Say "customer", never "client".
 - **warn is never a failure.** Checks that could not be measured are always labelled so;
   prose never counts them among failures or passes.
 - **PinMeTo is named only where the fix happens in PinMeTo** (the two GEO listing Themes),
@@ -700,23 +758,23 @@ surfaces. Fix-brief drawer text follows its own contract above.
   to PinMeTo: "GEO gained 3 points after the Apple listings were connected", not "thanks to
   PinMeTo".
 - **The location noun.** Every fixed string (Theme names, effort labels, count tags, section
-  headings, table headers) says "location". Per-scan prose (summary card, Theme summaries,
+  headings, table headers) says "location". Per-scan prose (summary, Theme summaries,
   evidence, trend bullets) may use the kind-specific noun the brand uses for itself (shops,
   restaurants, charging stations) when every sampled location shares one PinMeTo primary
   category. Mixed or unknown kinds say "location".
 - **Numbers.** Every count comes from this scan's evidence and names its denominator when it
   is a sample ("3 of the 5 checked locations"); never extrapolate to the fleet. Integers only.
   Numbers one to twelve are words when they open a sentence, digits elsewhere. The summary
-  card carries at most one score pair (from and to); all other scores live in the hero,
-  scorecards and trend. **Every data-driven string agrees with its own number.** The templates
+  carries at most one score pair (from and to); all other scores live in the hero,
+  pillar scores, points bar and trend. **Every data-driven string agrees with its own number.** The templates
   below are written in the plural because that is the common case; at one, render the singular:
   `Worth ~1 point`, `1 check`, `pays in 1 pillar`, `Copy all 1 brief`, `One theme cleared since
   your first scan on <date>`, `Up 1 point since your first scan on <date>`, `+1 since <date>`,
-  and `One theme, worth ~1 point` in the Themes h2, which also drops its "together" at a single
+  and `One theme, worth ~1 point` in the Themes lede, which also drops its "together" at a single
   Theme. A pill reading "Worth ~1 points" is the tell that a count was pasted into a fixed
   string instead of rendered from the data. A one-point move is the most likely delta a re-run
   will ever print, so the trend headline meets this first.
-- **Technical names.** None in Layer 1 headlines. A Theme summary or summary-card sentence may
+- **Technical names.** None in Layer 1 headlines. A Theme summary or summary sentence may
   name one file or standard, once, right after the plain-language phrase ("a text guide at
   /llms.txt"), and only when the reader will need the word to brief a developer. Check ids
   never appear in Layer 1.
@@ -727,8 +785,8 @@ surfaces. Fix-brief drawer text follows its own contract above.
 
 ### Layer 1 templates
 
-- **Hero band word.** One of Strong / Healthy / Needs work / Critical, never rephrased.
-- **Summary card.** Two paragraphs, two or three sentences each. Paragraph 1: what is strong,
+- **Band word.** One of Strong / Healthy / Needs work / Critical, never rephrased.
+- **Summary.** Two paragraphs, two or three sentences each. Paragraph 1: what is strong,
   then what holds the score back. Paragraph 2: the shape of the effort ("one template change,
   not fourteen page edits"), and from the second scan on, what moved since the previous scan
   with the one allowed score pair. First scan: paragraph 2 is effort shape only and ends with
@@ -747,7 +805,11 @@ surfaces. Fix-brief drawer text follows its own contract above.
   of the job and who does it, in eight words or fewer. The closed set is enumerated under
   "Effort labels" below, its one home in this file; pre-publish sanity check condition
   (d) is that every `effort` in the mapping is in that set.
-- **Themes h2.** `<Count> themes, worth ~<summed points> points together`, count in words.
+- **Themes heading and lede.** The h2 is the fixed string "What to fix, in this order". The
+  lede opens `<Count> themes, worth ~<summed points> points together`, count in words, and
+  continues with the fixed ranking sentence given under "Section order".
+- **Theme row facts.** Label-and-value cells (Effort, Pays in, Failing checks, Status) on the
+  expanded row; `~<N> pts` and the effort label on compact rows. Never a middle-dot string.
 - **Trend prose.** One template for movement in either direction, no adjectives, no
   attribution. The "What moved" bullets come mechanically from the checks diff, each
   classified as rubric change, measurement correction, or real change, and credit the change

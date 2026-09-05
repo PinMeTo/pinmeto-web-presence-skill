@@ -39,10 +39,10 @@
 //      cannot drift between two copies. Headings inside fenced code blocks are
 //      illustration, not structure, and are ignored here and in (d).
 //   6. The two-layer contract in references/artifact-report.md: the "Section
-//      order" section lists exactly the ten Layer 1 sections (LAYER_1_SECTIONS)
+//      order" section lists exactly the eleven Layer 1 sections (LAYER_1_SECTIONS)
 //      in order; the "Full audit detail" section enumerates Layer 2's six items
 //      (LAYER_2_ITEMS) in order and says the expander is collapsed; the "Pillar
-//      scorecards" section gives no pillar weight as a percentage, because the
+//      scores" section gives no pillar weight as a percentage, because the
 //      four weights live in "Methodology", which must name them.
 //   7. The trend card's progress story in references/artifact-report.md: the
 //      "Section order" section's Trend item frames the headline since the first
@@ -53,7 +53,7 @@
 //      older scan unknown rather than failing); the Themes item defines the
 //      "Open since" meta cell; the Trend item and the writing-style section, the
 //      two places #12 puts the templates, both carry TREND_TEMPLATES verbatim;
-//      and the writing-style section's Summary card bullet, not merely the
+//      and the writing-style section's Summary bullet, not merely the
 //      section, carries FIRST_SCAN_BASELINE_SENTENCE.
 //   8. Retired vocabulary (RETIRED_VOCABULARY: the wording the Themes work
 //      list replaced) is absent from SKILL.md, CONTEXT.md, README.md and every
@@ -79,6 +79,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const REQUIRED_GLOSSARY_TERMS = [
   "Fix brief",
   "Points returned",
+  "Points bar",
+  "Theme row",
   "Report",
   "Layer 1",
   "Layer 2",
@@ -421,14 +423,15 @@ export function checkThemeMapping(reportMd, rubricMd) {
 
 const SECTION_ORDER_HEADING = /^section order$/i;
 
-/** Layer 1's ten sections, in the order #13 approved and #17 landed. */
+/** Layer 1's eleven sections, in the order #13 approved, #17 landed and the variant-D redesign reordered. */
 export const LAYER_1_SECTIONS = [
   "Hero",
-  "Summary card",
-  "Pillar scorecards",
+  "Summary",
+  "Pillar scores",
+  "Points bar",
   "Trend",
   "Themes",
-  "NAP summary chip",
+  "NAP summary line",
   "Full audit detail",
   "What to do next",
   "Methodology",
@@ -498,9 +501,9 @@ function compareOrder(file, items, expected, { label, listedIn }) {
 }
 
 /**
- * The two-layer contract (#17): "Section order" lists exactly the ten Layer 1
+ * The two-layer contract (#17): "Section order" lists exactly the eleven Layer 1
  * sections in order, the "Full audit detail" section enumerates Layer 2's six
- * items in order, the "Pillar scorecards" section gives no pillar weight as a
+ * items in order, the "Pillar scores" section gives no pillar weight as a
  * percentage (those live in Methodology) and the "Methodology" section names
  * the weights.
  */
@@ -606,7 +609,7 @@ export const TREND_TEMPLATES = [
   "<count> themes cleared since your first scan on <date>: <name>, <name>",
 ];
 
-/** The sentence the summary card's second paragraph ends with on a first scan (#12 decision 9). */
+/** The sentence the summary's second paragraph ends with on a first scan (#12 decision 9). */
 export const FIRST_SCAN_BASELINE_SENTENCE = "This scan is your baseline; the next one shows what moved.";
 
 /** What the trend card's own contract has to say (#12's §4 and its cross-scan rules). */
@@ -689,15 +692,15 @@ export function checkTrendContract(reportMd) {
   } else {
     const section = sectionWithSubsections(headingList, stylePosition);
     templateHomes.push({ label: "writing-style section", prose: normalizeProse(section) });
-    // The sentence has to sit in the Summary card template, not merely somewhere in the
-    // section: #12 amends the summary card's second paragraph, and a sentence that drifted
-    // into a neighbouring template would leave the summary card without it.
-    const summaryCard = templateBullets(section).find((bullet) => /summary card/i.test(bullet.lead));
+    // The sentence has to sit in the Summary template, not merely somewhere in the
+    // section: #12 amends the summary's second paragraph, and a sentence that drifted
+    // into a neighbouring template would leave the summary without it.
+    const summaryCard = templateBullets(section).find((bullet) => /^summary\b/i.test(bullet.lead));
     if (summaryCard === undefined) {
-      violations.push(`${file}: the writing-style section has no **Summary card** template bullet`);
+      violations.push(`${file}: the writing-style section has no **Summary** template bullet`);
     } else if (!summaryCard.prose.includes(normalizeProse(FIRST_SCAN_BASELINE_SENTENCE))) {
       violations.push(
-        `${file}: the Summary card template does not end a first scan's second paragraph with the baseline sentence "${FIRST_SCAN_BASELINE_SENTENCE}"`,
+        `${file}: the Summary template does not end a first scan's second paragraph with the baseline sentence "${FIRST_SCAN_BASELINE_SENTENCE}"`,
       );
     }
   }

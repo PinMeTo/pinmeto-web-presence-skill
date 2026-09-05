@@ -459,7 +459,7 @@ const sectionOrderMd = ({
     .map((title, index) => {
       const number = index + 1;
       if (title === "Trend") return `${number}. **${title}**: ${trend}`;
-      if (title === "Pillar scorecards") return `${number}. **${title}**: ${scorecards}`;
+      if (title === "Pillar scores") return `${number}. **${title}**: ${scorecards}`;
       if (title === "Methodology") return `${number}. **${title}**: ${methodology}`;
       if (title === "Full audit detail") return `${number}. **${title}**: ${expander}\n${nested}`;
       return `${number}. **${title}**: prose.`;
@@ -468,18 +468,19 @@ const sectionOrderMd = ({
   return `# Report delivery\n\n## Brand look\n\nColors.\n\n## Section order\n\nThe report is two layers.\n\n${body}\n\n## The fix-brief drawer\n\nProse.\n`;
 };
 
-test("the ten Layer 1 sections in order, with Layer 2 enumerated inside the expander, pass", () => {
+test("the eleven Layer 1 sections in order, with Layer 2 enumerated inside the expander, pass", () => {
   assert.deepEqual(checkSectionOrder(sectionOrderMd()), []);
 });
 
-test("the contract is the ten Layer 1 sections and the six Layer 2 items from the spec", () => {
+test("the contract is the eleven Layer 1 sections and the six Layer 2 items from the spec", () => {
   assert.deepEqual(LAYER_1_SECTIONS, [
     "Hero",
-    "Summary card",
-    "Pillar scorecards",
+    "Summary",
+    "Pillar scores",
+    "Points bar",
     "Trend",
     "Themes",
-    "NAP summary chip",
+    "NAP summary line",
     "Full audit detail",
     "What to do next",
     "Methodology",
@@ -504,24 +505,24 @@ test("a missing Section order heading is one violation", () => {
 
 test("a Layer 1 section out of order names the position, what is there and what the contract has", () => {
   const swapped = [...LAYER_1_SECTIONS];
-  [swapped[4], swapped[5]] = [swapped[5], swapped[4]];
+  [swapped[5], swapped[6]] = [swapped[6], swapped[5]];
   const violations = checkSectionOrder(sectionOrderMd({ titles: swapped }));
   assert.equal(violations.length, 2);
-  assert.match(violations[0], /section 5/);
-  assert.match(violations[0], /NAP summary chip/);
+  assert.match(violations[0], /section 6/);
+  assert.match(violations[0], /NAP summary line/);
   assert.match(violations[0], /Themes/);
 });
 
 test("a dropped Layer 1 section names the count and the contract's count", () => {
-  const titles = LAYER_1_SECTIONS.filter((title) => title !== "NAP summary chip");
+  const titles = LAYER_1_SECTIONS.filter((title) => title !== "NAP summary line");
   const violations = checkSectionOrder(sectionOrderMd({ titles }));
-  assert.ok(violations.some((v) => /9 Layer 1 sections/.test(v) && /10/.test(v)), violations.join("\n"));
+  assert.ok(violations.some((v) => /10 Layer 1 sections/.test(v) && /11/.test(v)), violations.join("\n"));
 });
 
-test("a pillar weight percentage on the Pillar scorecards item is a violation naming Methodology", () => {
+test("a pillar weight percentage on the Pillar scores item is a violation naming Methodology", () => {
   const violations = checkSectionOrder(sectionOrderMd({ scorecards: "name + weight %, the score big." }));
   assert.equal(violations.length, 1);
-  assert.match(violations[0], /Pillar scorecards/);
+  assert.match(violations[0], /Pillar scores/);
   assert.match(violations[0], /Methodology/);
 });
 
@@ -632,7 +633,7 @@ const writingStyle = ({
     "",
     "### Layer 1 templates",
     "",
-    `- **Summary card.** First scan: paragraph 2 ends with the sentence "${baseline}"`,
+    `- **Summary.** First scan: paragraph 2 ends with the sentence "${baseline}"`,
     ...templateLines(templates, ""),
     "",
     "### Effort labels",
@@ -701,28 +702,28 @@ test("a template missing from both homes is one violation naming both", () => {
   assert.match(violations[0], /Trend section and the writing-style section/);
 });
 
-test("a Summary card template without the first-scan baseline sentence is a violation", () => {
+test("a Summary template without the first-scan baseline sentence is a violation", () => {
   const violations = checkTrendContract(trendMd({ style: writingStyle({ baseline: "Come back next month." }) }));
   assert.equal(violations.length, 1);
-  assert.match(violations[0], /Summary card/);
+  assert.match(violations[0], /Summary/);
   assert.match(violations[0], /baseline/i);
 });
 
-test("the baseline sentence under another template does not satisfy the Summary card rule", () => {
+test("the baseline sentence under another template does not satisfy the Summary rule", () => {
   const style = writingStyle({ baseline: "Come back next month." }).replace(
     "### Effort labels",
     `- **Theme summary.** Two moves. "${FIRST_SCAN_BASELINE_SENTENCE}"\n\n### Effort labels`,
   );
   const violations = checkTrendContract(trendMd({ style }));
   assert.equal(violations.length, 1);
-  assert.match(violations[0], /Summary card/);
+  assert.match(violations[0], /Summary/);
 });
 
-test("a writing-style section with no Summary card template bullet is a violation", () => {
-  const style = writingStyle().replace("- **Summary card.**", "First scan:");
+test("a writing-style section with no Summary template bullet is a violation", () => {
+  const style = writingStyle().replace("- **Summary.**", "First scan:");
   const violations = checkTrendContract(trendMd({ style }));
   assert.equal(violations.length, 1);
-  assert.match(violations[0], /Summary card/);
+  assert.match(violations[0], /Summary/);
 });
 
 test("a headline framed on the previous scan rather than the first scan is a violation", () => {

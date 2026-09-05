@@ -1,7 +1,7 @@
 ---
 name: pinmeto-web-presence
 description: This skill should be used when the user asks to "check our web presence", "audit or monitor our SEO / AIO / GEO / agent readiness", "how do we look in AI search / ChatGPT / Gemini", "are our locations correct on Google, Apple, and Bing Maps", "run a presence scan", "update the presence report", or otherwise requests an SEO, AI-visibility (AIO), generative-engine (GEO), or agent-readiness analysis of a multi-location brand's website and map listings. Scores the brand against the PinMeTo MLPR rubric, produces an updatable report as a Site in ChatGPT/Codex or an HTML artifact in Claude, and can set up scheduled monitoring. Requires the PinMeTo Location MCP server; GEO checks use a browser against the real Google, Apple, and Bing Maps.
-version: 0.13.0
+version: 0.14.0
 license: Proprietary - (c) PinMeTo AB. See LICENSE.
 ---
 
@@ -128,11 +128,12 @@ returned, per the Theme mapping in [references/artifact-report.md](references/ar
 ### Stage 6 — Report (host-native, updatable)
 
 Produce the report per [references/artifact-report.md](references/artifact-report.md), matching
-the PinMeTo Presence Report contract: two layers, the marketer's sections first (hero,
-summary, scorecards, trend, Themes, NAP summary chip), then the full audit behind one
-collapsed "Full audit detail" expander, then "What to do next", Methodology and the footer.
-Include a fix-brief drawer (with a copy-paste
-coding-agent prompt) for every failing check, plus a Theme brief per Theme card that stacks
+the PinMeTo Presence Report contract: a briefing document on a white page, two layers, the
+marketer's sections first (hero with the summary beside the score, pillar scores, the points
+bar, trend, Themes with the top Theme expanded, the NAP summary line), then the full audit
+behind one collapsed "Full audit detail" expander, then "What to do next", Methodology and the
+footer. Include a fix-brief drawer (with a copy-paste
+coding-agent prompt) for every failing check, plus a Theme brief per Theme row that stacks
 those drawers unchanged behind one copy-all control (members without a drawer, the GEO
 sub-group B/C fields, appear as evidence pointers). Choose the delivery path from the host,
 identified from the runtime context (the product named in the system prompt and the
