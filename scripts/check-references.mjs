@@ -626,13 +626,25 @@ const TREND_ITEM_RULES = [
   ["credit no one, PinMeTo included, for the movement", /\bnothing\b[^.]{0,80}\bcredits\b/i],
   ["compute Theme progress against the current mapping only", /\bcurrent mapping[^.]{0,40}\bonly\b/i],
   ["treat ids absent from an older scan as unknown, never failing", /\bunknown\b[^.]{0,40}never failing/i],
+  // Variant D folds "What moved" into a disclosure that loads collapsed; an always-open callout
+  // is the old trend card.
+  ['fold "What moved" into a collapsed disclosure', /collapsed[^.]{0,20}what moved[^.]{0,80}disclosure/i],
 ];
 
-/** The "Open since" meta cell the Theme card gains from the second scan on (#12 decision 7). */
-const THEME_CARD_RULES = [
+/** Wording the variant-D trend retired; its presence means the old trend card came back. */
+const TREND_ITEM_FORBIDDEN = [
+  ["repeat the per-pillar deltas as a strip (they sit beside the pillar scores)", /per-pillar[^.]{0,20}\bstrip\b/i],
+];
+
+/**
+ * The Theme row contract (#12 decision 7, variant D): the "Open since" status the row gains
+ * from the second scan on, and the one expanded row at the top of the list.
+ */
+const THEME_ROW_RULES = [
+  ["render the top Theme as the one expanded row", /\bone expanded row\b/i],
   // The cell itself, not the phrase: the item also says a first scan has no "Open since" cell,
   // and a bare /open since/ would pass on that sentence after the cell was deleted.
-  ['carry an "Open since" cell on the Theme card meta line', /open since <date>[^.]{0,20}<n> scans/i],
+  ['carry an "Open since" status on the Theme row', /open since <date>[^.]{0,20}<n> scans/i],
   ["define its date as the earliest scan with a failing member", /earliest scan[^.]{0,80}fail/i],
   ["count the scans from that one to now inclusive", /counts? the scans[^.]{0,40}\binclusive\b/i],
 ];
@@ -675,6 +687,9 @@ export function checkTrendContract(reportMd) {
   } else {
     const prose = normalizeProse(trend.body);
     checkRules(prose, "Trend section", TREND_ITEM_RULES);
+    for (const [requirement, pattern] of TREND_ITEM_FORBIDDEN) {
+      if (pattern.test(prose)) violations.push(`${file}: the Trend section must not ${requirement}`);
+    }
     templateHomes.push({ label: "Trend section", prose });
   }
 
@@ -682,8 +697,8 @@ export function checkTrendContract(reportMd) {
   if (themes === undefined) {
     violations.push(`${file}: the "Section order" section has no **Themes** item`);
   } else {
-    // The Theme card carries the "Open since" cell, not the trend templates.
-    checkRules(normalizeProse(themes.body), "Theme card contract", THEME_CARD_RULES);
+    // The Theme row carries the "Open since" status, not the trend templates.
+    checkRules(normalizeProse(themes.body), "Theme row contract", THEME_ROW_RULES);
   }
 
   const stylePosition = headingList.findIndex((heading) => WRITING_STYLE_HEADING.test(heading.text));
@@ -695,7 +710,8 @@ export function checkTrendContract(reportMd) {
     // The sentence has to sit in the Summary template, not merely somewhere in the
     // section: #12 amends the summary's second paragraph, and a sentence that drifted
     // into a neighbouring template would leave the summary without it.
-    const summaryCard = templateBullets(section).find((bullet) => /^summary\b/i.test(bullet.lead));
+    // Exactly "Summary": the retired "Summary card" lead must not satisfy the new contract.
+    const summaryCard = templateBullets(section).find((bullet) => /^summary\.?$/i.test(bullet.lead));
     if (summaryCard === undefined) {
       violations.push(`${file}: the writing-style section has no **Summary** template bullet`);
     } else if (!summaryCard.prose.includes(normalizeProse(FIRST_SCAN_BASELINE_SENTENCE))) {

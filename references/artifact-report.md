@@ -163,9 +163,11 @@ light and dark viewers.
 - **Ink.** Navy `#000050` for headings, every score and the one primary button; body text
   `#333`; muted `#6A6F76` for labels, datelines and meta; link blue `#1E7FE0` for links and
   text-link buttons. Light blue `#BBD9FA` and mid blue `#3399FF` appear only in the logo.
-- **Orange `#FF8854` in exactly two places.** The rank badge on the top Theme (orange fill,
-  navy numeral, never white on orange) and the top Theme's hatched segment of the points bar.
-  Never as type on white, never as a border or rule.
+- **Orange `#FF8854` as an accent in exactly two places.** The rank badge on the top Theme
+  (orange fill, navy numeral, never white on orange) and the top Theme's hatched segment of the
+  points bar. Its only other use is as a status mark: the 8px fail dot in the counts row and on
+  Layer 2 check rows, listed under status colors below. Never as type on white, never as a
+  border or rule.
 - **Status colors.** Text: fail `#B5481E`, warn `#6A6F76`, pass `#137A50` (the band word under
   a pillar score, the NAP mismatch count). Dots in the counts row: fail `#FF8854`, warn
   `#6A6F76`, pass `#1FA971`. The points bar's earned segment is muted green `#CFEBDC` so it reads
@@ -253,10 +255,11 @@ you are from 100 and what closes the gap, what moved, then the work in the order
    - **The top Theme's worth**: orange diagonal hatching on white with a 1px orange outline.
    - **Every other Theme's worth**, in rank order: navy diagonal hatching on white with a 1px
      navy outline, one segment per Theme, 2px gaps between segments.
-   - **Not measurable**: the points held by `warn` checks, a dotted grey fill with a dashed
-     grey edge. Compute it from the warn checks' weights (`check_weight × pillar_weight / 100`,
-     summed), never as `100 − score − Theme worths`, so a rounding gap in the Theme worths can
-     never be reported as an evidence gap. If the segments do not sum to 100 after rounding,
+   - **Not measurable**: the points the `warn` checks did not earn, a dotted grey fill with a
+     dashed grey edge. A `warn` already earns half credit in the score (`scoring.md` §1, ratio
+     0.5), so this segment is the unearned half only: `check_weight × 0.5 × pillar_weight / 100`
+     summed over the warn checks, never `100 − score − Theme worths`, so a rounding gap in the
+     Theme worths can never be reported as an evidence gap and the bar can never exceed 100. If the segments do not sum to 100 after rounding,
      absorb the difference in the earned segment's width, never in a label.
 
    Hatched and dotted fills mean unfinished; nothing still to earn is a solid colour. Above the

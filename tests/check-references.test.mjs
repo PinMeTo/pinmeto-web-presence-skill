@@ -452,7 +452,7 @@ const sectionOrderMd = ({
   scorecards = "the pillar score big, a bar, the band word.",
   methodology = "the four pillar weights with one-line descriptions.",
   nested = layer2Items(),
-  trend = "the movement since the first scan, a chart, a per-pillar strip.",
+  trend = "the movement since the first scan, a chart.",
   expander = "one expander, collapsed when the page loads.",
 } = {}) => {
   const body = titles
@@ -607,7 +607,7 @@ const trendItem = ({ templates = TREND_TEMPLATES } = {}) =>
     "   - **Subline, since the previous scan**: omit it when the report has exactly two scans.",
     "   - **Themes cleared, since the first scan**: one line naming the cleared Themes by their",
     '     mapping name. Zero cleared: omit the line; never print "0 themes cleared".',
-    '   - a "What moved since <previous scan>" callout naming a Theme as **reopened**.',
+    '   - a collapsed "What moved since <previous scan>" disclosure naming a Theme as **reopened**.',
     ...templateLines(templates, "   "),
     "",
     "   **Cross-scan rules.** Theme progress is computed against the current mapping table only:",
@@ -616,11 +616,11 @@ const trendItem = ({ templates = TREND_TEMPLATES } = {}) =>
   ].join("\n");
 
 const themesItem = [
-  "5. **Themes** (the work list): one card per Theme.",
+  "6. **Themes** (the work list): one row per Theme; the top Theme is the one expanded row.",
   "",
-  "   **Theme card contract.** Every card carries a muted meta line, and from the second scan",
-  "   onward `· Open since <date> · <n> scans`: the date is the earliest scan in which any",
-  "   current member id was `fail`, and `<n>` counts the scans from that one to now inclusive.",
+  "   **Theme row contract.** Every row carries, from the second scan onward, a status",
+  "   `Open since <date>, <n> scans`: the date is the earliest scan in which any current",
+  "   member id was `fail`, and `<n>` counts the scans from that one to now inclusive.",
   '   On the first scan there is no "Open since" cell.',
 ].join("\n");
 
@@ -650,8 +650,36 @@ const trendMd = ({ trend = trendItem(), themes = themesItem, style = writingStyl
   return `# Report delivery\n\n## Section order\n\nTwo layers.\n\n${body}\n\n${style}\n`;
 };
 
-test("a trend item, Theme card contract and writing-style section carrying #12's contract pass", () => {
+test("a trend item, Theme row contract and writing-style section carrying #12's contract pass", () => {
   assert.deepEqual(checkTrendContract(trendMd()), []);
+});
+
+test("a Trend item whose What moved is not a collapsed disclosure is a violation", () => {
+  const trend = trendItem().replace('a collapsed "What moved since <previous scan>" disclosure', 'a "What moved since <previous scan>" callout');
+  const violations = checkTrendContract(trendMd({ trend }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /collapsed disclosure/);
+});
+
+test("a Trend item that brings back the per-pillar strip is a violation", () => {
+  const trend = `${trendItem()}\n   A per-pillar now/±delta strip sits under the chart.`;
+  const violations = checkTrendContract(trendMd({ trend }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /per-pillar/);
+});
+
+test("a Themes item without the one expanded top row is a violation", () => {
+  const themes = themesItem.replace("; the top Theme is the one expanded row", "");
+  const violations = checkTrendContract(trendMd({ themes }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /one expanded row/);
+});
+
+test('the retired "Summary card" template lead does not satisfy the Summary rule', () => {
+  const style = writingStyle().replace("- **Summary.**", "- **Summary card.**");
+  const violations = checkTrendContract(trendMd({ style }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /no \*\*Summary\*\* template bullet/);
 });
 
 test("the trend templates are #12's seven exact strings and the first-scan baseline sentence", () => {
@@ -759,8 +787,9 @@ test("a trend item that names a regression anything but reopened is a violation"
 
 test("the cross-scan paragraph's own mention of reopened does not satisfy the naming rule", () => {
   const trend = trendItem()
-    .replace('   - a "What moved since <previous scan>" callout naming a Theme as **reopened**.\n', "")
-    .replace("Theme progress is computed", "Theme progress (cleared, reopened) is computed");
+    .replace('   - a collapsed "What moved since <previous scan>" disclosure naming a Theme as **reopened**.\n', "")
+    .replace("Theme progress is computed", "Theme progress (cleared, reopened) is computed")
+    .replace("Every number", 'A collapsed "What moved" disclosure. Every number');
   const violations = checkTrendContract(trendMd({ trend }));
   assert.equal(violations.length, 1);
   assert.match(violations[0], /reopened/i);
@@ -784,12 +813,12 @@ test("cross-scan rules missing current-mapping-only, or absent-ids-are-unknown, 
   assert.match(violations[0], /unknown/i);
 });
 
-test("a Theme card contract without the Open since cell, or without its definitions, is a violation each", () => {
-  let themes = themesItem.replace("`· Open since <date> · <n> scans`", "`· <n> scans`");
+test("a Theme row contract without the Open since status, or without its definitions, is a violation each", () => {
+  let themes = themesItem.replace("`Open since <date>, <n> scans`", "`<n> scans`");
   let violations = checkTrendContract(trendMd({ themes }));
   assert.equal(violations.length, 1);
   assert.match(violations[0], /Open since/i);
-  themes = themesItem.replace("the earliest scan in which any\n   current member id was `fail`", "the first scan");
+  themes = themesItem.replace("the earliest scan in which any current\n   member id was `fail`", "the first scan");
   violations = checkTrendContract(trendMd({ themes }));
   assert.equal(violations.length, 1);
   assert.match(violations[0], /earliest scan/i);
