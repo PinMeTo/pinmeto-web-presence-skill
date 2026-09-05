@@ -39,10 +39,10 @@
 //      cannot drift between two copies. Headings inside fenced code blocks are
 //      illustration, not structure, and are ignored here and in (d).
 //   6. The two-layer contract in references/artifact-report.md: the "Section
-//      order" section lists exactly the ten Layer 1 sections (LAYER_1_SECTIONS)
+//      order" section lists exactly the eleven Layer 1 sections (LAYER_1_SECTIONS)
 //      in order; the "Full audit detail" section enumerates Layer 2's six items
 //      (LAYER_2_ITEMS) in order and says the expander is collapsed; the "Pillar
-//      scorecards" section gives no pillar weight as a percentage, because the
+//      scores" section gives no pillar weight as a percentage, because the
 //      four weights live in "Methodology", which must name them.
 //   7. The trend card's progress story in references/artifact-report.md: the
 //      "Section order" section's Trend item frames the headline since the first
@@ -53,7 +53,7 @@
 //      older scan unknown rather than failing); the Themes item defines the
 //      "Open since" meta cell; the Trend item and the writing-style section, the
 //      two places #12 puts the templates, both carry TREND_TEMPLATES verbatim;
-//      and the writing-style section's Summary card bullet, not merely the
+//      and the writing-style section's Summary bullet, not merely the
 //      section, carries FIRST_SCAN_BASELINE_SENTENCE.
 //   8. Retired vocabulary (RETIRED_VOCABULARY: the wording the Themes work
 //      list replaced) is absent from SKILL.md, CONTEXT.md, README.md and every
@@ -79,6 +79,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const REQUIRED_GLOSSARY_TERMS = [
   "Fix brief",
   "Points returned",
+  "Points bar",
+  "Theme row",
   "Report",
   "Layer 1",
   "Layer 2",
@@ -421,14 +423,15 @@ export function checkThemeMapping(reportMd, rubricMd) {
 
 const SECTION_ORDER_HEADING = /^section order$/i;
 
-/** Layer 1's ten sections, in the order #13 approved and #17 landed. */
+/** Layer 1's eleven sections, in the order #13 approved, #17 landed and the variant-D redesign reordered. */
 export const LAYER_1_SECTIONS = [
   "Hero",
-  "Summary card",
-  "Pillar scorecards",
+  "Summary",
+  "Pillar scores",
+  "Points bar",
   "Trend",
   "Themes",
-  "NAP summary chip",
+  "NAP summary line",
   "Full audit detail",
   "What to do next",
   "Methodology",
@@ -498,9 +501,9 @@ function compareOrder(file, items, expected, { label, listedIn }) {
 }
 
 /**
- * The two-layer contract (#17): "Section order" lists exactly the ten Layer 1
+ * The two-layer contract (#17): "Section order" lists exactly the eleven Layer 1
  * sections in order, the "Full audit detail" section enumerates Layer 2's six
- * items in order, the "Pillar scorecards" section gives no pillar weight as a
+ * items in order, the "Pillar scores" section gives no pillar weight as a
  * percentage (those live in Methodology) and the "Methodology" section names
  * the weights.
  */
@@ -606,7 +609,7 @@ export const TREND_TEMPLATES = [
   "<count> themes cleared since your first scan on <date>: <name>, <name>",
 ];
 
-/** The sentence the summary card's second paragraph ends with on a first scan (#12 decision 9). */
+/** The sentence the summary's second paragraph ends with on a first scan (#12 decision 9). */
 export const FIRST_SCAN_BASELINE_SENTENCE = "This scan is your baseline; the next one shows what moved.";
 
 /** What the trend card's own contract has to say (#12's §4 and its cross-scan rules). */
@@ -623,13 +626,45 @@ const TREND_ITEM_RULES = [
   ["credit no one, PinMeTo included, for the movement", /\bnothing\b[^.]{0,80}\bcredits\b/i],
   ["compute Theme progress against the current mapping only", /\bcurrent mapping[^.]{0,40}\bonly\b/i],
   ["treat ids absent from an older scan as unknown, never failing", /\bunknown\b[^.]{0,40}never failing/i],
+  // Variant D folds "What moved" into a disclosure that loads collapsed; an always-open callout
+  // is the old trend card.
+  ['fold "What moved" into a collapsed disclosure', /collapsed[^.]{0,20}what moved[^.]{0,80}disclosure/i, "affirmative"],
 ];
 
-/** The "Open since" meta cell the Theme card gains from the second scan on (#12 decision 7). */
-const THEME_CARD_RULES = [
+/**
+ * Polarity. A rule that only looks for a phrase accepts "do not use a collapsed disclosure"
+ * and rejects "do not repeat the per-pillar strip". So a rule tagged "affirmative" holds only
+ * when the sentence carrying the phrase does not negate it before the phrase, and a prohibited
+ * phrase counts only when its sentence states it affirmatively. Sentences are split on ". ",
+ * which is how normalizeProse leaves them.
+ */
+const NEGATION = /\b(?:not|never|no|nor|without)\b/i;
+function sentenceAround(prose, pattern) {
+  const match = pattern.exec(prose);
+  if (match === null) return null;
+  const start = prose.lastIndexOf(". ", match.index) + 1;
+  return { before: prose.slice(start, match.index) };
+}
+/** True when `pattern` occurs in `prose` in a sentence that does not negate it first. */
+export function statesAffirmatively(prose, pattern) {
+  const found = sentenceAround(prose, pattern);
+  return found !== null && !NEGATION.test(found.before);
+}
+
+/** Wording the variant-D trend retired; its presence means the old trend card came back. */
+const TREND_ITEM_FORBIDDEN = [
+  ["repeat the per-pillar deltas as a strip (they sit beside the pillar scores)", /per-pillar[^.]{0,20}\bstrip\b/i],
+];
+
+/**
+ * The Theme row contract (#12 decision 7, variant D): the "Open since" status the row gains
+ * from the second scan on, and the one expanded row at the top of the list.
+ */
+const THEME_ROW_RULES = [
+  ["render the top Theme as the one expanded row", /\bone expanded row\b/i, "affirmative"],
   // The cell itself, not the phrase: the item also says a first scan has no "Open since" cell,
   // and a bare /open since/ would pass on that sentence after the cell was deleted.
-  ['carry an "Open since" cell on the Theme card meta line', /open since <date>[^.]{0,20}<n> scans/i],
+  ['carry an "Open since" status on the Theme row', /open since <date>[^.]{0,20}<n> scans/i],
   ["define its date as the earliest scan with a failing member", /earliest scan[^.]{0,80}fail/i],
   ["count the scans from that one to now inclusive", /counts? the scans[^.]{0,40}\binclusive\b/i],
 ];
@@ -659,8 +694,9 @@ export function checkTrendContract(reportMd) {
   const item = (title) => (layer1 ?? []).find((entry) => entry.title.toLowerCase() === title.toLowerCase());
 
   const checkRules = (prose, label, rules) => {
-    for (const [requirement, pattern] of rules) {
-      if (!pattern.test(prose)) violations.push(`${file}: the ${label} does not ${requirement}`);
+    for (const [requirement, pattern, polarity] of rules) {
+      const holds = polarity === "affirmative" ? statesAffirmatively(prose, pattern) : pattern.test(prose);
+      if (!holds) violations.push(`${file}: the ${label} does not ${requirement}`);
     }
   };
   /** The sections that must each carry every template, by label and normalized prose. */
@@ -672,6 +708,10 @@ export function checkTrendContract(reportMd) {
   } else {
     const prose = normalizeProse(trend.body);
     checkRules(prose, "Trend section", TREND_ITEM_RULES);
+    for (const [requirement, pattern] of TREND_ITEM_FORBIDDEN) {
+      // "Do not repeat the per-pillar strip" is the contract, not a breach of it.
+      if (statesAffirmatively(prose, pattern)) violations.push(`${file}: the Trend section must not ${requirement}`);
+    }
     templateHomes.push({ label: "Trend section", prose });
   }
 
@@ -679,8 +719,8 @@ export function checkTrendContract(reportMd) {
   if (themes === undefined) {
     violations.push(`${file}: the "Section order" section has no **Themes** item`);
   } else {
-    // The Theme card carries the "Open since" cell, not the trend templates.
-    checkRules(normalizeProse(themes.body), "Theme card contract", THEME_CARD_RULES);
+    // The Theme row carries the "Open since" status, not the trend templates.
+    checkRules(normalizeProse(themes.body), "Theme row contract", THEME_ROW_RULES);
   }
 
   const stylePosition = headingList.findIndex((heading) => WRITING_STYLE_HEADING.test(heading.text));
@@ -689,15 +729,16 @@ export function checkTrendContract(reportMd) {
   } else {
     const section = sectionWithSubsections(headingList, stylePosition);
     templateHomes.push({ label: "writing-style section", prose: normalizeProse(section) });
-    // The sentence has to sit in the Summary card template, not merely somewhere in the
-    // section: #12 amends the summary card's second paragraph, and a sentence that drifted
-    // into a neighbouring template would leave the summary card without it.
-    const summaryCard = templateBullets(section).find((bullet) => /summary card/i.test(bullet.lead));
+    // The sentence has to sit in the Summary template, not merely somewhere in the
+    // section: #12 amends the summary's second paragraph, and a sentence that drifted
+    // into a neighbouring template would leave the summary without it.
+    // Exactly "Summary": the retired "Summary card" lead must not satisfy the new contract.
+    const summaryCard = templateBullets(section).find((bullet) => /^summary\.?$/i.test(bullet.lead));
     if (summaryCard === undefined) {
-      violations.push(`${file}: the writing-style section has no **Summary card** template bullet`);
+      violations.push(`${file}: the writing-style section has no **Summary** template bullet`);
     } else if (!summaryCard.prose.includes(normalizeProse(FIRST_SCAN_BASELINE_SENTENCE))) {
       violations.push(
-        `${file}: the Summary card template does not end a first scan's second paragraph with the baseline sentence "${FIRST_SCAN_BASELINE_SENTENCE}"`,
+        `${file}: the Summary template does not end a first scan's second paragraph with the baseline sentence "${FIRST_SCAN_BASELINE_SENTENCE}"`,
       );
     }
   }

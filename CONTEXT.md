@@ -81,7 +81,7 @@ For sub-group C, the majority value across a location's observed platforms; Goog
 The letter A–F read from the rounded overall score. Decided once at scoring time and stored in history; never recomputed retroactively.
 
 **Status band**:
-The label shown on the hero and scorecards — Strong, Healthy, Needs work, Critical — mapped from the grade thresholds.
+The label shown on the hero and under each pillar score — Strong, Healthy, Needs work, Critical — mapped from the grade thresholds.
 
 **Points returned**:
 The overall-score points a fix would recover (`check_weight × (1 − ratio) × pillar_weight / 100`). The ranking key for Themes (summed across a Theme's failing members) and for sections inside a Theme brief.
@@ -114,7 +114,7 @@ _Avoid_: recommendation, action item
 _See also_: Theme brief
 
 **Layer 1**:
-Everything in a report except what sits inside the "Full audit detail" expander: the ten sections the report delivery reference fixes, from the hero through the Themes work list and the NAP summary chip to "What to do next", Methodology and the footer. Written for a marketer, and the print view.
+Everything in a report except what sits inside the "Full audit detail" expander: the eleven sections the report delivery reference fixes, from the hero through the pillar scores, the Points bar, the trend, the Themes work list and the NAP summary line to "What to do next", Methodology and the footer. Written for a marketer, and the print view.
 _Avoid_: overview, top of the page, executive summary
 
 **Layer 2**:
@@ -122,15 +122,23 @@ The full audit, behind the report's one "Full audit detail" expander, collapsed 
 _Avoid_: appendix, details section, the rest
 
 **Theme**:
-A fixed cross-pillar group of checks that one fix and one owner resolve, defined by the Theme mapping in the report delivery reference. The unit of the Layer 1 work list; a Theme card's headline is the Theme's name from the mapping, verbatim. Themes are presentation only; the rubric stays the closed set.
+A fixed cross-pillar group of checks that one fix and one owner resolve, defined by the Theme mapping in the report delivery reference. The unit of the Layer 1 work list; a Theme row's headline is the Theme's name from the mapping, verbatim. Themes are presentation only; the rubric stays the closed set.
 _Avoid_: focus area, opportunity, category, bucket, issue group
+
+**Theme row**:
+One Theme's entry in the Layer 1 work list: the top-ranked Theme as the one expanded row (rank badge, name, summary, effort, pays in, failing checks, status, worth, the page's one primary "How to fix" button), every other Theme as a compact line (rank, name, worth, effort, a text-link "How to fix"). Rows sit under hairlines; there are no cards.
+_Avoid_: Theme card, tile
+
+**Points bar**:
+The Layer 1 chart that answers "how far from 100 am I, and what closes the gap": one bar from 0 to 100 whose earned part is a solid muted green and whose remaining parts are hatched (one segment per open Theme, the top Theme in orange) or dotted (points held by `warn` checks). Hatched and dotted mean unfinished; its hatched total equals the Themes lede's summed worth.
+_Avoid_: progress bar, gap chart, missing-points bar
 
 **Theme mapping**:
 The fixed table assigning every point-bearing check id (pillar checks and GEO sub-group B/C fields) to exactly one Theme, pinned to a rubric version. Publishing fails when the mapping and the rubric disagree.
 _Avoid_: grouping, categorisation, bucket list
 
 **Theme brief**:
-The drawer opened from a Theme card. Contains, unchanged, the fix brief of every failing member check (an evidence pointer into the NAP matrix for the GEO sub-group B/C fields, which have no drawer), ordered by points returned, plus a header with the Theme's worth, effort and a copy-all control. Never a merged brief: nothing in it is written per Theme per scan.
+The drawer opened from a Theme row. Contains, unchanged, the fix brief of every failing member check (an evidence pointer into the NAP matrix for the GEO sub-group B/C fields, which have no drawer), ordered by points returned, plus a header with the Theme's worth, effort and a copy-all control. Never a merged brief: nothing in it is written per Theme per scan.
 _Avoid_: theme drawer, combined brief, mega-prompt
 
 **Effort label**:

@@ -85,7 +85,7 @@ real measurements, so GEO scores normally at or near zero and this branch must n
 pillar assembled entirely from 0.5s prints a mid-50s number for listings nobody looked at,
 under a PinMeTo logo. Instead:
 
-- render GEO as **"Not measured"** in the scorecard, with the reason,
+- render GEO as **"Not measured"** under the pillar scores, with the reason,
 - **exclude it from the overall**, reweighting the other three pillars proportionally
   (SEO 0.43, AIO 0.357, Agent Readiness 0.214), and say in the hero sub-line and the
   methodology that the overall covers three pillars,
@@ -111,7 +111,7 @@ history block so the report renders from them rather than recomputing.
 | D | ≥45 |
 | F | <45 |
 
-Status bands (used for the hero tag and the pillar scorecards) map onto the grade
+Status bands (used for the hero band word and the pillar scores) map onto the grade
 thresholds: **Strong** ≥90 · **Healthy** ≥75 · **Needs work** ≥60 · **Critical** <60.
 
 ## 4. Points returned: the ranking key for Themes
@@ -124,7 +124,7 @@ For each failing (not warn) check:
 `(1 ÷ count of that platform's applicable_checks) × platform_weight × 0.55 × 0.30`, and a
 sub-group B/C field's is `field_share × subgroup_weight × 0.30`. Themes rank by summed
 points returned over their failing members; membership comes from the Theme mapping in
-`artifact-report.md`, never from per-scan judgment, and presentation (the Theme cards and the
+`artifact-report.md`, never from per-scan judgment, and presentation (the Theme rows and the
 Theme brief) is specified in `artifact-report.md`.
 
 Tie-breakers: fleet-wide template fixes beat per-location manual edits; person-tasks (claim a
