@@ -675,6 +675,28 @@ test("a Themes item without the one expanded top row is a violation", () => {
   assert.match(violations[0], /one expanded row/);
 });
 
+test("a negated collapsed-disclosure sentence does not satisfy the affirmative rule", () => {
+  const trend = trendItem().replace(
+    'a collapsed "What moved since <previous scan>" disclosure naming a Theme as **reopened**.',
+    'Do not use a collapsed "What moved since <previous scan>" disclosure; a Theme that fails again is named as **reopened** in a callout.',
+  );
+  const violations = checkTrendContract(trendMd({ trend }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /collapsed disclosure/);
+});
+
+test("a prohibition of the per-pillar strip is the contract, not a violation", () => {
+  const trend = `${trendItem()}\n   Do not repeat the per-pillar delta strip here; the deltas sit beside the pillar scores.`;
+  assert.deepEqual(checkTrendContract(trendMd({ trend })), []);
+});
+
+test("a Themes item that negates the one expanded row is a violation", () => {
+  const themes = themesItem.replace("the top Theme is the one expanded row", "the top Theme is not the one expanded row");
+  const violations = checkTrendContract(trendMd({ themes }));
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /one expanded row/);
+});
+
 test('the retired "Summary card" template lead does not satisfy the Summary rule', () => {
   const style = writingStyle().replace("- **Summary.**", "- **Summary card.**");
   const violations = checkTrendContract(trendMd({ style }));

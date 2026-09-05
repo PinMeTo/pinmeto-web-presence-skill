@@ -628,8 +628,28 @@ const TREND_ITEM_RULES = [
   ["treat ids absent from an older scan as unknown, never failing", /\bunknown\b[^.]{0,40}never failing/i],
   // Variant D folds "What moved" into a disclosure that loads collapsed; an always-open callout
   // is the old trend card.
-  ['fold "What moved" into a collapsed disclosure', /collapsed[^.]{0,20}what moved[^.]{0,80}disclosure/i],
+  ['fold "What moved" into a collapsed disclosure', /collapsed[^.]{0,20}what moved[^.]{0,80}disclosure/i, "affirmative"],
 ];
+
+/**
+ * Polarity. A rule that only looks for a phrase accepts "do not use a collapsed disclosure"
+ * and rejects "do not repeat the per-pillar strip". So a rule tagged "affirmative" holds only
+ * when the sentence carrying the phrase does not negate it before the phrase, and a prohibited
+ * phrase counts only when its sentence states it affirmatively. Sentences are split on ". ",
+ * which is how normalizeProse leaves them.
+ */
+const NEGATION = /\b(?:not|never|no|nor|without)\b/i;
+function sentenceAround(prose, pattern) {
+  const match = pattern.exec(prose);
+  if (match === null) return null;
+  const start = prose.lastIndexOf(". ", match.index) + 1;
+  return { before: prose.slice(start, match.index) };
+}
+/** True when `pattern` occurs in `prose` in a sentence that does not negate it first. */
+export function statesAffirmatively(prose, pattern) {
+  const found = sentenceAround(prose, pattern);
+  return found !== null && !NEGATION.test(found.before);
+}
 
 /** Wording the variant-D trend retired; its presence means the old trend card came back. */
 const TREND_ITEM_FORBIDDEN = [
@@ -641,7 +661,7 @@ const TREND_ITEM_FORBIDDEN = [
  * from the second scan on, and the one expanded row at the top of the list.
  */
 const THEME_ROW_RULES = [
-  ["render the top Theme as the one expanded row", /\bone expanded row\b/i],
+  ["render the top Theme as the one expanded row", /\bone expanded row\b/i, "affirmative"],
   // The cell itself, not the phrase: the item also says a first scan has no "Open since" cell,
   // and a bare /open since/ would pass on that sentence after the cell was deleted.
   ['carry an "Open since" status on the Theme row', /open since <date>[^.]{0,20}<n> scans/i],
@@ -674,8 +694,9 @@ export function checkTrendContract(reportMd) {
   const item = (title) => (layer1 ?? []).find((entry) => entry.title.toLowerCase() === title.toLowerCase());
 
   const checkRules = (prose, label, rules) => {
-    for (const [requirement, pattern] of rules) {
-      if (!pattern.test(prose)) violations.push(`${file}: the ${label} does not ${requirement}`);
+    for (const [requirement, pattern, polarity] of rules) {
+      const holds = polarity === "affirmative" ? statesAffirmatively(prose, pattern) : pattern.test(prose);
+      if (!holds) violations.push(`${file}: the ${label} does not ${requirement}`);
     }
   };
   /** The sections that must each carry every template, by label and normalized prose. */
@@ -688,7 +709,8 @@ export function checkTrendContract(reportMd) {
     const prose = normalizeProse(trend.body);
     checkRules(prose, "Trend section", TREND_ITEM_RULES);
     for (const [requirement, pattern] of TREND_ITEM_FORBIDDEN) {
-      if (pattern.test(prose)) violations.push(`${file}: the Trend section must not ${requirement}`);
+      // "Do not repeat the per-pillar strip" is the contract, not a breach of it.
+      if (statesAffirmatively(prose, pattern)) violations.push(`${file}: the Trend section must not ${requirement}`);
     }
     templateHomes.push({ label: "Trend section", prose });
   }
