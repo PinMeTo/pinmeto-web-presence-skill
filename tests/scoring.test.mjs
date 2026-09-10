@@ -91,10 +91,20 @@ test("the history entry is ready to append to the scan history block", () => {
   const entry = scores.entry;
   assert.equal(entry.date, "2026-09-07");
   assert.equal(entry.label, "Third scan");
-  assert.equal(entry.rubricVersion, "2.14.0-skill.1");
+  assert.equal(entry.rubricVersion, "2.15.0-skill.1");
   assert.deepEqual(entry.pillars, { seo: 43, geo: 80, aio: 85, agent_readiness: 97 });
   assert.deepEqual(entry.sample, ["1337", "171206", "666", "GDANSK", "MUMBAI"]);
   assert.ok(entry.notes.length > 0, "the scan's measurement notes carry into the history entry");
+});
+
+test("the engine that measured LCP carries into the history entry", () => {
+  const withEngine = clone();
+  withEngine.lcpEngine = "psi-web";
+  assert.equal(score(withEngine).scores.entry.lcpEngine, "psi-web");
+  assert.ok(
+    !("lcpEngine" in score(fixture).scores.entry),
+    "a scan from before the ladder existed says nothing rather than null",
+  );
 });
 
 test("a category-conditional check excluded everywhere is absent from the history checks", () => {

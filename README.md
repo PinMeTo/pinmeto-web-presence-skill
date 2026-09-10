@@ -3,7 +3,7 @@
 A host-aware skill for ChatGPT/Codex and Claude that audits and **monitors** a multi-location
 brand's online findability across four pillars — **SEO**, **GEO** (real Google, Apple, and
 Bing Maps listings, checked in a browser), **AI visibility (AIO)**, and **Agent Readiness** —
-scored against the PinMeTo MLPR rubric (v2.14.0-skill.1, a skill-line fork of the v2.8.0
+scored against the PinMeTo MLPR rubric (v2.15.0-skill.1, a skill-line fork of the v2.8.0
 rubric in `pinmeto-www-reports` that re-adds Bing and adds a PinMeTo-connection check). It
 produces an updatable, two-layer Presence Report (a published Site in ChatGPT/Codex, or an
 HTML artifact in Claude). Layer 1 is written for a marketer: score, trend, and a ranked list of
@@ -62,10 +62,12 @@ lands, every future `vX.Y.Z` tag here syncs automatically.
 
 ## Status
 
-`v0.13.0` — four-pillar methodology on rubric 2.14.0-skill.1 (MLPR 2.8.0 + Bing re-added +
+`v0.16.0` — four-pillar methodology on rubric 2.15.0-skill.1 (MLPR 2.8.0 + Bing re-added +
 PinMeTo-connection check); GEO evidence via real map surfaces in a browser (no Places API /
 MapKit); host-native updatable report with embedded scan history, rendered as the two-layer
-Presence Report (Themes and the progress story first, the full audit behind one expander).
+Presence Report (Themes and the progress story first, the full audit behind one expander);
+the deterministic half of a scan shipped as scripts; PageSpeed measured on the API-key /
+`pagespeed.web.dev` / standing-`warn` ladder.
 Refine against real audits before v1.
 
 ## License

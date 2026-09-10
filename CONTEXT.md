@@ -56,6 +56,13 @@ _Avoid_: warning (as in "minor problem"), soft fail
 **Rendered-only credit**:
 The half credit a dual-pass check earns when a value exists only after JS rendering. A real half-failure with evidence and a fix brief — the opposite of a `warn`, despite sharing the number 0.5.
 
+**Measurement engine**:
+What produced a PageSpeed number: the PageSpeed Insights API (`psi`) or `pagespeed.web.dev`
+driven in the browser (`psi-web`). Both run Lighthouse on Google's infrastructure, so results
+are comparable; recorded per scan as `lcpEngine` so a future third engine cannot be compared
+against them silently.
+_Avoid_: measurement method, tool
+
 **Observation**:
 In GEO, one evaluation of a check at a single location × platform. Many observations exist per GEO check id.
 

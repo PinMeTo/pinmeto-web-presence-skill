@@ -1,7 +1,7 @@
 ---
 name: pinmeto-web-presence
 description: This skill should be used when the user asks to "check our web presence", "audit or monitor our SEO / AIO / GEO / agent readiness", "how do we look in AI search / ChatGPT / Gemini", "are our locations correct on Google, Apple, and Bing Maps", "run a presence scan", "update the presence report", or otherwise requests an SEO, AI-visibility (AIO), generative-engine (GEO), or agent-readiness analysis of a multi-location brand's website and map listings. Scores the brand against the PinMeTo MLPR rubric, produces an updatable report as a Site in ChatGPT/Codex or an HTML artifact in Claude, and can set up scheduled monitoring. Requires the PinMeTo Location MCP server; GEO checks use a browser against the real Google, Apple, and Bing Maps.
-version: 0.15.0
+version: 0.16.0
 license: Proprietary - (c) PinMeTo AB. See LICENSE.
 ---
 
@@ -24,7 +24,7 @@ location data), because most local-SEO and AI-visibility failures are NAP (name/
 and structured-data inconsistencies between PinMeTo and the live web.
 
 The scoring rubric is defined in [references/rubric.md](references/rubric.md) — a skill-line
-fork (v2.14.0-skill.1) of the PinMeTo MLPR product rubric v2.8.0 that re-adds Bing as a scored
+fork (v2.15.0-skill.1) of the PinMeTo MLPR product rubric v2.8.0 that re-adds Bing as a scored
 GEO platform and adds a PinMeTo-connection check; SEO/AIO/Agent Readiness are identical to
 the product. Do not invent checks or reweight; deviations from the rubric make scans
 incomparable.
@@ -49,7 +49,9 @@ incomparable.
   object, `geo.special_hours_set` still scores from `specialOpenHours`, and every check
   that needs a map surface is `warn` (evidence gap) with a note explaining why. If no GEO
   observation is possible at all, follow the "GEO could not be observed" path in
-  `references/scoring.md`.
+  `references/scoring.md`. A browser-less run is also the only one that needs a PageSpeed
+  API key: the keyless path for `seo.lcp_sample` drives `pagespeed.web.dev` in the browser
+  (`references/seo-checks.md`).
 - **Web fetch** for SEO / AIO / Agent Readiness checks against the brand's site.
 - **A shell with `curl` and `python3`** for the scripts in `scripts/` (see rule 1). Nothing
   to install — they are stdlib only. Without a shell the scan still runs, but every
@@ -70,6 +72,12 @@ Ask only for what is not obvious, one thing at a time:
 4. **Target markets / languages**, if multi-country (affects hreflang and sampling).
 5. Whether this is a **first scan** or a **re-run** of an existing report (re-runs update the
    same Site or artifact and reuse its pinned location sample — see Output below).
+6. **A PageSpeed API key — only when this run has no browser.** Do not ask otherwise: the
+   scan uses `$PAGESPEED_API_KEY` / `$PSI_API_KEY` when the host already has one, and
+   otherwise measures through `pagespeed.web.dev` in the browser, which needs no key. With
+   no browser and no key, `seo.lcp_sample` (10 SEO points) is a standing `warn`; say that,
+   offer the free key, and accept "skip" without pressing. The full ladder is in
+   `references/seo-checks.md`.
 
 ## Workflow
 
@@ -175,6 +183,7 @@ Route each kind of work to the cheapest thing that does it correctly:
    | `scripts/fetch.sh` | one concurrent burst of every URL Stages 2–3 need, including the no-redirect and markdown-negotiation probes | `fetch/<key>.{h,b,m}` |
    | `scripts/analyze_served.py` | served-pass extraction: title, meta, canonical, h1, og/twitter, hreflang, lang, robots, alt counts, anchors, JSON-LD graph, first 200 words | `served.json` |
    | `scripts/crawl.py` | the `seo.internal_linking_depth` BFS exactly as `seo-checks.md` defines it | `crawl.json` |
+   | `scripts/pagespeed.mjs` | rung 1 of the `seo.lcp_sample` engine ladder: PageSpeed for up to 3 URLs, one attempt each, stopping on the first 429 | JSON Lines on stdout |
    | `scripts/score.py` | the arithmetic in `scoring.md` and the Theme ranking in `artifact-report.md` | `scores.json` |
    | `scripts/diff_history.py` | the mechanical `checks` diff between the last two scans | `diff.json` |
 
@@ -218,8 +227,11 @@ Route each kind of work to the cheapest thing that does it correctly:
    data directory instead; do not terminate the running one, because you cannot tell from a
    process list whether somebody is working in it.
 5. **Parallelize everything that is not the browser.** The wall-clock order that works:
-   - Kick off the **PSI API calls first, in the background** — they are the slowest
-     single fetches in the scan and nothing depends on them until scoring.
+   - Kick off the **PageSpeed calls first, in the background** — the slowest single fetches
+     in the scan, and nothing depends on them until scoring. This applies to the keyed API
+     path (`scripts/pagespeed.mjs`) only; the keyless `pagespeed.web.dev` path needs the
+     single browser, so it sequences with the rendered pass and GEO instead of overlapping
+     them.
    - Write the URL lists and run **`scripts/fetch.sh`** once: robots, sitemaps, sampled
      pages and `.well-known` probes go out in one concurrent burst against the brand's own
      site. Leave the concurrency at its default of **3**. Higher backfires — at `-P 8`
@@ -236,7 +248,7 @@ Route each kind of work to the cheapest thing that does it correctly:
      Sequence there: concurrent served fetches → rendered pass → GEO.
 6. **No subagent support?** Fine — the whole workflow runs single-agent; the scripts in
    rule 1 (including their concurrent fetching) are what keep that affordable, and the
-   PSI-first ordering still applies.
+   PageSpeed-first ordering still applies on the keyed path.
 
 ## Scope and honesty
 

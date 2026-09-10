@@ -11,6 +11,54 @@ A rubric bump is required whenever a change moves scores, because the re-run att
 in `references/rubric.md` can only separate rubric drift from real customer progress if the
 version moved with the rules.
 
+## v0.16.0 · 2026-09-10 · rubric 2.15.0-skill.1
+
+The two PageSpeed checks stop being the ones that never run. `seo.lcp_sample` and
+`seo.mobile_friendly` came back `warn` in every dogfood scan because the anonymous PageSpeed
+quota is per-IP and always exhausted — three calls a scan that always failed, and a Theme
+(`fast-on-phones`) that could never appear.
+
+- **`seo.mobile_friendly` leaves PageSpeed entirely.** Its procedure read the Lighthouse
+  `viewport`, `tap-targets` and `font-size` audits and **none of the three still exists**:
+  a live `pagespeed.web.dev` run on 2026-09-10 returned Lighthouse 13.4.1 with an SEO category
+  of `is-crawlable, document-title, meta-description, http-status-code, link-text,
+  crawlable-anchors, robots-txt, image-alt, hreflang, canonical, structured-data`. The check
+  now reads `<meta name="viewport">` off the sampled pages' served HTML, which the scan already
+  fetches — deterministic, engine-free, and measurable even on a browser-less run. `source`
+  moves from `pagespeed` to `html` and the id joins `dual_pass_checks`.
+- **`seo.lcp_sample` gets an engine ladder**: the API when `$PAGESPEED_API_KEY` or
+  `$PSI_API_KEY` is already in the environment · else `pagespeed.web.dev` driven in the
+  browser, which needs no key · else, with neither, a standing `warn` recorded **without
+  calling anything**. Both measuring rungs are the same engine (Lighthouse on Google's
+  infrastructure), so scans stay comparable across rungs. Running Lighthouse locally was
+  considered and rejected: a lab number off the scanning machine moves with its CPU, which is
+  the drift the pinned sample exists to prevent.
+- **It scores the lab LCP, always.** Preferring CrUX field data "when present" mixed two
+  different measurements inside one three-URL ratio, since most location pages have no field
+  data. Field LCP is now evidence beside the lab number.
+- **`scripts/pagespeed.mjs`** (new, stock Node, no dependencies) is the API rung: one attempt
+  per URL, 60 s hard timeout, **no retries**, and it **stops after the first 429** because the
+  remaining URLs share the refused quota. It prints one JSON line per URL including the ones it
+  did not call, so the attempted denominator the rubric requires cannot silently shrink, and it
+  never prints the key — the endpoint appears as `key=REDACTED`.
+- **The browser rung's recipe is verified, not assumed.** `pagespeed.web.dev` delivers the full
+  Lighthouse JSON in a `batchexecute` response; `seo-checks.md` gives the extraction, including
+  the two traps a live run exposed: the chunk-length prefixes count bytes while the body is
+  UTF-16 text, and `form_factor=mobile` only selects the tab — the page runs both form factors,
+  so the payload must be picked by `configSettings.formFactor` or a desktop number gets scored
+  as mobile (733 ms vs 2927 ms on the same page).
+- **The key is no longer an up-front question.** `SKILL.md` asks for one only on a browser-less
+  run, where it is the difference between measuring and not, and takes "skip" without pressing.
+- **`lcpEngine`** joins the scan-history entry (optional, `"psi"` / `"psi-web"` / `null`) so a
+  later scan knows what measured the number it is comparing against. `results.json` carries it
+  and `scripts/score.py` copies it through; omit it and the entry omits it, because a scan from
+  before the ladder is unknown rather than `null`.
+- **The deterministic scripts learn the new signals**: `scripts/analyze_served.py` records each
+  page's `viewport` in `served.json`, which is what `seo.mobile_friendly` now scores.
+- **Scores move**: a re-run of a report whose PageSpeed checks were `warn` on quota can swing up
+  to 15 SEO points in either direction. That is the rubric bump, not customer progress —
+  weights, thresholds and the `warn`/`fail` precedence are otherwise unchanged.
+
 ## v0.15.0 · 2026-09-10 · rubric 2.14.0-skill.1
 
 The deterministic half of a scan ships as scripts instead of being re-authored from the

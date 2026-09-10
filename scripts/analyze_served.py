@@ -104,6 +104,10 @@ def extract(key, workdir, host):
     record["lang"] = html.get("lang") if html else None
     robots = doc.find("meta", {"name": "robots"})
     record["meta_robots"] = robots.get("content") if robots else None
+    # `seo.mobile_friendly` scores this tag directly: no current Lighthouse
+    # ships a viewport, tap-targets or font-size audit any more (seo-checks.md).
+    viewport = doc.find("meta", {"name": "viewport"})
+    record["viewport"] = viewport.get("content") if viewport else None
     # A noindex delivered as a header is invisible in the body but binding all
     # the same, so `seo.robots_allows_locations` has to see it.
     record["x_robots"] = bool(re.search(r"^x-robots-tag:", headers, re.I | re.M))

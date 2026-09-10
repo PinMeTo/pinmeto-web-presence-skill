@@ -111,6 +111,11 @@ every ratio is `1`, `0.5` or `0` unless the check id appears in the rubric's
     }
   },
 
+  // Which rung of the seo.lcp_sample engine ladder measured this scan:
+  // "psi", "psi-web", or null when neither was available. Omit it and the
+  // history entry omits it too. Copied into the entry verbatim.
+  "lcpEngine": "psi-web",
+
   // Measurement corrections and exclusions discovered about *this* scan.
   // Copied into the history entry verbatim.
   "notes": ["geo.menu_order_reservations excluded: …"]
