@@ -10,9 +10,9 @@ permanently closed) locations; an unscoped report's fleet is the whole account.
 | --- | --- |
 | `pinmeto_get_locations` | Fleet size, sampling, canonical NAP/hours/URLs/coordinates — **not** `network` (absent from the `fields` enum) |
 | `pinmeto_get_location` | Full record for one sampled location by `storeId` — the only source of the `network` platform deep links |
-| `pinmeto_get_google_ratings`, `pinmeto_get_facebook_ratings` | Reputation signal — aggregate only |
-| `pinmeto_get_google_keywords` | Queries Google already ties to the locations — context for the report narrative |
-| `pinmeto_get_google_insights` / `_facebook_insights` / `_apple_insights` | Visibility/action context (`total` aggregation only) |
+
+Those two tools are the whole Stage 1 pull. The ratings, keywords and insights tools return
+nothing any rubric check or report section consumes, so a scan does not call them.
 
 The cardinal rule: **never enumerate the full fleet into context.** Only the sampled
 locations ever need complete records; everything else is counting and selecting.
@@ -50,9 +50,6 @@ locations ever need complete records; everything else is counting and selecting.
 5. **Full records for the sample only** (`pinmeto_get_location` per storeId), and don't
    echo raw location JSON into the conversation — extract the canonical record fields and
    move on.
-6. **Aggregates, not per-location pulls,** for ratings/insights/keywords. Per-location
-   reputation detail is only ever fetched for the sampled locations, and only when the
-   narrative needs it.
 
 ## Fleet-size playbook
 
@@ -79,7 +76,6 @@ Flag per location:
   and sub-group C compares them.
 - **Missing coordinates** — breaks the ≤50 m pin checks; the pin comparison then runs
   baseline-less (page vs platform only) and says so.
-- **Long tail of zero-rating locations** — either genuinely new or disconnected profiles.
 
 `storeId` is case-sensitive to the MCP but sites often lowercase it in URLs
 (`/locations/GDANSK/` → `/locations/gdansk/`): use the record's exact storeId for MCP calls

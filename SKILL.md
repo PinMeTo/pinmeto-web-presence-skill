@@ -88,7 +88,6 @@ fleet can be 10 or 10,000 locations, and the budget must survive to the report e
   selection order live in `references/pinmeto-data-check.md`; do not restate it differently.
   On re-runs the sample is **pinned** — reuse the storeIds recorded in the report's history
   block. Full records (`pinmeto_get_location`) are fetched for sampled locations only.
-- Ratings/keywords/insights tools in aggregate for reputation and context.
 
 Baseline gaps (missing URL, hours, category, coordinates) are findings in their own right.
 
