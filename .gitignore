@@ -2,3 +2,5 @@ node_modules/
 *.skill
 .DS_Store
 local_assets/
+__pycache__/
+*.pyc

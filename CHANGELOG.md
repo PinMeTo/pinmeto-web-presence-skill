@@ -11,6 +11,46 @@ A rubric bump is required whenever a change moves scores, because the re-run att
 in `references/rubric.md` can only separate rubric drift from real customer progress if the
 version moved with the rules.
 
+## v0.15.0 · 2026-09-10 · rubric 2.14.0-skill.1
+
+The deterministic half of a scan ships as scripts instead of being re-authored from the
+reference prose every run. No rubric change: the rubric stays `2.14.0-skill.1`, and
+`scripts/score.py` reproduces the 2026-09-07 pinmeto.com scan to the digit (SEO 42.75, GEO
+79.80 from A 67.82 / B 90 / C 100, AIO 84.97, Agent Readiness 96.67, overall 72.51 → 73,
+grade C, the same seven Themes and worth).
+
+- **`scripts/fetch.sh`** — one concurrent burst of every URL Stages 2–3 need, headers, body
+  and meta captured per key. Concurrency 3, with retries on the transport failures a CDN
+  hands out under load; at `-P 8` BunnyCDN reset 9 of 26 connections. Separate lists for the
+  `--max-redirs 0` probes (the `.well-known` 301 → HTML 404 trap) and the markdown
+  negotiation probes.
+- **`scripts/analyze_served.py`** — served-pass extraction into `served.json`.
+- **`scripts/crawl.py`** — the `seo.internal_linking_depth` BFS as `seo-checks.md` defines
+  it, fetching each depth level concurrently and stopping once every sampled URL is reached.
+  The ordering rule fixes the URL set, not the fetch timing, so the verdict is unchanged:
+  50 pages in 18 seconds against 8 minutes sequential.
+- **`scripts/score.py`** — the arithmetic in `scoring.md` and the Theme ranking in
+  `artifact-report.md`, reading the rubric and Theme mapping out of the reference Markdown
+  and refusing to run when their pinned versions disagree. Implements the sub-group B and C
+  exclusions with their redistribution weights, and the "GEO could not be observed" path.
+- **`scripts/diff_history.py`** — the mechanical `checks` diff between the last two scans,
+  pre-labelled "rubric change" when the rubric version moved and left unclassified
+  otherwise, because separating a measurement correction from real customer progress needs
+  the evidence behind both scans.
+- **`scripts/README.md`** — the `results.json` contract, so the renderer and the model
+  author the same shape. `results.json` gains `pageObs` (sub-group C, per location) and
+  `notes`; a location is excluded from C when no platform was `observed`, whatever
+  `dominant` says.
+- **`scripts/htmlmini.py`** — a small tolerant HTML tree on `html.parser`, so the scripts
+  need nothing installed. `beautifulsoup4` and `lxml` are absent from a stock Mac running
+  Claude Code, and an install step that fails mid-scan is worse than a parser we control.
+- **Tests** — `tests/scoring.test.mjs` pins the 2026-09-07 numbers as a fixture and covers
+  the tri-state lookup, the parity exemption, both redistributions and the degraded path;
+  `tests/htmlmini.test.mjs` covers the parser against the markup that has broken checks
+  before.
+- `SKILL.md` rules 1 and 5 name the scripts instead of describing what a script should do,
+  and Requirements names the shell they need.
+
 ## v0.14.0 · 2026-09-05 · rubric 2.14.0-skill.1
 
 The Presence Report's Layer 1 is redesigned as a briefing document that says what to fix
