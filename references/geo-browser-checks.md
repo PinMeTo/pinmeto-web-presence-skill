@@ -17,9 +17,11 @@ Ground rules:
   like injection.
 - **Operation budget per location** — an operation being one navigation, click or
   `javascript_tool` call: **Google 3–4** (search, open the card, one targeted extraction,
-  sometimes the photo grid), **Apple 1**, **Bing 1**. A location that runs past its budget
-  records what is still missing as `warn` and moves on. This is still the longest stage of
-  the scan; tell the user before starting.
+  sometimes the photo grid), **Apple 1**, **Bing 1**. Apple's and Bing's budgets are for the
+  listing the ID link opens; the search path costs the two query variants on top, and a
+  platform with no ID link starts there. A location that runs past its budget records what is
+  still missing as `warn` and moves on. This is still the longest stage of the scan; tell the
+  user before starting.
 - **Decide once per interaction type.** The photo grid, the About tab and the reviews sort
   either work in this host or they don't. When one fails on the first location after a single
   retry, record `warn` with that same reason for every remaining location and carry on with
@@ -65,6 +67,11 @@ search pass:
   (existence, NAP, website, pin); nothing scores their discoverability, and parity keys on
   `not_found`, which an opened listing already answers. Apple's `?q=` search in particular
   never surfaced a business across three scans, listing present or not.
+- **An ID link that opens no listing** (404, an empty card, a redirect to the map root) has
+  settled nothing, so the two query variants still run — on every platform, Apple and Bing
+  included. That is the ID-link-plus-variants procedure the lookup-state table requires
+  before `not_found`. A link that fails to *load at all* — timeout, consent wall, host
+  blocked — is `unobserved` with a `lookupError`, not a reason to search.
 - **No `network.<platform>` entry** → pure search on that platform, two query variants. That
   *is* the `not_found` procedure (see the lookup-state table below), not an extra pass.
 
@@ -145,7 +152,8 @@ misbehaves. Never use `javascript_tool` to *change* anything on the page.
 
 1. Open `network.apple.link` (`maps.apple.com/place?auid=…`) when PinMeTo has it. A listing
    that opens is the whole lookup — extract it and move on.
-2. Without an auid, search `https://maps.apple.com/?q=<brand name> <street> <city>` (the web
+2. With no auid, or when the auid opened no listing, search
+   `https://maps.apple.com/?q=<brand name> <street> <city>` (the web
    app works in any modern browser; if it redirects to a marketing page, use
    `https://beta.maps.apple.com`) and open the matching place card; two query variants before
    declaring *no Apple listing*. **Apple's `?q=` search resolves to cities and neighbourhoods
@@ -165,9 +173,9 @@ misbehaves. Never use `javascript_tool` to *change* anything on the page.
 ## Per location: Bing Maps
 
 1. Open `network.bing.link` (`bing.com/maps?ss=ypid.<YPID>&mkt=…`) when PinMeTo has it; a
-   listing that opens is the whole lookup. Without a ypid, search
-   `https://www.bing.com/maps?q=<brand name> <street> <city>`, two query variants before
-   declaring *no Bing listing*. Decline non-essential cookies either way.
+   listing that opens is the whole lookup. With no ypid, or when the ypid opened no listing,
+   search `https://www.bing.com/maps?q=<brand name> <street> <city>`, two query variants
+   before declaring *no Bing listing*. Decline non-essential cookies either way.
 2. Extract from the place card: **name, address, phone, website URL**, and the **pin
    coordinates** — read the `cp=<lat>~<lng>` parameter from the URL once the card has
    centered the map, or take them from the share link. **Wait for it.** The parameter is
