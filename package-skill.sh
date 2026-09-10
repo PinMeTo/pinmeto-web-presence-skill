@@ -21,6 +21,6 @@ PAYLOAD=(SKILL.md)
 [ -d assets ] && PAYLOAD+=(assets)
 
 zip -rq "$OUT" "${PAYLOAD[@]}" \
-  -x '*/.DS_Store' '*/node_modules/*' '*.skill'
+  -x '*/.DS_Store' '*/node_modules/*' '*/__pycache__/*' '*.pyc' '*.skill'
 
 echo "$OUT"

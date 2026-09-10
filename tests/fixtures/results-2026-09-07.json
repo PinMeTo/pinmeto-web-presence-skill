@@ -1,0 +1,1301 @@
+{
+ "scanDate": "2026-09-07",
+ "checks": [
+  {
+   "id": "seo.localbusiness_jsonld_present",
+   "status": "fail",
+   "ratio": 0.5,
+   "result": "Rendered only · 5 / 5 pages",
+   "name": "Location pages carry LocalBusiness schema, but only after JavaScript runs",
+   "why": "The served HTML for all five sampled location URLs is the same store-locator shell and carries only an Organization/WebSite graph. After rendering, every page emits one valid <code>LocalBusiness</code> node, and its <code>@type</code> is now a real schema.org type (the previous scan found a Google category string there). Under the dual-pass policy that earns half credit.",
+   "cost": "Google and agent browsers now see a proper location entity. The AI crawlers your robots.txt welcomes by name (GPTBot, ClaudeBot, PerplexityBot) do not run JavaScript and still see five identical pages that describe no location.",
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "served: every /locations/ URL returns the same 129,642-byte store-locator shell (sha1 d79e4533ce3a…); JSON-LD types Organization, WebSite, ContactPoint, ImageObject only"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "rendered: {\"@type\":\"LocalBusiness\",\"name\":\"PinMeTo (Malmö)\",\"address\":{…\"streetAddress\":\"Adelgatan 9\"…},\"geo\":{…},\"telephone\":\"073-142 59 13\",\"url\":\"https://www.pinmeto.com/locations/1337/\"} · client-rendered only: visible to Google and agent browsers, invisible to non-rendering AI crawlers (half credit)"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/171206/",
+     "note": "rendered: LocalBusiness \"PinMeTo (Helsinki)\", Karhumäentie 3, +358 44 241 8244 · rendered only"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/666/",
+     "note": "rendered: LocalBusiness \"PinMeTo (Stockholm)\", Fleminggatan 18 · rendered only"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/gdansk/",
+     "note": "rendered: LocalBusiness \"PinMeTo (Gdańsk)\", Aleja Grunwaldzka 163 · rendered only"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/mumbai/",
+     "note": "rendered: LocalBusiness \"PinMeTo (Mumbai)\", A321, Master Mind 4 · rendered only"
+    }
+   ],
+   "fixSteps": [
+    "Render the /locations/<storeId>/ route on the server (SSR or build-time prerender) so the initial HTML already contains the page.",
+    "Serialize the existing LocalBusiness node into the served <head> as <script type=\"application/ld+json\">.",
+    "Keep the hydrated output identical so nothing changes for browsers.",
+    "Add a test that fetches one location URL without JavaScript and asserts a LocalBusiness node is present."
+   ],
+   "agentPrompt": "Goal: Serve the LocalBusiness JSON-LD in the initial HTML for every https://www.pinmeto.com/locations/<storeId>/ page.\nIssue: A raw HTTP GET of https://www.pinmeto.com/locations/1337/ (and /locations/171206/, /locations/666/, /locations/gdansk/, /locations/mumbai/) returns a 129,642-byte store-locator shell whose only JSON-LD is an Organization/WebSite @graph. The LocalBusiness node for the location (name, PostalAddress, GeoCoordinates, telephone, openingHoursSpecification, url) is only injected after JavaScript executes.\nFix: Find the route or shared template that renders /locations/<storeId>/ (the store-locator app that fetches location data client-side). Move the location data fetch to the server or build step so the initial HTML contains the location's <title>, <h1>, meta description, canonical and the same LocalBusiness <script type=\"application/ld+json\"> block the client currently injects. Keep the hydrated DOM equivalent. Add a regression test that requests /locations/1337/ with a plain HTTP client (no JavaScript), parses every ld+json block and asserts a node with \"@type\":\"LocalBusiness\" whose name, address.streetAddress, geo.latitude, telephone and url are non-empty. Show the diff, the raw-response excerpt and the test output.\nSkill: None\nDocs: https://developers.google.com/search/docs/appearance/structured-data/local-business, https://schema.org/LocalBusiness",
+   "docLinks": [
+    "https://developers.google.com/search/docs/appearance/structured-data/local-business",
+    "https://schema.org/LocalBusiness"
+   ],
+   "skillLinks": [],
+   "xref": [
+    "ar.jsonld_present_valid",
+    "Agent readiness"
+   ]
+  },
+  {
+   "id": "seo.localbusiness_jsonld_richness",
+   "status": "fail",
+   "ratio": 0.275,
+   "result": "Rendered only · 55 / 100",
+   "name": "Schema richness is 55 of 100, and only after rendering",
+   "why": "The rendered LocalBusiness node parses cleanly and carries all five base properties (name, address, geo, url, telephone: 40 points) plus <code>openingHoursSpecification</code> (10) and <code>sameAs</code> (5). It has a single <code>image</code> rather than a logo and cover pair, and no <code>aggregateRating</code>, <code>contactPoint</code>, <code>areaServed</code>, <code>amenityFeature</code> or <code>hasOfferCatalog</code>. 55 of 100, halved because it exists only after rendering.",
+   "cost": "The data that would lift this to 80 or more already sits in PinMeTo (Google attributes, ratings, logo and cover). The node just does not carry it, and half the audience never sees the node at all.",
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "rendered node props: name, description, geo, openingHoursSpecification, url, @id, address, telephone, email, image (one URL), keywords, sameAs · missing: image[logo+cover], areaServed, paymentAccepted, amenityFeature, hasOfferCatalog|makesOffer, review|aggregateRating, contactPoint · client-rendered only: visible to Google and agent browsers, invisible to non-rendering AI crawlers (half credit)"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/666/",
+     "note": "rendered node additionally has specialOpeningHoursSpecification (not a scored bonus)"
+    }
+   ],
+   "fixSteps": [
+    "Add <code>aggregateRating</code> from the Google rating PinMeTo already holds, and a <code>contactPoint</code> with the location email.",
+    "Emit <code>image</code> as an array with the brand logo and the cover photo.",
+    "Map the PinMeTo Google attributes (wheelchair access, appointments) to <code>amenityFeature</code>.",
+    "Serve the node in the initial HTML (see the LocalBusiness fix)."
+   ],
+   "agentPrompt": "Goal: Enrich the LocalBusiness JSON-LD on https://www.pinmeto.com/locations/<storeId>/ pages so each node carries the recommended optional properties, and serve it in the initial HTML.\nIssue: The node injected client-side on https://www.pinmeto.com/locations/1337/ has name, address, geo, url, telephone, openingHoursSpecification, one image URL and sameAs, but no aggregateRating, no contactPoint, no amenityFeature, no areaServed and only one image (no logo plus cover pair). It is absent from the raw HTTP response entirely.\nFix: Find the code that builds the LocalBusiness object for the location page template (it reads PinMeTo location data: address, openHours, contact, networkAttributes). Extend it to emit image as an array [brand logo URL, location cover photo], contactPoint {\"@type\":\"ContactPoint\",\"email\":<location email>,\"contactType\":\"customer service\"}, amenityFeature entries for the PinMeTo Google attributes that are true (e.g. wheelchair accessible entrance), and aggregateRating {\"@type\":\"AggregateRating\",\"ratingValue\":…,\"reviewCount\":…} when the location has a Google rating. Render the block server-side. Add a test that fetches /locations/1337/ without JavaScript, parses the LocalBusiness node and asserts image has 2 entries and contactPoint.email is set. Show the diff and test output.\nSkill: None\nDocs: https://schema.org/LocalBusiness, https://developers.google.com/search/docs/appearance/structured-data/local-business",
+   "docLinks": [
+    "https://schema.org/LocalBusiness"
+   ],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "seo.canonical_present",
+   "status": "fail",
+   "ratio": 0.5,
+   "result": "Rendered only · half credit",
+   "name": "Canonical appears only after JavaScript runs",
+   "why": "None of the five sampled location URLs returns a <code>&lt;link rel=\"canonical\"&gt;</code> in its HTTP response. After rendering each page sets the correct self-referencing canonical (for example <code>https://www.pinmeto.com/locations/1337/</code>).",
+   "cost": "Five URLs served with identical markup and no canonical is a duplicate-content pattern for every fetcher that does not run JavaScript.",
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "served: no link[rel=canonical]; rendered: https://www.pinmeto.com/locations/1337/ · client-rendered only: visible to Google and agent browsers, invisible to non-rendering AI crawlers (half credit)"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/gdansk/",
+     "note": "served: none; rendered: https://www.pinmeto.com/locations/gdansk/ (lowercase; the sitemap lists /locations/GDANSK/ which 301s here)"
+    }
+   ],
+   "fixSteps": [
+    "Emit the self-referencing canonical in the served <head> of each location page.",
+    "Use the lowercase storeId path the redirect already resolves to.",
+    "Verify with a plain HTTP fetch."
+   ],
+   "agentPrompt": "Goal: Serve a self-referencing <link rel=\"canonical\"> in the initial HTML of every https://www.pinmeto.com/locations/<storeId>/ page.\nIssue: A raw HTTP GET of https://www.pinmeto.com/locations/1337/ returns no canonical link element; the correct canonical (https://www.pinmeto.com/locations/1337/) is only added after JavaScript runs. Same for /locations/171206/, /locations/666/, /locations/gdansk/ and /locations/mumbai/.\nFix: In the server-rendered or prerendered location page template, output <link rel=\"canonical\" href=\"https://www.pinmeto.com/locations/<storeId lowercased>/\"> in <head>. Add a test that fetches /locations/1337/ without JavaScript and asserts exactly one canonical link whose href equals the request URL. Show the diff and test output.\nSkill: None\nDocs: https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls",
+   "docLinks": [
+    "https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls"
+   ],
+   "skillLinks": [],
+   "xref": [
+    "aio.canonical_homepage_resolvable",
+    "AIO"
+   ]
+  },
+  {
+   "id": "seo.meta_title_unique",
+   "status": "fail",
+   "ratio": 0.5,
+   "result": "Rendered only · half credit",
+   "name": "Titles are unique only after hydration",
+   "why": "All five sampled pages return <code>&lt;title&gt;PinMeTo Locations&lt;/title&gt;</code> in the served HTML. After rendering each has its own title (\"PinMeTo (Malmö) - Adelgatan 9\", \"PinMeTo (Helsinki) - Karhumäentie 3\", …), all five distinct.",
+   "cost": "The title is the strongest on-page ranking and click signal a location page has. It works for Google and does nothing for crawlers that read HTML only.",
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "served title \"PinMeTo Locations\" on all 5 URLs; rendered \"PinMeTo (Malmö) - Adelgatan 9\" · client-rendered only: visible to Google and agent browsers, invisible to non-rendering AI crawlers (half credit)"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/mumbai/",
+     "note": "rendered \"PinMeTo (Mumbai) - A321, Master Mind 4, Royal Palms, Goregaon East\""
+    }
+   ],
+   "fixSteps": [
+    "Render the per-location <title> on the server.",
+    "Keep the \"PinMeTo (City) - Street\" pattern, it is already unique.",
+    "Test with a plain HTTP fetch of two location URLs and assert the titles differ."
+   ],
+   "agentPrompt": "Goal: Serve a unique per-location <title> in the initial HTML of every https://www.pinmeto.com/locations/<storeId>/ page.\nIssue: A raw HTTP GET of https://www.pinmeto.com/locations/1337/ and https://www.pinmeto.com/locations/666/ both return <title>PinMeTo Locations</title>; the location titles (\"PinMeTo (Malmö) - Adelgatan 9\") are set client-side only.\nFix: In the location page template, render <title>PinMeTo (<locationDescriptor>) - <street></title> server-side using the location record. Add a test that fetches /locations/1337/ and /locations/666/ without JavaScript and asserts the two <title> values differ and each contains the city. Show the diff and test output.\nSkill: None\nDocs: https://developers.google.com/search/docs/appearance/title-link",
+   "docLinks": [
+    "https://developers.google.com/search/docs/appearance/title-link"
+   ],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "seo.meta_description_unique",
+   "status": "fail",
+   "ratio": 0.0,
+   "result": "Duplicate in both passes",
+   "name": "Two location pages share the same description even after rendering",
+   "why": "In the served HTML all five pages carry the locator description. After rendering each uses its PinMeTo <code>shortDescription</code>, but Helsinki and Stockholm resolve to exactly the same sentence, and Malmö differs from Mumbai only by a leading space and a comma. Fails in both passes.",
+   "cost": "A description that repeats across locations suppresses click-through on the queries a location page should win. This is a data fix in PinMeTo, not a template fix.",
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/locations/171206/",
+     "note": "rendered description: \"Built for multi-location brands PinMeTo is a location marketing tool for online presence management.\""
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/666/",
+     "note": "rendered description: identical to Helsinki"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "rendered description: \" Built for multi-location brands, PinMeTo is a location marketing tool for online presence management\" (leading space, no full stop)"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "served: all 5 URLs carry \"Browse PinMeTo office locations and find details for each location.\""
+    }
+   ],
+   "fixSteps": [
+    "Write a distinct shortDescription per location in PinMeTo (name the city and what the office does).",
+    "Trim whitespace when the template maps shortDescription to the meta description.",
+    "Fall back to \"<name> in <city>: <street>\" when shortDescription is empty or duplicated.",
+    "Serve the description in the initial HTML."
+   ],
+   "agentPrompt": "Goal: Give every https://www.pinmeto.com/locations/<storeId>/ page a unique meta description in the initial HTML.\nIssue: After rendering, https://www.pinmeto.com/locations/171206/ and https://www.pinmeto.com/locations/666/ both carry <meta name=\"description\" content=\"Built for multi-location brands PinMeTo is a location marketing tool for online presence management.\">. The raw HTTP response of every location URL carries the generic locator description instead.\nFix: In the location page template, build the description server-side as the location's trimmed shortDescription, and when that is empty or equal to another location's, fall back to \"<name> (<city>): <street>, <zip> <city>. <first sentence of longDescription>\". Add a test that fetches /locations/171206/ and /locations/666/ without JavaScript and asserts the descriptions are non-empty and different. Show the diff and test output. Separately, the content team should give each location its own shortDescription in PinMeTo.\nSkill: None\nDocs: https://developers.google.com/search/docs/appearance/snippet",
+   "docLinks": [
+    "https://developers.google.com/search/docs/appearance/snippet"
+   ],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "seo.h1_unique_has_location",
+   "status": "fail",
+   "ratio": 0.5,
+   "result": "Rendered only · half credit",
+   "name": "No H1 before JavaScript runs",
+   "why": "The served HTML for all five sampled pages contains zero <code>&lt;h1&gt;</code> elements. After hydration each page has exactly one, unique, naming the location (\"PinMeTo (Malmö)\", \"PinMeTo (Gdańsk)\").",
+   "cost": "A page with no H1 in its source states no subject to a non-rendering crawler.",
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "served: 0 h1; rendered: \"PinMeTo (Malmö)\" · client-rendered only: visible to Google and agent browsers, invisible to non-rendering AI crawlers (half credit)"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/gdansk/",
+     "note": "rendered: \"PinMeTo (Gdańsk)\""
+    }
+   ],
+   "fixSteps": [
+    "Render the <h1>PinMeTo (<city>)</h1> server-side.",
+    "Keep exactly one H1 per page.",
+    "Assert its presence in a no-JavaScript fetch test."
+   ],
+   "agentPrompt": "Goal: Serve one location-specific <h1> in the initial HTML of every https://www.pinmeto.com/locations/<storeId>/ page.\nIssue: A raw HTTP GET of https://www.pinmeto.com/locations/1337/ contains no <h1>; the heading \"PinMeTo (Malmö)\" is injected by JavaScript.\nFix: In the location page template, render <h1>PinMeTo (<locationDescriptor>)</h1> server-side. Add a test that fetches /locations/1337/ without JavaScript and asserts exactly one h1 containing \"Malmö\". Show the diff and test output.\nSkill: None\nDocs: https://developers.google.com/search/docs/fundamentals/seo-starter-guide",
+   "docLinks": [
+    "https://developers.google.com/search/docs/fundamentals/seo-starter-guide"
+   ],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "seo.og_twitter_per_location",
+   "status": "fail",
+   "ratio": 0.5,
+   "result": "Generic in served HTML · half credit",
+   "name": "Social cards are generic in the response, specific only in the browser",
+   "why": "All four required tags are present in the served HTML (<code>og:title</code>, <code>og:description</code>, <code>og:image</code>, <code>twitter:card</code>) but carry the locator values on every location URL, with <code>og:url</code> set to <code>/locations/</code>. After rendering each page gets its own og:url, og:title and a location photo as og:image.",
+   "cost": "Most social and chat link previews are generated by fetchers that do not execute JavaScript, so every share of a location page renders as a generic \"PinMeTo Locations\" card.",
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "served: og:title \"PinMeTo Locations\", og:url https://www.pinmeto.com/locations/, og:image /og-image-default.jpg, twitter:card summary_large_image (identical on all 5)"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "rendered: og:title \"PinMeTo (Malmö) - Adelgatan 9\", og:url /locations/1337/, og:image lh3.googleusercontent.com/… · client-rendered only: visible to Google and agent browsers, invisible to non-rendering AI crawlers (half credit)"
+    }
+   ],
+   "fixSteps": [
+    "Render og:title, og:description, og:url and og:image per location on the server.",
+    "Use a stable, self-hosted og:image rather than a googleusercontent URL.",
+    "Verify with a plain HTTP fetch."
+   ],
+   "agentPrompt": "Goal: Serve location-specific Open Graph and Twitter card tags in the initial HTML of every https://www.pinmeto.com/locations/<storeId>/ page.\nIssue: A raw HTTP GET of https://www.pinmeto.com/locations/1337/ returns og:title \"PinMeTo Locations\", og:url \"https://www.pinmeto.com/locations/\" and og:image \"https://www.pinmeto.com/og-image-default.jpg\"; the location-specific values are added client-side only.\nFix: In the location page template, render og:title \"<name> (<city>) - <street>\", og:description (the location description), og:url (the canonical location URL) and og:image (a self-hosted 1200x630 image for the location, falling back to the brand default) server-side, plus twitter:card. Add a test that fetches /locations/1337/ and /locations/666/ without JavaScript and asserts og:url equals each request URL and og:title values differ. Show the diff and test output.\nSkill: None\nDocs: https://ogp.me/",
+   "docLinks": [
+    "https://ogp.me/"
+   ],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "seo.image_alt_text",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "100%",
+   "name": "Images carry alt text",
+   "why": "Every image on the sampled pages has non-empty alt text: 2 of 2 in the served HTML and 4 of 4 after rendering, on all five pages.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "served 2/2 img with alt; rendered 4/4"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "seo.hreflang_correct",
+   "status": "fail",
+   "ratio": 0.0,
+   "result": "0 / 5 pages",
+   "name": "Location pages carry no hreflang alternates",
+   "why": "The site is multi-market (en, de, sv, pl, es, da, ar) and the homepage declares a clean hreflang set with an x-default. The location pages declare none, in either pass.",
+   "cost": "Gdańsk points its listings at the Polish site (/pl/) but its location page exists only in English with no alternate declared.",
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/",
+     "note": "served: 8 hreflang alternates incl. x-default"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "served: 0 link[rel=alternate][hreflang]; rendered: 0"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/gdansk/",
+     "note": "rendered: 0; PinMeTo record homepage is https://www.pinmeto.com/pl/"
+    }
+   ],
+   "fixSteps": [
+    "Decide whether location pages are single-language (then declare a self-referencing hreflang plus x-default) or localized.",
+    "Emit the hreflang set in the served <head>.",
+    "Spot-check one alternate links back."
+   ],
+   "agentPrompt": "Goal: Declare hreflang alternates in the initial HTML of every https://www.pinmeto.com/locations/<storeId>/ page.\nIssue: https://www.pinmeto.com/ serves eight hreflang link elements (x-default, en, de, sv, pl, es, da, ar) but https://www.pinmeto.com/locations/1337/ and the other location pages serve none, before or after JavaScript.\nFix: In the location page template, render at least <link rel=\"alternate\" hreflang=\"en\" href=\"<canonical URL>\"> and <link rel=\"alternate\" hreflang=\"x-default\" href=\"<canonical URL>\"> server-side; if localized location pages exist under /<lang>/locations/, list each and ensure they link back. Add a test that fetches /locations/1337/ without JavaScript and asserts a self-referencing hreflang and an x-default. Show the diff and test output.\nSkill: None\nDocs: https://developers.google.com/search/docs/specialty/international/localized-versions",
+   "docLinks": [
+    "https://developers.google.com/search/docs/specialty/international/localized-versions"
+   ],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "seo.sitemap_lists_locations",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "5 / 5",
+   "name": "All five open locations are in the sitemap",
+   "why": "<code>robots.txt</code> points at <code>/sitemap.xml</code>, an index referencing <code>/sitemap-0.xml</code> and a dedicated <code>/locations-sitemap.xml</code> that lists all five open locations with lastmod, changefreq and priority. The four permanently closed offices are no longer listed.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/locations-sitemap.xml",
+     "note": "5 URLs: /locations/1337/, /171206/, /666/, /GDANSK/, /MUMBAI/ (the uppercase two 301 to lowercase)"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": [
+    "ar.xml_sitemap",
+    "Agent readiness"
+   ]
+  },
+  {
+   "id": "seo.robots_allows_locations",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "5 / 5",
+   "name": "Crawlers are allowed everywhere that matters",
+   "why": "<code>robots.txt</code> allows <code>/</code> for <code>*</code> and for the named AI crawlers, disallowing five internal paths (<code>/presenter</code>, <code>/pitchcraft</code>, <code>/pitch</code>, <code>/deck-slides</code>, <code>/enablement</code>). No sampled page carries <code>noindex</code> or an <code>X-Robots-Tag</code>.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/robots.txt",
+     "note": "Allow: / for * and 17 named agents; Disallow: /presenter, /pitchcraft, /pitch, /deck-slides, /enablement"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "seo.internal_linking_depth",
+   "status": "fail",
+   "ratio": 0.0,
+   "result": "0 / 5 reachable",
+   "name": "The store locator is still orphaned from the homepage",
+   "why": "A strict breadth-first crawl of 50 served pages from the homepage (466 URLs discovered, depth 2 reached before the cap) found no link to <code>/locations</code> anywhere. The rendered homepage has 48 internal anchors and none points at the locator either. The locator lists locations only after JavaScript builds the list, and it is not reachable in the first place.",
+   "cost": "This caps every other SEO gain: pages with no crawlable path from the homepage accumulate no internal authority, however good their markup becomes.",
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/",
+     "note": "served: 48 same-host anchors, 0 to /locations; rendered: 48, 0 to /locations"
+    },
+    {
+     "url": "https://www.pinmeto.com/",
+     "note": "BFS crawl: 50 pages fetched (cap), 466 URLs seen, no page links to /locations, locator never reached"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/",
+     "note": "served locator: 0 links to individual location pages (list is built client-side)"
+    }
+   ],
+   "fixSteps": [
+    "Add a \"Locations\" or \"Our offices\" link to the site footer or header navigation.",
+    "Render the locator's list of location links in the served HTML.",
+    "Re-crawl: every location page should sit at depth 2 (home → locator → page)."
+   ],
+   "agentPrompt": "Goal: Make every https://www.pinmeto.com/locations/<storeId>/ page reachable by plain <a href> links within three clicks of https://www.pinmeto.com/.\nIssue: A breadth-first crawl of the served HTML from https://www.pinmeto.com/ (50 pages, depth 2) finds no anchor to /locations or /locations/. The locator page https://www.pinmeto.com/locations/ itself renders its list of location links only client-side, so a raw HTTP GET of it contains no link to /locations/1337/ or any other location page.\nFix: Add a footer (or header) navigation link to https://www.pinmeto.com/locations/ in the shared site layout so it appears on every page's served HTML, and render the locator's list of locations server-side as <a href=\"/locations/<storeId>/\"> elements. Add a test that fetches https://www.pinmeto.com/ and https://www.pinmeto.com/locations/ without JavaScript and asserts the first contains a link to /locations/ and the second contains links to /locations/1337/ and /locations/666/. Show the diff and test output.\nSkill: None\nDocs: https://developers.google.com/search/docs/crawling-indexing/links-crawlable",
+   "docLinks": [
+    "https://developers.google.com/search/docs/crawling-indexing/links-crawlable"
+   ],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "seo.breadcrumbs_structured",
+   "status": "fail",
+   "ratio": 0.0,
+   "result": "0 / 5 pages",
+   "name": "No breadcrumbs on the location pages",
+   "why": "Blog, article, product and support templates carry a <code>BreadcrumbList</code>. The location pages carry neither BreadcrumbList JSON-LD nor a visible trail, in the served HTML or after rendering.",
+   "cost": "Breadcrumbs are how a search result shows \"pinmeto.com › Locations › Malmö\" instead of a bare URL, and how an assistant works out where a page sits in the site.",
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "served and rendered: no BreadcrumbList, no visible breadcrumb"
+    },
+    {
+     "url": "https://www.pinmeto.com/blog/agent-ready-website-multi-location-brands-guide/",
+     "note": "for contrast: BreadcrumbList Home › Blog › article present in served HTML"
+    }
+   ],
+   "fixSteps": [
+    "Add a visible Home › Locations › <City> trail to the location template.",
+    "Emit the matching BreadcrumbList JSON-LD in the served HTML.",
+    "Keep labels identical between the two."
+   ],
+   "agentPrompt": "Goal: Add a visible breadcrumb trail and matching BreadcrumbList JSON-LD to every https://www.pinmeto.com/locations/<storeId>/ page, served in the initial HTML.\nIssue: https://www.pinmeto.com/locations/1337/ has no breadcrumb navigation and no BreadcrumbList structured data, before or after JavaScript, while https://www.pinmeto.com/blog/agent-ready-website-multi-location-brands-guide/ already emits a correct BreadcrumbList.\nFix: In the location page template, render <nav aria-label=\"Breadcrumb\"><ol>…</ol></nav> with Home (https://www.pinmeto.com/) › Locations (https://www.pinmeto.com/locations/) › <name> (<city>) and a BreadcrumbList JSON-LD with the same three ListItem names and URLs, reusing the blog template's breadcrumb component if one exists. Add a test that fetches /locations/1337/ without JavaScript and asserts the BreadcrumbList item names equal the visible breadcrumb labels. Show the diff and test output.\nSkill: None\nDocs: https://developers.google.com/search/docs/appearance/structured-data/breadcrumb, https://schema.org/BreadcrumbList",
+   "docLinks": [
+    "https://developers.google.com/search/docs/appearance/structured-data/breadcrumb"
+   ],
+   "skillLinks": [],
+   "xref": [
+    "aio.breadcrumblist_matches_visible_nav",
+    "AIO"
+   ]
+  },
+  {
+   "id": "seo.lcp_sample",
+   "status": "warn",
+   "ratio": 0.5,
+   "result": "Not measured",
+   "name": "Page speed could not be measured",
+   "why": "The public PageSpeed Insights API refused all three requests with a daily-quota error, the same failure as both previous scans. The fixed 3-URL sample was the landing pages of the first three pinned locations: /locations/1337/, /locations/171206/, /locations/666/. The check takes the 0.5 evidence-gap credit.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=https://www.pinmeto.com/locations/1337/&strategy=mobile",
+     "note": "PageSpeed Insights API returned HTTP 429: \"Quota exceeded for quota metric 'Queries' and limit 'Queries per day'\" for all three URLs (anonymous per-IP quota, shared machine-wide)"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/171206/",
+     "note": "attempted, 429"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/666/",
+     "note": "attempted, 429"
+    }
+   ],
+   "fixSteps": [
+    "Provide a free PageSpeed Insights API key for the next scan (passed as &key=) so the quota is yours, not the shared anonymous one."
+   ],
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "seo.mobile_friendly",
+   "status": "warn",
+   "ratio": 0.5,
+   "result": "Not measured",
+   "name": "Mobile-friendliness could not be measured",
+   "why": "Same PageSpeed quota failure as the LCP check: the viewport and tap-target audits were never returned. The pages do declare a <code>width=device-width, initial-scale=1</code> viewport, which is a good sign but is not the audit.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "PageSpeed Insights API returned HTTP 429: \"Quota exceeded for quota metric 'Queries' and limit 'Queries per day'\" for all three URLs (anonymous per-IP quota, shared machine-wide)"
+    }
+   ],
+   "fixSteps": [
+    "Provide a PageSpeed Insights API key for the next scan."
+   ],
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "aio.faqpage_schema_2_types",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "5 page types",
+   "name": "FAQ schema on several page types",
+   "why": "<code>FAQPage</code> JSON-LD is present in the served HTML of the homepage, a blog article, a product page, the support page and the AI information page.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/",
+     "note": "served: FAQPage with Question/Answer"
+    },
+    {
+     "url": "https://www.pinmeto.com/blog/agent-ready-website-multi-location-brands-guide/",
+     "note": "served: FAQPage, 7 questions"
+    },
+    {
+     "url": "https://www.pinmeto.com/products/support/",
+     "note": "served: FAQPage"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "aio.quick_answer_first_200w",
+   "status": "pass",
+   "ratio": 0.58,
+   "result": "0.58 mean · pass at 0.5",
+   "name": "Pages state what they are about early, location pages only after rendering",
+   "why": "The homepage opens with a concrete declarative sentence (\"PinMeTo enables multi-location brands to get discovered, found, and verified on the most important search, map, and social media platforms\"). The five location pages have no main content in the served HTML; after rendering each opens with the location name, address, phone and an About paragraph (half credit each). Mean 0.58 across the six pages, above the 0.5 pass line.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/",
+     "note": "served: direct answer within the first 200 words"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "served main content empty; rendered: \"PinMeTo (Malmö) … Adelgatan 9, 211 22, Malmö … PinMeTo is a leading Swedish SaaS company…\" · client-rendered only: visible to Google and agent browsers, invisible to non-rendering AI crawlers (half credit)"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "aio.speakable_specification",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "Present",
+   "name": "Speakable sections are declared on articles",
+   "why": "The article template carries a <code>SpeakableSpecification</code> with <code>cssSelector</code> targets in the served HTML.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/blog/agent-ready-website-multi-location-brands-guide/",
+     "note": "served: Article.speakable {\"@type\":\"SpeakableSpecification\",\"cssSelector\":[\"article h1\", …]}"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "aio.entity_consistent_brand_naming",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "Consistent",
+   "name": "One brand name everywhere",
+   "why": "\"PinMeTo\" with the same casing in the homepage title, the Organization node, <code>og:site_name</code> and the rendered location pages (\"PinMeTo (City)\").",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/",
+     "note": "Organization.name \"PinMeTo\", og:site_name \"PinMeTo\""
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "rendered LocalBusiness.name \"PinMeTo (Malmö)\", og:site_name \"PinMeTo\""
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "aio.eeat_article_signals",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "Present",
+   "name": "Articles carry author, date and publisher",
+   "why": "The sampled article emits <code>Article</code> with a named <code>Person</code> author, <code>datePublished</code> and a <code>publisher</code> linked to the Organization node.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/blog/agent-ready-website-multi-location-brands-guide/",
+     "note": "served: Article.author Person \"Marcus Olsson\", datePublished 2026-04-22, publisher @id #organization"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "aio.graph_jsonld_pattern",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "Present",
+   "name": "JSON-LD is connected through @graph",
+   "why": "Every sampled template emits a single <code>@graph</code> with <code>@id</code>-linked nodes rather than disconnected duplicate blocks.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/",
+     "note": "served: one @graph, Organization #organization referenced by WebSite.publisher and WebPage.about"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "aio.inlanguage_matches_html_lang",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "Agree",
+   "name": "Declared language matches the page language",
+   "why": "<code>&lt;html lang=\"en\"&gt;</code> and JSON-LD <code>inLanguage: \"en\"</code> agree on every sampled page; the Polish homepage declares <code>lang=\"pl\"</code>.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "served: html lang=en, WebSite.inLanguage en"
+    },
+    {
+     "url": "https://www.pinmeto.com/pl/",
+     "note": "served: html lang=pl"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "aio.organization_schema_complete",
+   "status": "fail",
+   "ratio": 0.75,
+   "result": "3 / 4 properties",
+   "name": "Homepage Organization schema lacks a contact point",
+   "why": "The homepage <code>Organization</code> node has <code>sameAs</code> (LinkedIn, G2 and more), <code>logo</code> and <code>knowsAbout</code>, but no <code>contactPoint</code>. The inner-page template does carry one, so the two Organization definitions disagree.",
+   "cost": "An assistant grounding on the homepage entity finds no way to contact the company; the same node on inner pages does.",
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/",
+     "note": "served Organization keys: @id, @type, areaServed, description, foundingDate, knowsAbout, logo, name, sameAs, url (no contactPoint)"
+    },
+    {
+     "url": "https://www.pinmeto.com/products/support/",
+     "note": "inner-page Organization has contactPoint {email info@pinmeto.com, contactType customer service}"
+    }
+   ],
+   "fixSteps": [
+    "Add the same contactPoint the inner pages use to the homepage Organization node.",
+    "Ideally emit one shared Organization definition from a single component."
+   ],
+   "agentPrompt": "Goal: Make the Organization JSON-LD on https://www.pinmeto.com/ complete with a contactPoint.\nIssue: The served @graph on https://www.pinmeto.com/ contains an Organization node with sameAs, logo and knowsAbout but no contactPoint, while inner pages such as https://www.pinmeto.com/products/support/ emit an Organization node with contactPoint {\"@type\":\"ContactPoint\",\"email\":\"info@pinmeto.com\",\"contactType\":\"customer service\"}.\nFix: Find the homepage layout's JSON-LD (it emits Organization with @id https://www.pinmeto.com/#organization) and add the same contactPoint object the inner-page layout uses; better, source both from one shared Organization component. Add a test that fetches https://www.pinmeto.com/ without JavaScript and asserts the Organization node has sameAs (>=2), logo, contactPoint and knowsAbout. Show the diff and test output.\nSkill: None\nDocs: https://schema.org/Organization, https://developers.google.com/search/docs/appearance/structured-data/organization",
+   "docLinks": [
+    "https://schema.org/Organization"
+   ],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "aio.breadcrumblist_matches_visible_nav",
+   "status": "fail",
+   "ratio": 0.0,
+   "result": "No visible trail",
+   "name": "Breadcrumb schema has no visible trail to match",
+   "why": "Blog, article, product, support and AI-information templates emit a <code>BreadcrumbList</code>, but no visible breadcrumb trail exists on those pages in the served HTML or the rendered DOM (the only \"Blog\" link is in the main navigation). Structured data that describes navigation the reader cannot see fails this check.",
+   "cost": "Google may ignore breadcrumb markup that has no visible counterpart, and the location pages have neither.",
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/blog/agent-ready-website-multi-location-brands-guide/",
+     "note": "served BreadcrumbList: Home › Blog › How to Make Your Multi-Location Website Agent-Ready in 2026; no nav/ol/list starting with \"Home\" in served or rendered DOM"
+    },
+    {
+     "url": "https://www.pinmeto.com/products/support/",
+     "note": "BreadcrumbList Home › Products › Support; no visible trail found"
+    }
+   ],
+   "fixSteps": [
+    "Render a visible breadcrumb component on every template that emits BreadcrumbList.",
+    "Use the same labels as the ListItem names.",
+    "Add the pair to the location template as well."
+   ],
+   "agentPrompt": "Goal: Show a visible breadcrumb trail on every https://www.pinmeto.com page that emits BreadcrumbList JSON-LD, with labels equal to the ListItem names.\nIssue: https://www.pinmeto.com/blog/agent-ready-website-multi-location-brands-guide/ serves a BreadcrumbList (Home › Blog › <article title>) and https://www.pinmeto.com/products/support/ serves Home › Products › Support, but neither page renders a breadcrumb navigation element in HTML or after JavaScript.\nFix: Find the component that emits the BreadcrumbList in the blog, product and content layouts and have it also render <nav aria-label=\"Breadcrumb\"><ol><li><a href=…>Home</a></li>…</ol></nav> from the same items array, placed above the h1. Add a test that fetches the two URLs above without JavaScript and asserts the visible breadcrumb labels equal the BreadcrumbList item names in order. Show the diff and test output.\nSkill: None\nDocs: https://developers.google.com/search/docs/appearance/structured-data/breadcrumb",
+   "docLinks": [
+    "https://developers.google.com/search/docs/appearance/structured-data/breadcrumb"
+   ],
+   "skillLinks": [],
+   "xref": [
+    "seo.breadcrumbs_structured",
+    "SEO"
+   ]
+  },
+  {
+   "id": "aio.canonical_homepage_resolvable",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "Resolves",
+   "name": "The homepage canonical resolves and the variants converge",
+   "why": "<code>https://www.pinmeto.com/</code> returns 200 with a matching canonical; <code>http://pinmeto.com/</code>, <code>https://pinmeto.com/</code> and <code>http://www.pinmeto.com/</code> each reach it in one redirect.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://pinmeto.com/",
+     "note": "1 redirect → https://www.pinmeto.com/ 200"
+    },
+    {
+     "url": "http://www.pinmeto.com/",
+     "note": "1 redirect → https://www.pinmeto.com/ 200"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": [
+    "seo.canonical_present",
+    "SEO"
+   ]
+  },
+  {
+   "id": "aio.haspart_about_mentions_enrichment",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "2 templates",
+   "name": "Pages link to the things they are about",
+   "why": "Two distinct templates use entity enrichment: the homepage <code>WebPage</code> node carries <code>about</code> → the Organization, and the AI-information page's <code>AboutPage</code> does the same. Two templates is the pass line.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/",
+     "note": "WebPage.about {\"@id\":\"https://www.pinmeto.com/#organization\"}"
+    },
+    {
+     "url": "https://www.pinmeto.com/ai-info-about-pinmeto/",
+     "note": "AboutPage.about {\"@id\":\"https://www.pinmeto.com/#organization\"}"
+    },
+    {
+     "url": "https://www.pinmeto.com/blog/agent-ready-website-multi-location-brands-guide/",
+     "note": "Article: no about/mentions/hasPart (not needed for the pass, but an easy enrichment)"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "aio.llms_txt_present",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "200 text/plain",
+   "name": "llms.txt is live and substantial",
+   "why": "<code>GET /llms.txt</code> returns 200 <code>text/plain</code>, 32,980 bytes of markdown with a title line and links.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/llms.txt",
+     "note": "200, text/plain, 32,980 bytes"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": [
+    "ar.llms_txt_full",
+    "Agent readiness"
+   ]
+  },
+  {
+   "id": "aio.markdown_content_negotiation",
+   "status": "fail",
+   "ratio": 0.667,
+   "result": "2 / 3 pages",
+   "name": "Markdown negotiation works everywhere except location pages",
+   "why": "The homepage and the blog article return <code>text/markdown</code> when asked for it. The location page ignores the <code>Accept</code> header and returns the HTML shell. 2 of 3 probed pages.",
+   "cost": "The pages an AI assistant would most want as text (where is the office, when is it open) are the ones that refuse to answer in text.",
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/",
+     "note": "Accept: text/markdown → 200 text/markdown; charset=utf-8, 12,911 bytes"
+    },
+    {
+     "url": "https://www.pinmeto.com/blog/agent-ready-website-multi-location-brands-guide/",
+     "note": "Accept: text/markdown → 200 text/markdown, 43,155 bytes"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "Accept: text/markdown → 200 text/html, 129,642 bytes (the HTML shell; header ignored)"
+    }
+   ],
+   "fixSteps": [
+    "Extend the markdown negotiation to the /locations/ route.",
+    "Generate one markdown document per location from the PinMeTo record.",
+    "Test with curl -H \"Accept: text/markdown\"."
+   ],
+   "agentPrompt": "Goal: Honour \"Accept: text/markdown\" on https://www.pinmeto.com/locations/<storeId>/ pages the way the rest of the site already does.\nIssue: GET https://www.pinmeto.com/ and GET https://www.pinmeto.com/blog/agent-ready-website-multi-location-brands-guide/ with \"Accept: text/markdown\" return 200 text/markdown, but GET https://www.pinmeto.com/locations/1337/ with the same header returns 200 text/html (the store-locator shell).\nFix: Find the mechanism that serves markdown for the other routes (a build step producing sibling .md files, or an edge/origin rewrite keyed on the Accept header) and extend it to the /locations/<storeId>/ route, generating a markdown document per location from the location record (name, address, phone, opening hours, description, map links). Add a test that requests /locations/1337/ with Accept: text/markdown and asserts a text/markdown content type and a body that starts with \"# PinMeTo (Malmö)\". Show the diff and test output.\nSkill: None\nDocs: https://www.rfc-editor.org/rfc/rfc9110#name-accept",
+   "docLinks": [
+    "https://www.rfc-editor.org/rfc/rfc9110#name-accept"
+   ],
+   "skillLinks": [],
+   "xref": [
+    "ar.markdown_content_negotiation",
+    "Agent readiness"
+   ]
+  },
+  {
+   "id": "ar.content_signals_robots",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "Declared",
+   "name": "robots.txt declares content signals",
+   "why": "<code>Content-Signal: ai-train=yes, search=yes, ai-input=yes</code> is declared for <code>*</code> and repeated for every named AI crawler block.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/robots.txt",
+     "note": "Content-Signal lines present under User-agent: * and 17 named agents"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "ar.mcp_server_card",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "200 JSON",
+   "name": "The MCP server card is live",
+   "why": "<code>GET /.well-known/mcp-server-card</code> returns 200 <code>application/json</code> (no redirect) with a valid server card: name <code>com.pinmeto/pinmeto-location-mcp</code>, version 3.2.2, repository and npm installation metadata. Both previous scans found a 301 into an HTML 404 here.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/.well-known/mcp-server-card",
+     "note": "200 application/json, 1,124 bytes, $schema static.modelcontextprotocol.io/schemas/v1/server-card.schema.json, name com.pinmeto/pinmeto-location-mcp"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "ar.webmcp_tools_registered",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "6 tools",
+   "name": "WebMCP tools are registered on the homepage",
+   "why": "The served homepage contains an inline loader for <code>/scripts/webmcp.js</code>, which feature-detects <code>navigator.modelContext</code> and registers six tools (<code>request_demo</code>, <code>search_knowledge_base</code>, <code>view_product</code>, <code>compare_competitor</code>, <code>view_case_studies</code>, <code>get_site_overview</code>). Judged from source: the browser used for this scan does not implement the API, so <code>typeof navigator.modelContext</code> is undefined there.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/",
+     "note": "served: inline script appends /scripts/webmcp.js after window load"
+    },
+    {
+     "url": "https://www.pinmeto.com/scripts/webmcp.js",
+     "note": "200 application/javascript, 5,468 bytes; navigator.modelContext.registerTool called for 6 named tools"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "ar.agent_skills_discovery",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "200 JSON",
+   "name": "Agent skills are discoverable",
+   "why": "<code>/.well-known/skills/index.json</code> returns 200 JSON listing skills with digests, and the first listed <code>SKILL.md</code> resolves as <code>text/markdown</code>.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/.well-known/skills/index.json",
+     "note": "200 application/json, schema agentskills.io discovery 0.2.0, skills incl. location-insights, learn-local-seo, compare-platforms"
+    },
+    {
+     "url": "https://www.pinmeto.com/.well-known/skills/location-insights/SKILL.md",
+     "note": "200 text/markdown, 1,867 bytes"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "ar.api_catalog",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "200 linkset",
+   "name": "The API catalog is live",
+   "why": "<code>GET /.well-known/api-catalog</code> returns 200 <code>application/linkset+json</code> (no redirect) with a linkset enumerating the Locations v4, Media v1 and Keywords & Insights v3 APIs with <code>service-desc</code> and <code>service-doc</code> links. Both previous scans found a 301 into an HTML 404.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/.well-known/api-catalog",
+     "note": "200 application/linkset+json, 2,706 bytes, 3 anchors with service-desc (application/openapi+json)"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "ar.llms_txt_full",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "2 / 2",
+   "name": "Both llms files are served",
+   "why": "<code>/llms.txt</code> (32,980 bytes) and <code>/llms-full.txt</code> (58,239 bytes) both return 200 <code>text/plain</code> markdown.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/llms-full.txt",
+     "note": "200 text/plain, 58,239 bytes"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": [
+    "aio.llms_txt_present",
+    "AIO"
+   ]
+  },
+  {
+   "id": "ar.markdown_content_negotiation",
+   "status": "fail",
+   "ratio": 0.667,
+   "result": "2 / 3 pages",
+   "name": "Markdown negotiation works everywhere except location pages",
+   "why": "Same probe as the AIO check, scored identically: homepage and article return <code>text/markdown</code>, the location page returns HTML.",
+   "cost": "An agent asking for the text version of an office page gets a 129 KB JavaScript shell instead.",
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/",
+     "note": "Accept: text/markdown → 200 text/markdown; charset=utf-8, 12,911 bytes"
+    },
+    {
+     "url": "https://www.pinmeto.com/blog/agent-ready-website-multi-location-brands-guide/",
+     "note": "Accept: text/markdown → 200 text/markdown, 43,155 bytes"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "Accept: text/markdown → 200 text/html, 129,642 bytes (the HTML shell; header ignored)"
+    }
+   ],
+   "fixSteps": [
+    "Extend the markdown negotiation to the /locations/ route.",
+    "Generate one markdown document per location from the PinMeTo record.",
+    "Test with curl -H \"Accept: text/markdown\"."
+   ],
+   "agentPrompt": "Goal: Honour \"Accept: text/markdown\" on https://www.pinmeto.com/locations/<storeId>/ pages the way the rest of the site already does.\nIssue: GET https://www.pinmeto.com/ and GET https://www.pinmeto.com/blog/agent-ready-website-multi-location-brands-guide/ with \"Accept: text/markdown\" return 200 text/markdown, but GET https://www.pinmeto.com/locations/1337/ with the same header returns 200 text/html (the store-locator shell).\nFix: Find the mechanism that serves markdown for the other routes (a build step producing sibling .md files, or an edge/origin rewrite keyed on the Accept header) and extend it to the /locations/<storeId>/ route, generating a markdown document per location from the location record (name, address, phone, opening hours, description, map links). Add a test that requests /locations/1337/ with Accept: text/markdown and asserts a text/markdown content type and a body that starts with \"# PinMeTo (Malmö)\". Show the diff and test output.\nSkill: None\nDocs: https://www.rfc-editor.org/rfc/rfc9110#name-accept",
+   "docLinks": [
+    "https://www.rfc-editor.org/rfc/rfc9110#name-accept"
+   ],
+   "skillLinks": [],
+   "xref": [
+    "aio.markdown_content_negotiation",
+    "AIO"
+   ]
+  },
+  {
+   "id": "ar.rfc8288_link_headers",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "3 / 3",
+   "name": "Link headers advertise the agent surfaces, and they resolve",
+   "why": "The homepage response carries an RFC 8288 <code>Link</code> header with <code>rel=\"api-catalog\"</code>, <code>rel=\"describedby\"</code> (llms.txt) and <code>rel=\"service-desc\"</code> (the MCP server card). All three targets return 200 with the advertised content types; in the previous scans two of them resolved to an HTML 404.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/",
+     "note": "link: </.well-known/api-catalog>; rel=\"api-catalog\"; type=\"application/linkset+json\", </llms.txt>; rel=\"describedby\", </.well-known/mcp-server-card>; rel=\"service-desc\"; all three targets 200"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": null
+  },
+  {
+   "id": "ar.jsonld_present_valid",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "Valid",
+   "name": "JSON-LD parses cleanly on the homepage and the location pages",
+   "why": "The homepage and every sampled location page carry JSON-LD that parses without error in the served HTML (the Organization/WebSite graph); the rendered location pages add a valid LocalBusiness node.",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/",
+     "note": "served: 1 block, 0 parse errors"
+    },
+    {
+     "url": "https://www.pinmeto.com/locations/1337/",
+     "note": "served: 1 block (Organization graph), 0 parse errors; rendered: +1 LocalBusiness block"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": [
+    "seo.localbusiness_jsonld_present",
+    "SEO"
+   ]
+  },
+  {
+   "id": "ar.xml_sitemap",
+   "status": "pass",
+   "ratio": 1.0,
+   "result": "Valid",
+   "name": "A valid XML sitemap is referenced from robots.txt",
+   "why": "<code>robots.txt</code> lists <code>Sitemap: https://www.pinmeto.com/sitemap.xml</code>; it is a valid sitemap index with two child sitemaps (2,034 and 5 URLs).",
+   "cost": null,
+   "evidence": [
+    {
+     "url": "https://www.pinmeto.com/sitemap.xml",
+     "note": "sitemapindex → sitemap-0.xml (2,034 URLs), locations-sitemap.xml (5 URLs)"
+    }
+   ],
+   "fixSteps": null,
+   "agentPrompt": null,
+   "docLinks": [],
+   "skillLinks": [],
+   "xref": [
+    "seo.sitemap_lists_locations",
+    "SEO"
+   ]
+  }
+ ],
+ "geoObs": {
+  "1337": {
+   "google": {
+    "lookup": "observed",
+    "pinDistanceM": 0,
+    "geo.name_matches_site": 1,
+    "geo.address_matches_site": 1,
+    "geo.phone_matches_site": 1,
+    "geo.coords_within_50m": 1,
+    "geo.website_url_on_listing": 1,
+    "geo.listing_connected_pinmeto": 1,
+    "connectedDowngraded": false,
+    "geo.hours_present": 1,
+    "geo.special_hours_set": 0,
+    "geo.photos_5_plus": 0.5,
+    "geo.services_attributes": 1,
+    "geo.recent_reviews_180d": 0,
+    "geo.consumer_alerts_clear": 1
+   },
+   "apple": {
+    "lookup": "observed",
+    "pinDistanceM": 0,
+    "geo.name_matches_site": 1,
+    "geo.address_matches_site": 1,
+    "geo.phone_matches_site": 1,
+    "geo.coords_within_50m": 1,
+    "geo.listing_connected_pinmeto": 1,
+    "connectedDowngraded": false
+   },
+   "bing": {
+    "lookup": "observed",
+    "pinDistanceM": 4,
+    "geo.name_matches_site": 1,
+    "geo.address_matches_site": 1,
+    "geo.phone_matches_site": 1,
+    "geo.coords_within_50m": 1,
+    "geo.website_url_on_listing": 1,
+    "geo.listing_connected_pinmeto": 1,
+    "connectedDowngraded": false
+   }
+  },
+  "171206": {
+   "google": {
+    "lookup": "observed",
+    "pinDistanceM": 0,
+    "geo.name_matches_site": 1,
+    "geo.address_matches_site": 1,
+    "geo.phone_matches_site": 1,
+    "geo.coords_within_50m": 1,
+    "geo.website_url_on_listing": 1,
+    "geo.listing_connected_pinmeto": 1,
+    "connectedDowngraded": false,
+    "geo.hours_present": 1,
+    "geo.special_hours_set": 0,
+    "geo.photos_5_plus": 0.5,
+    "geo.services_attributes": 1,
+    "geo.recent_reviews_180d": 0,
+    "geo.consumer_alerts_clear": 1
+   },
+   "apple": {
+    "lookup": "observed",
+    "pinDistanceM": 11635,
+    "geo.name_matches_site": 1,
+    "geo.address_matches_site": 0,
+    "geo.phone_matches_site": 0,
+    "geo.coords_within_50m": 0,
+    "geo.listing_connected_pinmeto": 0,
+    "connectedDowngraded": true
+   },
+   "bing": {
+    "lookup": "observed",
+    "pinDistanceM": 0,
+    "geo.name_matches_site": 1,
+    "geo.address_matches_site": 0,
+    "geo.phone_matches_site": 1,
+    "geo.coords_within_50m": 1,
+    "geo.website_url_on_listing": 1,
+    "geo.listing_connected_pinmeto": 0,
+    "connectedDowngraded": true
+   }
+  },
+  "GDANSK": {
+   "google": {
+    "lookup": "observed",
+    "pinDistanceM": 18,
+    "geo.name_matches_site": 1,
+    "geo.address_matches_site": 1,
+    "geo.phone_matches_site": 1,
+    "geo.coords_within_50m": 1,
+    "geo.website_url_on_listing": 1,
+    "geo.listing_connected_pinmeto": 1,
+    "connectedDowngraded": false,
+    "geo.hours_present": 1,
+    "geo.special_hours_set": 0,
+    "geo.photos_5_plus": 0.5,
+    "geo.services_attributes": 0.5,
+    "geo.recent_reviews_180d": 0.5,
+    "geo.consumer_alerts_clear": 1
+   },
+   "apple": {
+    "lookup": "not_found"
+   },
+   "bing": {
+    "lookup": "observed",
+    "pinDistanceM": 16,
+    "geo.name_matches_site": 1,
+    "geo.address_matches_site": 1,
+    "geo.phone_matches_site": 1,
+    "geo.coords_within_50m": 1,
+    "geo.website_url_on_listing": 1,
+    "geo.listing_connected_pinmeto": 1,
+    "connectedDowngraded": false
+   }
+  },
+  "666": {
+   "google": {
+    "lookup": "observed",
+    "pinDistanceM": 0,
+    "geo.name_matches_site": 1,
+    "geo.address_matches_site": 1,
+    "geo.phone_matches_site": 1,
+    "geo.coords_within_50m": 1,
+    "geo.website_url_on_listing": 1,
+    "geo.listing_connected_pinmeto": 1,
+    "connectedDowngraded": false,
+    "geo.hours_present": 1,
+    "geo.special_hours_set": 0,
+    "geo.photos_5_plus": 0.5,
+    "geo.services_attributes": 1,
+    "geo.recent_reviews_180d": 0.5,
+    "geo.consumer_alerts_clear": 1
+   },
+   "apple": {
+    "lookup": "observed",
+    "pinDistanceM": 28,
+    "geo.name_matches_site": 1,
+    "geo.address_matches_site": 1,
+    "geo.phone_matches_site": 1,
+    "geo.coords_within_50m": 1,
+    "geo.listing_connected_pinmeto": 1,
+    "connectedDowngraded": false
+   },
+   "bing": {
+    "lookup": "observed",
+    "pinDistanceM": 1,
+    "geo.name_matches_site": 1,
+    "geo.address_matches_site": 1,
+    "geo.phone_matches_site": 1,
+    "geo.coords_within_50m": 1,
+    "geo.website_url_on_listing": 1,
+    "geo.listing_connected_pinmeto": 1,
+    "connectedDowngraded": false
+   }
+  },
+  "MUMBAI": {
+   "google": {
+    "lookup": "observed",
+    "pinDistanceM": 0,
+    "geo.name_matches_site": 1,
+    "geo.address_matches_site": 1,
+    "geo.phone_matches_site": 1,
+    "geo.coords_within_50m": 1,
+    "geo.website_url_on_listing": 1,
+    "geo.listing_connected_pinmeto": 1,
+    "connectedDowngraded": false,
+    "geo.hours_present": 1,
+    "geo.special_hours_set": 0,
+    "geo.photos_5_plus": 0.5,
+    "geo.services_attributes": 0,
+    "geo.recent_reviews_180d": 1,
+    "geo.consumer_alerts_clear": 1
+   },
+   "apple": {
+    "lookup": "not_found"
+   },
+   "bing": {
+    "lookup": "observed",
+    "pinDistanceM": 0,
+    "geo.name_matches_site": 1,
+    "geo.address_matches_site": 1,
+    "geo.phone_matches_site": 1,
+    "geo.coords_within_50m": 1,
+    "geo.website_url_on_listing": 1,
+    "geo.listing_connected_pinmeto": 1,
+    "connectedDowngraded": false
+   }
+  }
+ },
+ "parity": 0,
+ "sample": [
+  "1337",
+  "171206",
+  "666",
+  "GDANSK",
+  "MUMBAI"
+ ],
+ "names": {
+  "1337": "Malmö",
+  "171206": "Helsinki",
+  "666": "Stockholm",
+  "GDANSK": "Gdańsk",
+  "MUMBAI": "Mumbai"
+ },
+ "pages": {
+  "1337": "https://www.pinmeto.com/locations/1337/",
+  "171206": "https://www.pinmeto.com/locations/171206/",
+  "666": "https://www.pinmeto.com/locations/666/",
+  "GDANSK": "https://www.pinmeto.com/locations/gdansk/",
+  "MUMBAI": "https://www.pinmeto.com/locations/mumbai/"
+ },
+ "pageObs": {
+  "1337": {
+   "dominant": "google",
+   "page.jsonld_name_matches_dominant": 1,
+   "page.jsonld_telephone_matches_dominant": 1,
+   "page.jsonld_geo_within_50m_dominant": 1,
+   "page.opening_hours_matches_dominant": 1,
+   "page.visible_nap_matches_dominant": 1
+  },
+  "171206": {
+   "dominant": "google",
+   "page.jsonld_name_matches_dominant": 1,
+   "page.jsonld_telephone_matches_dominant": 1,
+   "page.jsonld_geo_within_50m_dominant": 1,
+   "page.opening_hours_matches_dominant": 1,
+   "page.visible_nap_matches_dominant": 1
+  },
+  "666": {
+   "dominant": "google",
+   "page.jsonld_name_matches_dominant": 1,
+   "page.jsonld_telephone_matches_dominant": 1,
+   "page.jsonld_geo_within_50m_dominant": 1,
+   "page.opening_hours_matches_dominant": 1,
+   "page.visible_nap_matches_dominant": 1
+  },
+  "GDANSK": {
+   "dominant": "google",
+   "page.jsonld_name_matches_dominant": 1,
+   "page.jsonld_telephone_matches_dominant": 1,
+   "page.jsonld_geo_within_50m_dominant": 1,
+   "page.opening_hours_matches_dominant": 1,
+   "page.visible_nap_matches_dominant": 1
+  },
+  "MUMBAI": {
+   "dominant": "google",
+   "page.jsonld_name_matches_dominant": 1,
+   "page.jsonld_telephone_matches_dominant": 1,
+   "page.jsonld_geo_within_50m_dominant": 1,
+   "page.opening_hours_matches_dominant": 1,
+   "page.visible_nap_matches_dominant": 1
+  }
+ },
+ "label": "Third scan",
+ "brand": "pinmeto.com",
+ "scope": null,
+ "notes": [
+  "geo.menu_order_reservations excluded: primary category \"Internet marketing service\" implies no menu, ordering or reservations",
+  "Sample substitution: Oslo (storeId 7) is now permanently closed in PinMeTo and was replaced by Stockholm (storeId 666), the only remaining open location not already in the pinned sample",
+  "GEO rollups for geo.photos_5_plus, geo.services_attributes and geo.recent_reviews_180d include observations the in-app browser could not read (photo grid, About tab, newest-review sort); those observations score 0.5 as evidence gaps",
+  "Bing Helsinki address \"Aviabulevardi Vantaa\" scored as a mismatch by the postal rule; the previous scans counted it as a match"
+ ]
+}

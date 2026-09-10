@@ -1,7 +1,7 @@
 ---
 name: pinmeto-web-presence
 description: This skill should be used when the user asks to "check our web presence", "audit or monitor our SEO / AIO / GEO / agent readiness", "how do we look in AI search / ChatGPT / Gemini", "are our locations correct on Google, Apple, and Bing Maps", "run a presence scan", "update the presence report", or otherwise requests an SEO, AI-visibility (AIO), generative-engine (GEO), or agent-readiness analysis of a multi-location brand's website and map listings. Scores the brand against the PinMeTo MLPR rubric, produces an updatable report as a Site in ChatGPT/Codex or an HTML artifact in Claude, and can set up scheduled monitoring. Requires the PinMeTo Location MCP server; GEO checks use a browser against the real Google, Apple, and Bing Maps.
-version: 0.14.0
+version: 0.15.0
 license: Proprietary - (c) PinMeTo AB. See LICENSE.
 ---
 
@@ -51,6 +51,9 @@ incomparable.
   observation is possible at all, follow the "GEO could not be observed" path in
   `references/scoring.md`.
 - **Web fetch** for SEO / AIO / Agent Readiness checks against the brand's site.
+- **A shell with `curl` and `python3`** for the scripts in `scripts/` (see rule 1). Nothing
+  to install — they are stdlib only. Without a shell the scan still runs, but every
+  deterministic step falls back to model reasoning, which is slower and less reproducible.
 
 ## Inputs to gather from the user
 
@@ -162,13 +165,25 @@ host's scheduling capability. Mechanics in [references/monitoring.md](references
 
 Route each kind of work to the cheapest thing that does it correctly:
 
-1. **Scripts beat any model.** Everything deterministic runs as shell scripts, not model
-   reasoning: HTTP fetching and header/JSON-LD parsing (Stages 2–3), the scoring
-   arithmetic (`scoring.md`), and producing the report from the data structure
-   (`artifact-report.md`) — on the Claude artifact path, emit the HTML from a template
-   script; on the Sites path, write the results and history into a data module that the
-   Site's components render (the Site build is the deterministic generator there). This is
-   required where a shell exists — it is faster, free, and reproducible.
+1. **Scripts beat any model.** The deterministic work ships in `scripts/`. Run them; do not
+   re-author them from the prose in `references/`, which costs ~25 minutes a scan and lets
+   the arithmetic come out differently each time. They are Python 3 and bash, stdlib only,
+   nothing to install, and every one takes `--workdir DIR` and touches nothing outside it:
+
+   | Script | Does | Writes |
+   | --- | --- | --- |
+   | `scripts/fetch.sh` | one concurrent burst of every URL Stages 2–3 need, including the no-redirect and markdown-negotiation probes | `fetch/<key>.{h,b,m}` |
+   | `scripts/analyze_served.py` | served-pass extraction: title, meta, canonical, h1, og/twitter, hreflang, lang, robots, alt counts, anchors, JSON-LD graph, first 200 words | `served.json` |
+   | `scripts/crawl.py` | the `seo.internal_linking_depth` BFS exactly as `seo-checks.md` defines it | `crawl.json` |
+   | `scripts/score.py` | the arithmetic in `scoring.md` and the Theme ranking in `artifact-report.md` | `scores.json` |
+   | `scripts/diff_history.py` | the mechanical `checks` diff between the last two scans | `diff.json` |
+
+   You assemble `results.json` between `crawl.py` and `score.py` — that is where your
+   judgment calls enter. Its shape is fixed: **`scripts/README.md` is the contract**, and
+   the renderer reads the same one. Producing the report from that data structure is
+   likewise a script, not hand-authored markup (`artifact-report.md`): on the Claude
+   artifact path emit the HTML from a template script; on the Sites path write the results
+   and history into a data module the Site's components render.
 2. **Delegate only falsifiable reads.** A read is **falsifiable** when the baseline can prove
    the value wrong, which is exactly the identity-and-position set: listing **existence,
    name, address, phone, website href, coordinates**. Delegate those to a subagent with the
@@ -205,9 +220,15 @@ Route each kind of work to the cheapest thing that does it correctly:
 5. **Parallelize everything that is not the browser.** The wall-clock order that works:
    - Kick off the **PSI API calls first, in the background** — they are the slowest
      single fetches in the scan and nothing depends on them until scoring.
-   - Inside the fetch script, pull all pages **concurrently** (e.g. `curl` via
-     `xargs -P4`, or an async fetch script) — robots, sitemaps, sampled pages,
-     `.well-known` probes in one burst against the brand's own site.
+   - Write the URL lists and run **`scripts/fetch.sh`** once: robots, sitemaps, sampled
+     pages and `.well-known` probes go out in one concurrent burst against the brand's own
+     site. Leave the concurrency at its default of **3**. Higher backfires — at `-P 8`
+     against BunnyCDN, 9 of 26 connections came back reset, and a reset misread as a fetch
+     failure turns a passing check into a `warn`. Resolve location-URL casing once from the
+     sitemap or a redirect instead of fetching both `/GDANSK/` and `/gdansk/`.
+   - **`scripts/crawl.py`** fetches each depth level concurrently and stops as soon as every
+     sampled URL is reached. Neither changes the verdict — `seo-checks.md`'s ordering rule
+     fixes the URL *set*, not the fetch timing — and 50 sequential curls took 8 minutes.
    - Where background subagents exist, run **the HTTP-only part of Stages 2–3 and Stage 4
      (browser) at the same time** — they share no state except the Stage 1 baseline, and
      join before Stage 5 scoring. **Caveat on client-rendered sites:** the rendered pass of
