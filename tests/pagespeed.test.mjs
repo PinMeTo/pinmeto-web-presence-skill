@@ -23,12 +23,17 @@ const psiBody = ({ labMs = 3100, fieldMs = null, audits = {} } = {}) => ({
   },
 });
 
-/** Run the CLI against a stub endpoint; resolves with {code, lines, stderr}. */
-function runCli(args, { responses, env = {} }) {
+/**
+ * Run the CLI against a stub endpoint; resolves with {code, lines, stderr}.
+ * `handler` replaces the canned `responses` when a test needs to misbehave at
+ * the socket level (drop the body, stall after the headers).
+ */
+function runCli(args, { responses, handler, env = {} }) {
   return new Promise((resolve, reject) => {
     const seen = [];
     const server = createServer((req, res) => {
       seen.push(req.url);
+      if (handler) return handler(req, res);
       const next = responses[Math.min(seen.length - 1, responses.length - 1)];
       res.writeHead(next.status, { "content-type": "application/json" });
       res.end(JSON.stringify(next.body ?? {}));
@@ -151,4 +156,41 @@ test("more than three URLs is a usage error, not a partial run", async () => {
   assert.equal(run.code, 2);
   assert.deepEqual(run.requests, []);
   assert.equal(run.lines.length, 0);
+});
+
+
+// The body is a second failure point after the headers. An unhandled rejection
+// here would escape the loop in main() and leave the remaining URLs without a
+// line at all, silently shrinking the attempted denominator the ratio divides by.
+test("a body that never arrives is one failed line, and the next URL still runs", async () => {
+  const run = await runCli(["https://brand.example/a", "https://brand.example/b"], {
+    env: { PAGESPEED_API_KEY: "secret-key" },
+    handler: (req, res) => {
+      res.writeHead(200, { "content-type": "application/json", "content-length": "999" });
+      res.flushHeaders();
+      res.socket.destroy();
+    },
+  });
+  assert.equal(run.code, 5);
+  assert.equal(run.lines.length, 2, "every URL still gets a line");
+  assert.deepEqual(
+    run.lines.map((line) => line.error),
+    ["network_error", "network_error"],
+  );
+  assert.equal(run.lines[0].httpStatus, 200, "the headers did arrive; the body did not");
+});
+
+test("a body that stalls past the timeout is a timeout, not a crash", async () => {
+  const run = await runCli(["https://brand.example/a"], {
+    env: { PAGESPEED_API_KEY: "secret-key", PAGESPEED_TIMEOUT_MS: "300" },
+    handler: (req, res) => {
+      res.writeHead(200, { "content-type": "application/json", "content-length": "999" });
+      res.flushHeaders();
+      // Never end the body: the read has to abort on the timeout.
+    },
+  });
+  assert.equal(run.code, 5);
+  assert.equal(run.lines.length, 1);
+  assert.equal(run.lines[0].error, "timeout");
+  assert.match(run.lines[0].message, /within 0\.3s/);
 });

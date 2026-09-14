@@ -22,10 +22,11 @@
 // 429 · 5 some other request failed. Any non-zero exit still prints a full set
 // of lines; the exit code is a summary, not a reason to skip stdout.
 
-// $PAGESPEED_ENDPOINT is a test seam (tests/pagespeed.test.mjs points it at a
-// local server); a scan never sets it.
+// $PAGESPEED_ENDPOINT and $PAGESPEED_TIMEOUT_MS are test seams
+// (tests/pagespeed.test.mjs points one at a local server and shortens the
+// other); a scan never sets either.
 const ENDPOINT = process.env.PAGESPEED_ENDPOINT || "https://www.googleapis.com/pagespeedonline/v5/runPagespeed";
-const TIMEOUT_MS = 60_000;
+const TIMEOUT_MS = Number(process.env.PAGESPEED_TIMEOUT_MS) || 60_000;
 const MAX_URLS = 3;
 
 /** Audit score 1 → "pass", 0 → "fail", missing/not-applicable → "unknown". */
@@ -83,27 +84,42 @@ function redactedEndpoint(url) {
   return `${ENDPOINT}?url=${encodeURIComponent(url)}&strategy=mobile&key=REDACTED`;
 }
 
+/** A failed request as one scored line; never throws, so the loop survives it. */
+function failure(url, error, httpStatus, message) {
+  return { url, engine: "psi", ok: false, error, httpStatus, endpoint: redactedEndpoint(url), message };
+}
+
 async function measure(url, key) {
+  const timeoutSignal = AbortSignal.timeout(TIMEOUT_MS);
+  const timedOut = (httpStatus) =>
+    failure(url, "timeout", httpStatus, `no response within ${TIMEOUT_MS / 1000}s`);
+
   let response;
   try {
     response = await fetch(requestUrl(url, key), {
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: timeoutSignal,
       headers: { accept: "application/json" },
     });
   } catch (error) {
-    const timedOut = error?.name === "TimeoutError" || error?.name === "AbortError";
-    return {
-      url,
-      engine: "psi",
-      ok: false,
-      error: timedOut ? "timeout" : "network_error",
-      httpStatus: null,
-      endpoint: redactedEndpoint(url),
-      message: timedOut ? `no response within ${TIMEOUT_MS / 1000}s` : String(error?.message ?? error),
-    };
+    return timeoutSignal.aborted
+      ? timedOut(null)
+      : failure(url, "network_error", null, String(error?.message ?? error));
   }
 
-  const text = await response.text();
+  // The body is a second failure point: headers can arrive and the read still
+  // abort on the timeout, or the connection drop mid-JSON. Left unhandled that
+  // rejection escapes the loop in main() and the remaining URLs never get a
+  // line, which is exactly the silently-shrunk denominator this script exists
+  // to prevent.
+  let text;
+  try {
+    text = await response.text();
+  } catch (error) {
+    return timeoutSignal.aborted
+      ? timedOut(response.status)
+      : failure(url, "network_error", response.status, String(error?.message ?? error));
+  }
+
   if (!response.ok) {
     let message = text.slice(0, 300);
     try {
@@ -111,29 +127,18 @@ async function measure(url, key) {
     } catch {
       // Non-JSON error body (an HTML quota page, say): the excerpt is the evidence.
     }
-    return {
+    return failure(
       url,
-      engine: "psi",
-      ok: false,
-      error: response.status === 429 ? "quota_exceeded" : `http_${response.status}`,
-      httpStatus: response.status,
-      endpoint: redactedEndpoint(url),
+      response.status === 429 ? "quota_exceeded" : `http_${response.status}`,
+      response.status,
       message,
-    };
+    );
   }
 
   try {
     return extractResult(url, JSON.parse(text));
   } catch (error) {
-    return {
-      url,
-      engine: "psi",
-      ok: false,
-      error: "unparseable_response",
-      httpStatus: response.status,
-      endpoint: redactedEndpoint(url),
-      message: String(error?.message ?? error),
-    };
+    return failure(url, "unparseable_response", response.status, String(error?.message ?? error));
   }
 }
 

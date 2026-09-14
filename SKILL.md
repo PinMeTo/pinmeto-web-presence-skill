@@ -53,9 +53,12 @@ incomparable.
   API key: the keyless path for `seo.lcp_sample` drives `pagespeed.web.dev` in the browser
   (`references/seo-checks.md`).
 - **Web fetch** for SEO / AIO / Agent Readiness checks against the brand's site.
-- **A shell with `curl` and `python3`** for the scripts in `scripts/` (see rule 1). Nothing
-  to install — they are stdlib only. Without a shell the scan still runs, but every
-  deterministic step falls back to model reasoning, which is slower and less reproducible.
+- **A shell with `curl` and `python3`** for the scripts in `scripts/` (see rule 1), plus
+  **Node** for the two `.mjs` ones (`pagespeed.mjs`, `check-references.mjs`). Nothing to
+  install — every script is stdlib only. Without a shell the scan still runs, but every
+  deterministic step falls back to model reasoning, which is slower and less reproducible;
+  without Node specifically, the keyed PageSpeed rung is unavailable and `seo.lcp_sample`
+  falls to the browser rung.
 
 ## Inputs to gather from the user
 
@@ -175,15 +178,17 @@ Route each kind of work to the cheapest thing that does it correctly:
 
 1. **Scripts beat any model.** The deterministic work ships in `scripts/`. Run them; do not
    re-author them from the prose in `references/`, which costs ~25 minutes a scan and lets
-   the arithmetic come out differently each time. They are Python 3 and bash, stdlib only,
-   nothing to install, and every one takes `--workdir DIR` and touches nothing outside it:
+   the arithmetic come out differently each time. They are Python 3, bash and Node, stdlib
+   only, nothing to install. The scan-pipeline scripts each take `--workdir DIR` and touch
+   nothing outside it; `pagespeed.mjs` is the exception — it takes URLs and prints to
+   stdout, because it reads a remote API rather than the scan's files:
 
    | Script | Does | Writes |
    | --- | --- | --- |
    | `scripts/fetch.sh` | one concurrent burst of every URL Stages 2–3 need, including the no-redirect and markdown-negotiation probes | `fetch/<key>.{h,b,m}` |
    | `scripts/analyze_served.py` | served-pass extraction: title, meta, canonical, h1, og/twitter, hreflang, lang, robots, alt counts, anchors, JSON-LD graph, first 200 words | `served.json` |
    | `scripts/crawl.py` | the `seo.internal_linking_depth` BFS exactly as `seo-checks.md` defines it | `crawl.json` |
-   | `scripts/pagespeed.mjs` | rung 1 of the `seo.lcp_sample` engine ladder: PageSpeed for up to 3 URLs, one attempt each, stopping on the first 429 | JSON Lines on stdout |
+   | `scripts/pagespeed.mjs` | rung 1 of the `seo.lcp_sample` engine ladder: PageSpeed for up to 3 URLs, one attempt each, stopping on the first 429. `node scripts/pagespeed.mjs <url> [<url> <url>]`, key from `$PAGESPEED_API_KEY` / `$PSI_API_KEY` | JSON Lines on stdout |
    | `scripts/score.py` | the arithmetic in `scoring.md` and the Theme ranking in `artifact-report.md` | `scores.json` |
    | `scripts/diff_history.py` | the mechanical `checks` diff between the last two scans | `diff.json` |
 

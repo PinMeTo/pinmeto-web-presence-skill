@@ -5,19 +5,22 @@ model; these are those scripts. Re-authoring them from the prose in
 `references/` cost about 25 minutes of every run and let the arithmetic come
 out slightly differently each time.
 
-Everything is Python 3 or bash from the standard library. There is nothing to
-install: the served-HTML parsing runs on `html.parser` through the small
+Everything is Python 3, bash or Node from the standard library. There is nothing
+to install: the served-HTML parsing runs on `html.parser` through the small
 `htmlmini.py` in this directory, because `beautifulsoup4` and `lxml` are not
 present on a stock Mac running Claude Code and an install step that fails
 halfway through a scan is worse than a parser we control.
 
-Every script takes `--workdir DIR` and reads and writes only inside it. No
+Every script in the scan pipeline takes `--workdir DIR` and reads and writes only
+inside it. `pagespeed.mjs` is the exception: it takes URLs on the command line and
+prints to stdout, because it reads a remote API rather than the scan's files. No
 script contains a brand, a URL or a host path.
 
 | Script | Stage | Reads | Writes |
 | --- | --- | --- | --- |
 | `fetch.sh` | 2–3 | `fetch-list*.txt` | `fetch/<key>.{h,b,m,err}` |
 | `analyze_served.py` | 2–3 | `fetch/` | `served.json` |
+| `pagespeed.mjs` | 2 | — (the PageSpeed API) | JSON Lines on stdout |
 | `crawl.py` | 2 | the live site | `crawl.json` |
 | `score.py` | 5 | `results.json`, `references/` | `scores.json` |
 | `diff_history.py` | 6 | `history.json` | `diff.json` |
@@ -27,11 +30,17 @@ A scan runs them in that order:
 
 ```bash
 W=/tmp/scan-brand && mkdir -p "$W"
+# First, in the background: the slowest fetches in the scan, and nothing needs
+# them until scoring. Skipped without a key — see the engine ladder in
+# references/seo-checks.md for what happens then.
+node scripts/pagespeed.mjs "$LCP_URL_1" "$LCP_URL_2" "$LCP_URL_3" > "$W/pagespeed.jsonl" &
 # …write $W/fetch-list.txt from the sample and the site's URLs…
 scripts/fetch.sh          --workdir "$W"
 scripts/analyze_served.py --workdir "$W"
 scripts/crawl.py          --workdir "$W" --start https://www.brand.com/ --targets-file "$W/targets.txt"
-# …the model assembles $W/results.json from served.json, crawl.json and Stage 4…
+wait  # the PageSpeed lines are needed from here on
+# …the model assembles $W/results.json from served.json, crawl.json,
+#   pagespeed.jsonl and Stage 4…
 scripts/score.py          --workdir "$W" --label "Third scan"
 scripts/diff_history.py   --workdir "$W"
 ```
