@@ -58,7 +58,7 @@ incomparable.
   install — every script is stdlib only. Without a shell the scan still runs, but every
   deterministic step falls back to model reasoning, which is slower and less reproducible;
   without Node specifically, the keyed PageSpeed rung is unavailable and `seo.lcp_sample`
-  falls to the browser rung.
+  falls to the browser rung — or, with no browser either, to the standing `warn`.
 
 ## Inputs to gather from the user
 
