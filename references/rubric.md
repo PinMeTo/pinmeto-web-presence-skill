@@ -1,4 +1,33 @@
-# Rubric — v2.14.0-skill.1 (skill-line fork of PinMeTo MLPR rubric v2.8.0)
+# Rubric — v2.15.0-skill.1 (skill-line fork of PinMeTo MLPR rubric v2.8.0)
+
+Changes in 2.15.0-skill.1: the PageSpeed checks stop being the two that never run.
+
+- **`seo.lcp_sample` gains a measurement-engine ladder**: the PageSpeed Insights API when the
+  host already holds a key, otherwise `pagespeed.web.dev` driven in the browser, and only a run
+  with neither a browser nor a key records the standing `warn` — without calling anything. Both
+  rungs are the same engine (Lighthouse on Google's infrastructure), so scans stay comparable
+  across rungs; measuring with a local Lighthouse was rejected because a lab number off the
+  scanning machine moves with its CPU. Each scan records which rung ran as `lcpEngine`.
+- **`seo.lcp_sample` scores the lab LCP, always.** It previously preferred CrUX field data
+  "when present". Field data is a 28-day rolling average that exists for high-traffic URLs and
+  not for most location pages, so preferring it mixed two different measurements inside one
+  three-URL ratio and moved between scans for reasons unrelated to the site. Field LCP is now
+  evidence, recorded next to the lab number, never the scored value.
+- **`seo.mobile_friendly` moves off PageSpeed entirely** — `source` changes from `pagespeed` to
+  `html`, and it joins `dual_pass_checks`. Its procedure read three Lighthouse audits
+  (`viewport`, `tap-targets`, `font-size`); **none of the three exists any more**. Lighthouse
+  13.4.1, verified against a live `pagespeed.web.dev` run on 2026-09-10, ships an SEO category
+  of `is-crawlable, document-title, meta-description, http-status-code, link-text,
+  crawlable-anchors, robots-txt, image-alt, hreflang, canonical, structured-data` and no
+  mobile-friendliness audits at all. The check now reads the `<meta name="viewport">` tag off
+  the sampled pages' served HTML, which the scan already fetches: deterministic, free of any
+  engine, and never a quota `warn`.
+
+**Scores move.** Scans that recorded these two as `warn` on an exhausted quota now carry real
+measurements, so up to 15 SEO points can swing in either direction on the first re-run, and
+`seo.mobile_friendly` is measurable on every run including browser-less ones. Attribute that to
+the rubric, not to customer progress. Weights, thresholds and the `warn`/`fail` precedence
+rules are otherwise unchanged.
 
 Changes in 2.14.0-skill.1 (second cross-file contract review, first review of the shipped
 2.13.0): the `geo.listing_connected_pinmeto` browser downgrade is now **encoded in the
@@ -85,7 +114,7 @@ Never present a rubric-caused or correction-caused delta as customer progress.
 
 ```json
 {
-  "rubric_version": "2.14.0-skill.1",
+  "rubric_version": "2.15.0-skill.1",
   "derived_from": "MLPR 2.8.0",
   "rendered_only_credit": 0.5,
   "dual_pass_checks": [
@@ -93,7 +122,7 @@ Never present a rubric-caused or correction-caused delta as customer progress.
     "seo.canonical_present", "seo.meta_title_unique", "seo.meta_description_unique",
     "seo.h1_unique_has_location", "seo.og_twitter_per_location", "seo.image_alt_text",
     "seo.hreflang_correct", "seo.breadcrumbs_structured", "seo.internal_linking_depth",
-    "aio.faqpage_schema_2_types", "aio.quick_answer_first_200w",
+    "seo.mobile_friendly", "aio.faqpage_schema_2_types", "aio.quick_answer_first_200w",
     "aio.speakable_specification", "aio.entity_consistent_brand_naming",
     "aio.eeat_article_signals", "aio.graph_jsonld_pattern",
     "aio.inlanguage_matches_html_lang", "aio.organization_schema_complete",
@@ -132,8 +161,8 @@ Never present a rubric-caused or correction-caused delta as customer progress.
         { "id": "seo.sitemap_lists_locations", "weight": 5, "threshold": ">=80% of discovered locations", "source": "sitemap.xml" },
         { "id": "seo.robots_allows_locations", "weight": 5, "threshold": "all sampled URLs accessible", "source": "robots.txt" },
         { "id": "seo.og_twitter_per_location", "weight": 5, "threshold": ">=80% present", "source": "html" },
-        { "id": "seo.lcp_sample", "weight": 10, "threshold": "LCP <2.5s on >=80% of 3 sampled URLs", "source": "pagespeed" },
-        { "id": "seo.mobile_friendly", "weight": 5, "threshold": "pass on all sampled", "source": "pagespeed" },
+        { "id": "seo.lcp_sample", "weight": 10, "threshold": "lab LCP <2.5s on >=80% of 3 sampled URLs", "source": "pagespeed" },
+        { "id": "seo.mobile_friendly", "weight": 5, "threshold": "configured viewport on all sampled pages", "source": "html" },
         { "id": "seo.image_alt_text", "weight": 5, "threshold": ">=90% present", "source": "html" },
         { "id": "seo.meta_description_unique", "weight": 5, "threshold": "no duplicates", "source": "html" },
         { "id": "seo.internal_linking_depth", "weight": 10, "threshold": "all within 3 clicks of homepage", "source": "crawl" },
@@ -292,11 +321,19 @@ This skill gathers the **same facts from the real map surfaces in a browser** (s
   when the surface shows an unclaimed/"Claim This Place" banner, **or** when the listing
   disagrees with the PinMeTo record on **address or pin**. Full downgrade rule, including
   what does *not* trigger it, in `geo-browser-checks.md`.
-- **`seo.lcp_sample` / `seo.mobile_friendly`**: use the PageSpeed Insights API
-  (`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=...&strategy=mobile`) on
-  up to 3 sampled URLs. The anonymous quota is per-IP, shared machine-wide, and frequently
-  already exhausted — expect `warn` without a key. If these 15 SEO points matter to the
-  user, ask them for a (free) PSI API key and pass it as `&key=`. Errors → `warn`.
+- **`seo.lcp_sample`**: measure the **mobile lab LCP** of up to 3 sampled URLs on the first
+  available rung of the engine ladder in `seo-checks.md`: the PageSpeed Insights API when a key
+  is already in the environment
+  (`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=...&strategy=mobile&key=`),
+  else `pagespeed.web.dev` in the browser, else — no browser and no key — a standing `warn`
+  recorded without calling. One attempt per URL, no retries, and stop at the first quota
+  refusal: the anonymous API quota is per-IP and shared machine-wide, so the remaining calls
+  would buy nothing. Errors → `warn`; a URL that did not return still counts in the attempted
+  denominator. CrUX field LCP goes in evidence, never in the ratio.
+- **`seo.mobile_friendly`**: read `<meta name="viewport">` on each sampled page under the
+  dual-pass policy — present with `width=device-width` in served HTML = 1, only after
+  rendering = 0.5, absent = 0. Do not look for Lighthouse's `viewport`, `tap-targets` or
+  `font-size` audits: no current Lighthouse ships them.
 - Anything unmeasurable in the current host (no browser, blocked fetch, consent wall you
   cannot decline) → `warn`, with the reason in evidence. Never guess a value to avoid a warn.
 

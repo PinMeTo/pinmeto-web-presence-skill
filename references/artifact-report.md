@@ -228,7 +228,7 @@ you are from 100 and what closes the gap, what moved, then the work in the order
 
 1. **Hero**: a masthead (the PinMeTo logo left, "Web presence report" right, a hairline
    under both), then a two-column lead. Left: the brand domain as the h1 (46px), a one-sentence
-   dateline ("Five locations, scanned 4 September 2026. Rubric 2.14.0-skill.1."), and the
+   dateline ("Five locations, scanned 4 September 2026. Rubric 2.15.0-skill.1."), and the
    Summary (section 2), which lives in this column. Right, right-aligned: the overall score
    huge (96px, 800, navy), "of 100", the band word (Strong / Healthy / Needs work / Critical)
    in its status colour, and from the second scan on a delta pill (↑ or ↓ and points, green or
@@ -447,7 +447,9 @@ you are from 100 and what closes the gap, what moved, then the work in the order
     pillar covers and why it carries that share of the overall score (the weights moved here
     from the pillar scores, and this is the only place they appear), plus rubric version, scan
     date, and sources ("Google, Apple, and Bing Maps as observed in a browser, your website
-    and store locator, PageSpeed Insights, PinMeTo location data"). State the sample
+    and store locator, PageSpeed Insights, PinMeTo location data" — drop PageSpeed from that
+    list when no rung measured it, rather than crediting a source the scan never used).
+    State the sample
     explicitly: which locations, which pages, what was not covered. When any check used the
     rendered pass, include the one-paragraph explanation of the dual-pass policy (served =
     full credit, client-rendered = half, and why: Google renders, AI training crawlers
@@ -603,12 +605,13 @@ The report carries its own memory. Embed exactly one block in the rendered page:
   "scans": [
     {
       "date": "2026-08-09",
-      "rubricVersion": "2.14.0-skill.1",
+      "rubricVersion": "2.15.0-skill.1",
       "label": "First scan",
       "overall": 63, "grade": "C",
       "pillars": { "seo": 47, "geo": 79, "aio": 45, "agent_readiness": 90 },
       "counts": { "pass": 40, "warn": 2, "fail": 14 },
       "sample": ["<locationId>", "…"],
+      "lcpEngine": "psi",
       "checks": { "seo.h1_unique_has_location": { "status": "fail", "ratio": 0 } },
       "notes": ["ar.markdown_content_negotiation was recorded 1.0 here but 0.5 under the AIO id; corrected in the next scan"]
     }
@@ -638,6 +641,12 @@ The report carries its own memory. Embed exactly one block in the rendered page:
   it among "could not be measured" and imply somebody tried, and do not record it as `fail`.
   The trend's mechanical diff reads an id missing from one side as unknown, so an exclusion
   that persists across scans never shows up as movement.
+- `lcpEngine` (optional) names the rung that measured `seo.lcp_sample`: `"psi"` (the API),
+  `"psi-web"` (`pagespeed.web.dev` in the browser), or `null` when neither was available and
+  the check is the standing `warn`. Absent means
+  a scan from before the ladder existed — unknown, not `null`. The two engines are the same
+  Lighthouse-on-Google's-infrastructure measurement, so the trend may compare across them;
+  the field exists so a future third engine cannot silently be compared against these.
 - `notes` (optional) records **measurement corrections** discovered about *that* scan — so
   a later run can see "this check was mis-scored" without re-deriving it. Append notes to
   the older entry when you find the error; never edit its scores.
@@ -669,7 +678,7 @@ facts), `effort` (a property of the fix, not the scan; one of the closed set bel
 
 ```json
 {
-  "theme_mapping_for_rubric_version": "2.14.0-skill.1",
+  "theme_mapping_for_rubric_version": "2.15.0-skill.1",
   "themes": [
     { "slug": "location-data-in-code",
       "name": "Put each location's and your brand's details into the page code",

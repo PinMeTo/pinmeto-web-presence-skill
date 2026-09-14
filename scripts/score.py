@@ -440,6 +440,12 @@ def score(results, rubric, themes, label=None):
         "sample": results["sample"],
         "checks": history_checks,
     }
+    # Which rung of the seo.lcp_sample engine ladder measured this scan, so a
+    # later scan knows what it is comparing against (seo-checks.md). Absent
+    # means a scan from before the ladder existed; explicit null means neither
+    # rung was available.
+    if "lcpEngine" in results:
+        entry["lcpEngine"] = results["lcpEngine"]
     notes = list(results.get("notes") or [])
     if geo_unmeasured:
         notes.append(

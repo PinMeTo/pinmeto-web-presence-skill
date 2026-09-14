@@ -9,6 +9,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -96,4 +98,43 @@ test("uppercase tags and attributes are matched lowercase", () => {
 test("malformed markup parses instead of raising", () => {
   assert.equal(parse("<p>unterminated <b>bold", "doc.get_text()"), "unterminated bold");
   assert.equal(parse("", "doc.get_text()"), "");
+});
+
+// `seo.mobile_friendly` scores the viewport tag off served HTML, so the served
+// pass has to surface it. No current Lighthouse ships a viewport, tap-targets
+// or font-size audit, which is why the check reads the markup directly.
+test("analyze_served surfaces the viewport meta tag", () => {
+  const workdir = mkdtempSync(join(tmpdir(), "pmt-served-"));
+  const fetchDir = join(workdir, "fetch");
+  mkdirSync(fetchDir);
+  writeFileSync(
+    join(fetchDir, "page.b"),
+    '<html lang="en"><head><title>T</title>' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+      "</head><body><h1>H</h1></body></html>",
+  );
+  writeFileSync(join(fetchDir, "page.h"), "HTTP/2 200\n");
+  writeFileSync(join(fetchDir, "page.m"), "200\thttps://brand.example/a\ttext/html\t120\t0\n");
+
+  const run = spawnSync("python3", [join(repo, "scripts", "analyze_served.py"), "--workdir", workdir], {
+    encoding: "utf8",
+  });
+  assert.equal(run.status, 0, run.stderr);
+  const served = JSON.parse(readFileSync(join(workdir, "served.json"), "utf8"));
+  assert.equal(served.page.viewport, "width=device-width, initial-scale=1");
+});
+
+test("a page with no viewport tag reports null, not an empty string", () => {
+  const workdir = mkdtempSync(join(tmpdir(), "pmt-served-"));
+  const fetchDir = join(workdir, "fetch");
+  mkdirSync(fetchDir);
+  writeFileSync(join(fetchDir, "page.b"), "<html><head><title>T</title></head><body></body></html>");
+  writeFileSync(join(fetchDir, "page.h"), "HTTP/2 200\n");
+  writeFileSync(join(fetchDir, "page.m"), "200\thttps://brand.example/a\ttext/html\t60\t0\n");
+
+  const run = spawnSync("python3", [join(repo, "scripts", "analyze_served.py"), "--workdir", workdir], {
+    encoding: "utf8",
+  });
+  assert.equal(run.status, 0, run.stderr);
+  assert.equal(JSON.parse(readFileSync(join(workdir, "served.json"), "utf8")).page.viewport, null);
 });
