@@ -11,6 +11,26 @@ A rubric bump is required whenever a change moves scores, because the re-run att
 in `references/rubric.md` can only separate rubric drift from real customer progress if the
 version moved with the rules.
 
+## v0.16.1 · 2026-09-16 · rubric 2.15.0-skill.1
+
+Two Claude Desktop symptoms from the first v0.16.0 runs, no score moved. The scan opened a
+separate Chrome instead of using the built-in browser, and it hit Desktop's per-session
+tool-call cap.
+
+- **The built-in browser is the stated preference.** `SKILL.md` and `geo-browser-checks.md`
+  listed the in-app Browser, Claude in Chrome and "another browser automation surface" as
+  equals. Now: use the host's built-in browser tool when one exists, launch or attach a Chrome
+  only when the host has none, and never launch one to get around a busy built-in browser.
+  Rule 4's profile-in-use advice is scoped to that launched-Chrome case.
+- **PageSpeed rung 2 reads the rendered number first.** The v0.16.0 recipe led with pulling
+  the Lighthouse JSON out of the browser's network log, which only a DevTools MCP has, so the
+  model picked that browser for the whole scan. The rendered read (navigate, wait, one
+  `javascript_tool` read of the mobile-tab LCP) is now the primary path; the network-log
+  recipe stays as the DevTools-only variant. Same Lighthouse run either way.
+- **Rule 7: expect the tool-call cap.** A full scan lands above Desktop's per-session cap, so
+  the "continue" prompt is normal. Evidence goes to the location file after each platform and
+  "continue" resumes from the last recorded lookup instead of restarting the stage.
+
 ## v0.16.0 · 2026-09-10 · rubric 2.15.0-skill.1
 
 The two PageSpeed checks stop being the ones that never run. `seo.lcp_sample` and

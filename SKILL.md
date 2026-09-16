@@ -1,7 +1,7 @@
 ---
 name: pinmeto-web-presence
 description: This skill should be used when the user asks to "check our web presence", "audit or monitor our SEO / AIO / GEO / agent readiness", "how do we look in AI search / ChatGPT / Gemini", "are our locations correct on Google, Apple, and Bing Maps", "run a presence scan", "update the presence report", or otherwise requests an SEO, AI-visibility (AIO), generative-engine (GEO), or agent-readiness analysis of a multi-location brand's website and map listings. Scores the brand against the PinMeTo MLPR rubric, produces an updatable report as a Site in ChatGPT/Codex or an HTML artifact in Claude, and can set up scheduled monitoring. Requires the PinMeTo Location MCP server; GEO checks use a browser against the real Google, Apple, and Bing Maps.
-version: 0.16.0
+version: 0.16.1
 license: Proprietary - (c) PinMeTo AB. See LICENSE.
 ---
 
@@ -38,7 +38,15 @@ incomparable.
   the server answers. If it fails or is missing, stop and run the
   `pinmeto-setup` flow first — the scan is meaningless without the PinMeTo baseline.
 - **A browser tool** — for GEO always, and for SEO/AIO whenever the site client-renders:
-  the in-app Browser, Claude in Chrome, or another browser automation surface. GEO evidence
+  the in-app Browser, Claude in Chrome, or another browser automation surface. **Prefer the
+  host's built-in browser tool when one exists** (the in-app Browser in Claude Desktop and
+  Cowork, Claude in Chrome); launch or attach a separate Chrome — a DevTools MCP, puppeteer —
+  only when the host offers no browser tool at all. Every procedure in this skill is written
+  for the built-in surface's `navigate`, `javascript_tool` and `read_page`; on a fallback,
+  map them once and follow the procedure unchanged — Chrome DevTools MCP: `navigate_page`,
+  `evaluate_script`, `take_snapshot`; puppeteer: `page.goto`, `page.evaluate`,
+  `page.accessibility.snapshot()`. A launched Chrome still costs several tool calls per page
+  where the built-in one costs one, which is why it is the last resort. GEO evidence
   comes from the *real* Google, Apple, and Bing Maps pages — never from the Places API or
   MapKit — and JS-shell pages get their rendered pass in the same browser (see the
   rendering policy in `references/seo-checks.md`). If no browser is available, run the
@@ -226,11 +234,13 @@ Route each kind of work to the cheapest thing that does it correctly:
    within that surface. Two independent surfaces (e.g. the in-app Browser *and* Claude in
    Chrome) may run one driver each. Do not go wider against the map platforms regardless:
    parallel automation from one IP invites bot detection and consent loops, which cost
-   more time than they save. **The constraint is machine-wide, not per-agent.** Another
-   session on the same machine may already hold the browser's profile, and the launch then
-   fails with a profile-in-use error. Start your own browser on a separate profile or user
-   data directory instead; do not terminate the running one, because you cannot tell from a
-   process list whether somebody is working in it.
+   more time than they save. **The constraint is machine-wide, not per-agent.** This only
+   matters on a host with no built-in browser tool, where the browser is a Chrome you launch
+   yourself: another session on the same machine may already hold its profile, and the launch
+   then fails with a profile-in-use error. Start your own browser on a separate profile or
+   user data directory instead; do not terminate the running one, because you cannot tell
+   from a process list whether somebody is working in it. Never launch a Chrome to get around
+   a busy built-in browser — wait for it.
 5. **Parallelize everything that is not the browser.** The wall-clock order that works:
    - Kick off the **PageSpeed calls first, in the background** — the slowest single fetches
      in the scan, and nothing depends on them until scoring. This applies to the keyed API
@@ -254,6 +264,15 @@ Route each kind of work to the cheapest thing that does it correctly:
 6. **No subagent support?** Fine — the whole workflow runs single-agent; the scripts in
    rule 1 (including their concurrent fetching) are what keep that affordable, and the
    PageSpeed-first ordering still applies on the keyed path.
+7. **Expect the host's tool-call cap.** Claude Desktop caps tool calls per session and asks
+   the user to click "continue"; a full scan (~60 GEO operations, the rendered pass, PageSpeed
+   in the browser, evidence writes) lands above it, so the pause is normal, not a fault. What
+   must not happen is losing work at the pause: write evidence to the location file after
+   each platform, never hold it for a batch write, and on "continue" resume from the last
+   recorded lookup rather than restarting the stage. Spend calls where they change a score —
+   the per-location operation budget and the "decide once per interaction type" rule in
+   `references/geo-browser-checks.md` exist so a failing interaction is paid for once, not
+   once per location.
 
 ## Scope and honesty
 

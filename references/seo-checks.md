@@ -230,8 +230,20 @@ URL at a time, and wait for the lab report to appear (allow up to 120 s; the run
 Google's side). It needs the **single browser**, so it cannot run in the background: sequence it
 after the rendered pass and before Stage 4, and budget about two minutes per URL.
 
-**Read the JSON, not the page.** The app fetches the full Lighthouse result and it is
-retrievable from the browser's network log. The recipe, as verified on 2026-09-10:
+**Read the rendered number.** In the built-in browser this rung is three calls per URL:
+navigate, wait for the lab report, one `javascript_tool` read. Make sure the **Mobile** tab is
+the active one (`form_factor=mobile` selects it, but check — the page runs mobile *and*
+desktop, and the desktop number is much smaller: 733 ms against 2927 ms on the same page on
+2026-09-10), then read the "Largest Contentful Paint" value from the lab metrics list, a
+localized string like "2.9 s" or "2,9 s". Convert it yourself: this is a localized-UI read of
+the kind this skill keeps on the primary model and never delegates. Record the string as seen
+and the milliseconds you derived. The mobile-tab field panel is where CrUX numbers appear when
+the URL has them; record those as evidence only.
+
+**DevTools variant — only when the browser exposes a network log.** A Chrome DevTools MCP can
+read the full Lighthouse result instead of the rendered number; it is not a reason to pick that
+browser over the built-in one (`SKILL.md`, browser prerequisite). The recipe, as verified on
+2026-09-10:
 
 1. The result arrives in a `POST` to `/_/PagespeedUi/data/batchexecute` (rpcid `LsX2he`). Poll
    responses come back first and are small; the one you want is over a megabyte.
@@ -247,11 +259,8 @@ retrievable from the browser's network log. The recipe, as verified on 2026-09-1
    ms for the same page.
 5. Read `audits['largest-contentful-paint'].numericValue`.
 
-Only when the response body cannot be retrieved, fall back to reading the rendered number (the
-lab metrics list shows "Largest Contentful Paint" with a value like "2.9 s") and say so in the
-evidence: that is a localized-UI read of the kind this skill keeps on the primary model and
-never delegates. The mobile-tab field panel is where CrUX numbers appear when the URL has them;
-record those as evidence only.
+Both reads are the same Lighthouse run; a scan measured one way is comparable with a scan
+measured the other.
 
 **Same stop rule.** If the analysis errors, is rate-limited, or hits an interstitial or bot
 check on the first URL, do not retry and do not walk the remaining URLs — record them as not
