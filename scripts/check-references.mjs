@@ -8,7 +8,7 @@
 //
 // Two modes. The default (full) mode checks everything below and is the repo
 // gate CI runs; it requires the repo-only files (CHANGELOG.md, CONTEXT.md,
-// README.md). `--scan` mode runs only the assertions that read files a skill
+// README.md, docs/rubric.md). `--scan` mode runs only the assertions that read files a skill
 // payload ships (the references plus SKILL.md), so a scanning agent can run it
 // before publishing from inside an unpacked `.skill`, where the repo-only files
 // are absent by design. A missing *reference* still fails in both modes.
@@ -60,6 +60,10 @@
 //      file under references/. Matching ignores case, treats any whitespace run,
 //      including a line wrap, as one space, and stops at word boundaries
 //      ("desktop fixture" is not "top fix"; "top fixes" is).
+//   9. docs/rubric.md, the human-readable rubric page, equals what
+//      scripts/render-rubric.mjs renders from the rubric JSON and the Theme
+//      mapping, and the renderer carries a plain-language sentence for every
+//      point-bearing id. Repo-only, since the page is not in the skill payload.
 //
 // Every assertion is about an externally observable property of the shipped
 // files, never about how the markdown is laid out. Which sections the report
@@ -75,6 +79,7 @@
 import { readdirSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { renderRubricPage, RUBRIC_PAGE_PATH } from "./render-rubric.mjs";
 
 const REQUIRED_GLOSSARY_TERMS = [
   "Fix brief",
@@ -803,13 +808,33 @@ function referenceOnlyChecks({ skillMd, referenceMds }) {
 }
 
 /**
+ * docs/rubric.md is generated from the rubric JSON and the Theme mapping by
+ * scripts/render-rubric.mjs. It must equal what the renderer produces today,
+ * and the renderer must have a plain-language sentence for every point-bearing
+ * id, so a rubric bump cannot leave the readable page describing the old rules.
+ */
+export function checkRubricPage(rubricPageMd, rubricMd, reportMd) {
+  let rendered;
+  try {
+    rendered = renderRubricPage({ rubricMd, reportMd });
+  } catch (error) {
+    return [error.message];
+  }
+  if (rubricPageMd !== rendered) {
+    return [`${RUBRIC_PAGE_PATH}: differs from the renderer's output; run \`node scripts/render-rubric.mjs\``];
+  }
+  return [];
+}
+
+/**
  * The repo-only checks: they read files a skill payload does not contain
  * (CHANGELOG.md, CONTEXT.md, README.md), so they are meaningful only in the
  * repo, where CI runs the full check on every push.
  */
-function repoOnlyChecks({ skillMd, changelogMd, contextMd, readmeMd }) {
+function repoOnlyChecks({ skillMd, changelogMd, contextMd, readmeMd, rubricPageMd, referenceMds }) {
   return [
     ...checkVersionMatchesChangelog(skillMd, changelogMd),
+    ...checkRubricPage(rubricPageMd, referenceMds["references/rubric.md"] ?? "", referenceMds["references/artifact-report.md"] ?? ""),
     ...checkGlossaryTerms(contextMd),
     // Retired vocabulary in the two repo-only prose files; SKILL.md and the
     // references are already swept by the reference-only check.
@@ -863,12 +888,14 @@ export function runCheck({ readFile, listReferences, argv = [] }) {
     changelogMd: "",
     contextMd: "",
     readmeMd: "",
+    rubricPageMd: "",
     referenceMds,
   };
   if (!scanTime) {
     contents.changelogMd = read("CHANGELOG.md");
     contents.contextMd = read("CONTEXT.md");
     contents.readmeMd = read("README.md");
+    contents.rubricPageMd = read(RUBRIC_PAGE_PATH);
   }
 
   return missing.length > 0 ? missing : checkReferences(contents, { scanTime });
