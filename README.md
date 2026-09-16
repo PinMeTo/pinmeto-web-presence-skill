@@ -2,8 +2,8 @@
 
 Your customers are everywhere. Are you?
 
-Web Presence is a skill for Claude that checks how easily a multi-location brand is found
-today: in Google search, on Google, Apple and Bing Maps, in AI answers from ChatGPT, Gemini
+Web Presence is a skill for Claude, ChatGPT and any other AI tool that runs skills. It checks
+how easily a multi-location brand is found today: in Google search, on Google, Apple and Bing Maps, in AI answers from ChatGPT, Gemini
 or Perplexity, and by the AI agents that increasingly shop and book on a customer's behalf.
 You ask for a scan, and you get one score, a ranked list of what to fix, and a brief your
 developer can act on for each item. Run it again next month and the report shows what moved.
@@ -51,9 +51,9 @@ starting over.
 
 ## How to run it
 
-Web Presence ships inside the **PinMeTo Locations** plugin for Claude, alongside Location
-Reports. Once the plugin and the PinMeTo Location connection are installed, ask Claude in
-plain words:
+Web Presence ships inside the **PinMeTo Locations** plugin, alongside Location Reports, and
+the same skill runs in Claude, ChatGPT and other tools that support skills. Once the skill and
+the PinMeTo Location connection are installed, ask your assistant in plain words:
 
 > Check our web presence for brand.com
 
@@ -62,7 +62,8 @@ or, later:
 > Re-run the presence scan for brand.com and show me what changed since 7 September.
 
 The scan reads your location data through PinMeTo, fetches your website, and looks up your
-listings on the real map services in a browser. It works on a sample of your locations rather
+listings on the real map services in a browser. In Claude the report is delivered as an
+artifact; in ChatGPT it is published as a Site. It works on a sample of your locations rather
 than all of them, and the report says exactly which ones. You can also ask for a scoped report,
 for one country or region, and for a scheduled monthly scan.
 
