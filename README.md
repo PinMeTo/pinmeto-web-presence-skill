@@ -43,8 +43,10 @@ version:
 "pinmeto-web-presence": { "repo": "PinMeTo/pinmeto-web-presence-skill", "version": "0.16.2" }
 ```
 
-Every `vX.Y.Z` tag here builds the `.skill` archive and notifies the marketplace, which
-vendors the new version and bumps the plugin. Nothing else needs doing per release.
+Every `vX.Y.Z` tag here builds the `.skill` archive and, when the `MARKETPLACE_DISPATCH_TOKEN`
+secret is configured, notifies the marketplace, which vendors the new version and bumps the
+plugin. Without the secret, run the marketplace's "Sync plugin artifacts" workflow by hand
+(see Releasing).
 
 ## Layout
 

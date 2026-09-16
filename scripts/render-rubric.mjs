@@ -126,7 +126,8 @@ export function pointBearingIds(rubric) {
   return ids;
 }
 
-const cell = (text) => String(text ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ");
+// Backslash first, so an escaped pipe is not itself re-escaped.
+const cell = (text) => String(text ?? "").replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/\n/g, " ");
 
 function table(header, rows) {
   const line = (cells) => `| ${cells.map(cell).join(" | ")} |`;
@@ -276,7 +277,7 @@ export function renderRubricPage({ rubricMd, reportMd }) {
   out.push("## How this differs from the PinMeTo product rubric");
   out.push("");
   out.push(
-    `The scan is a skill-line fork of MLPR ${rubric.derived_from}. SEO, AIO and Agent Readiness are scored identically to the product. GEO differs in two ways, so GEO scores are not directly comparable with product scores:`,
+    `The scan is a skill-line fork of ${rubric.derived_from}. SEO, AIO and Agent Readiness are scored identically to the product. GEO differs in two ways, so GEO scores are not directly comparable with product scores:`,
   );
   out.push("");
   out.push(

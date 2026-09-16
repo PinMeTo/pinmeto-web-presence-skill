@@ -181,7 +181,7 @@ The report groups failing checks into Themes: one plain-language issue that one 
 
 ## How this differs from the PinMeTo product rubric
 
-The scan is a skill-line fork of MLPR MLPR 2.8.0. SEO, AIO and Agent Readiness are scored identically to the product. GEO differs in two ways, so GEO scores are not directly comparable with product scores:
+The scan is a skill-line fork of MLPR 2.8.0. SEO, AIO and Agent Readiness are scored identically to the product. GEO differs in two ways, so GEO scores are not directly comparable with product scores:
 
 - **Bing is a scored platform again.** The product dropped it because the Bing Maps Enterprise API is being retired; the skill reads the live bing.com/maps surface in a browser instead.
 - **`geo.listing_connected_pinmeto` is new.** It measures whether each listing is connected and managed through PinMeTo, judged from the location record and downgraded when the map surface contradicts it.
