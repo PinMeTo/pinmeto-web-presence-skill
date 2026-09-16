@@ -15,7 +15,8 @@ rm -f ./*.skill
 
 # Include only the skill payload. Never ship dev cruft, node_modules, or the
 # previous archive.
-PAYLOAD=(SKILL.md)
+# LICENSE ships because SKILL.md front matter points the reader at it.
+PAYLOAD=(SKILL.md LICENSE)
 [ -d references ] && PAYLOAD+=(references)
 [ -d scripts ] && PAYLOAD+=(scripts)
 [ -d assets ] && PAYLOAD+=(assets)

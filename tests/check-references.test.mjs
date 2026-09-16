@@ -874,7 +874,7 @@ test("the default required glossary terms include Cleared and Reopened", () => {
 // shipped tree, which CI keeps green; each failing case mutates one file.
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
-const REPO_ONLY = ["CHANGELOG.md", "CONTEXT.md", "README.md"];
+const REPO_ONLY = ["CHANGELOG.md", "CONTEXT.md", "README.md", "docs/rubric.md"];
 
 /** The real shipped tree as a { path: contents } map plus the reference names. */
 function realTree() {
@@ -950,4 +950,25 @@ test("full mode still fails when a repo-only file such as CONTEXT.md is missing"
   delete tree.files["CONTEXT.md"];
   const violations = runOverTree(tree);
   assert.ok(violations.some((v) => /CONTEXT\.md: file is missing/.test(v)), violations.join("\n"));
+});
+
+test("full mode fails when docs/rubric.md is stale against the rubric JSON", () => {
+  const tree = realTree();
+  tree.files["docs/rubric.md"] = tree.files["docs/rubric.md"].replace("| SEO | 30% |", "| SEO | 35% |");
+  const violations = runOverTree(tree);
+  assert.ok(violations.some((v) => /docs\/rubric\.md.*render-rubric/.test(v)), violations.join("\n"));
+});
+
+test("full mode names a rubric id the readable page has no sentence for", () => {
+  const tree = realTree();
+  tree.files["references/rubric.md"] = tree.files["references/rubric.md"].replace(
+    '{ "id": "ar.xml_sitemap", "weight": 5, "spec": "sitemaps.org" }',
+    '{ "id": "ar.xml_sitemap", "weight": 3, "spec": "sitemaps.org" }, { "id": "ar.brand_new_check", "weight": 2, "spec": "x" }',
+  );
+  tree.files["references/artifact-report.md"] = tree.files["references/artifact-report.md"].replace(
+    '"ar.xml_sitemap", "seo.robots_allows_locations"',
+    '"ar.xml_sitemap", "ar.brand_new_check", "seo.robots_allows_locations"',
+  );
+  const violations = runOverTree(tree);
+  assert.ok(violations.some((v) => /PLAIN_LANGUAGE.*ar\.brand_new_check/.test(v)), violations.join("\n"));
 });
