@@ -42,8 +42,11 @@ incomparable.
   host's built-in browser tool when one exists** (the in-app Browser in Claude Desktop and
   Cowork, Claude in Chrome); launch or attach a separate Chrome — a DevTools MCP, puppeteer —
   only when the host offers no browser tool at all. Every procedure in this skill is written
-  for the built-in surface's `navigate`, `javascript_tool` and `read_page`, and a launched
-  Chrome costs several tool calls per page where the built-in one costs one. GEO evidence
+  for the built-in surface's `navigate`, `javascript_tool` and `read_page`; on a fallback,
+  map them once and follow the procedure unchanged — Chrome DevTools MCP: `navigate_page`,
+  `evaluate_script`, `take_snapshot`; puppeteer: `page.goto`, `page.evaluate`,
+  `page.accessibility.snapshot()`. A launched Chrome still costs several tool calls per page
+  where the built-in one costs one, which is why it is the last resort. GEO evidence
   comes from the *real* Google, Apple, and Bing Maps pages — never from the Places API or
   MapKit — and JS-shell pages get their rendered pass in the same browser (see the
   rendering policy in `references/seo-checks.md`). If no browser is available, run the
