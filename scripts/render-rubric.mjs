@@ -168,7 +168,7 @@ export function renderRubricPage({ rubricMd, reportMd }) {
   );
   out.push("");
   out.push(
-    `This page explains how the PinMeTo web presence scan scores a multi-location brand. It is the same contract the scan runs (\`references/rubric.md\`), laid out for reading. The rubric is derived from PinMeTo's MLPR product rubric (${rubric.derived_from}); the differences are listed at the end.`,
+    `This page explains how the PinMeTo web presence scan scores a multi-location brand. It is the same contract the scan runs (\`references/rubric.md\`), laid out for reading.`,
   );
   out.push("");
   out.push("## How the score is built");
@@ -274,18 +274,7 @@ export function renderRubricPage({ rubricMd, reportMd }) {
     ),
   );
   out.push("");
-  out.push("## How this differs from the PinMeTo product rubric");
-  out.push("");
-  out.push(
-    `The scan is a skill-line fork of ${rubric.derived_from}. SEO, AIO and Agent Readiness are scored identically to the product. GEO differs in two ways, so GEO scores are not directly comparable with product scores:`,
-  );
-  out.push("");
-  out.push(
-    "- **Bing is a scored platform again.** The product dropped it because the Bing Maps Enterprise API is being retired; the skill reads the live bing.com/maps surface in a browser instead.",
-  );
-  out.push(
-    "- **`geo.listing_connected_pinmeto` is new.** It measures whether each listing is connected and managed through PinMeTo, judged from the location record and downgraded when the map surface contradicts it.",
-  );
+  out.push("## Re-runs and rubric versions");
   out.push("");
   out.push(
     "A re-run always scores with the current rubric version. Earlier scans keep the scores they were computed with, and the report attributes every moved check to a rubric change, a measurement correction, or a real change on the site or listing. The version history is in `references/rubric.md`.",

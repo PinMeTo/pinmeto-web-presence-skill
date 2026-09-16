@@ -74,8 +74,7 @@ are weighted into the overall score: Search 30, Maps 30, AI answers 25, AI agent
 score maps to a grade from A to F.
 
 [The rubric, explained](docs/rubric.md) lists every check with what it looks for, when it
-passes, and which Theme it belongs to. It follows the PinMeTo MLPR rubric that PinMeTo's own
-reports use, with two adjustments for Maps that the page describes.
+passes, and which Theme it belongs to.
 
 ## Good to know
 
