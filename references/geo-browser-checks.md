@@ -1,7 +1,8 @@
 # GEO checks — real Google, Apple, and Bing Maps in the browser (pillar weight 30%)
 
 GEO evidence comes from **browsing the actual map surfaces**, not the Places API or MapKit.
-Use the available browser tool (in-app Browser, Claude in Chrome, or equivalent). The point:
+Use the host's built-in browser tool (in-app Browser, Claude in Chrome); a separately launched
+Chrome only when the host has none — see the browser prerequisite in `SKILL.md`. The point:
 what you see is what a customer — and an AI assistant grounding on these platforms — sees.
 
 Ground rules:
