@@ -55,19 +55,19 @@ jobs:
             # from the first step and calls `gh release create` again for a tag that
             # now already has a release, which fails. Recovery is the marketplace's
             # own workflow_dispatch, which is built for exactly this.
-            echo "::warning::MARKETPLACE_DISPATCH_TOKEN is not set, so the marketplace was not notified. The release and its .skill artifact were published normally. To vendor this version, run the 'Sync plugin artifacts' workflow in PinMeTo/claude-plugins with skill_name=pinmeto-web-presence and skill_version=$VERSION, and add the secret so future releases notify automatically."
+            echo "::warning::MARKETPLACE_DISPATCH_TOKEN is not set, so the marketplace was not notified. The release and its .skill artifact were published normally. To vendor this version, run the 'Sync plugin artifacts' workflow in PinMeTo/agent-plugins with skill_name=pinmeto-web-presence and skill_version=$VERSION, and add the secret so future releases notify automatically."
           fi
 
       - name: Notify the marketplace to sync
         # Requires a MARKETPLACE_DISPATCH_TOKEN secret: a token allowed to send
-        # repository_dispatch to PinMeTo/claude-plugins. The payload names this
+        # repository_dispatch to PinMeTo/agent-plugins. The payload names this
         # skill so the marketplace sync vendors the right registry entry.
         if: steps.dispatch.outputs.configured == 'true'
         env:
           GH_TOKEN: ${{ secrets.MARKETPLACE_DISPATCH_TOKEN }}
           VERSION: ${{ steps.v.outputs.version }}
         run: |
-          gh api repos/PinMeTo/claude-plugins/dispatches \
+          gh api repos/PinMeTo/agent-plugins/dispatches \
             --field event_type=skill-released \
             --field "client_payload[skill_name]=pinmeto-web-presence" \
             --field "client_payload[skill_version]=$VERSION"

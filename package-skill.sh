@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Packages the skill into a distributable `.skill` archive (a plain zip of the
-# skill payload) named after the version declared in SKILL.md. The claude-plugins
+# skill payload) named after the version declared in SKILL.md. The agent-plugins
 # marketplace sync unpacks this artifact into the plugin.
 set -euo pipefail
 
