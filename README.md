@@ -104,7 +104,7 @@ node scripts/render-rubric.mjs       # regenerate docs/rubric.md after a rubric 
 To release: bump `version:` in `SKILL.md`, add the changelog entry, regenerate `docs/rubric.md`
 if the rubric moved, then tag `vX.Y.Z` and push the tag. `release.yml` packages the `.skill`,
 publishes a GitHub release and, when the `MARKETPLACE_DISPATCH_TOKEN` secret is configured,
-notifies [`PinMeTo/claude-plugins`](https://github.com/PinMeTo/claude-plugins) to vendor the
+notifies [`PinMeTo/agent-plugins`](https://github.com/PinMeTo/agent-plugins) to vendor the
 new version. Without the secret, run the marketplace's "Sync plugin artifacts" workflow by hand.
 A rubric change also bumps `rubric_version` in `references/rubric.md`, so re-runs can tell
 rubric drift from real progress.
